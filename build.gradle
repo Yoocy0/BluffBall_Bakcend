@@ -40,6 +40,9 @@ dependencies {
     // MariaDB Driver
     runtimeOnly 'org.mariadb.jdbc:mariadb-java-client'
 
+    // Spring Data Redis
+    implementation 'org.springframework.boot:spring-boot-starter-data-redis'
+
     // Test
     testImplementation 'org.springframework.boot:spring-boot-starter-test'
     testRuntimeOnly 'org.junit.platform:junit-platform-launcher'
