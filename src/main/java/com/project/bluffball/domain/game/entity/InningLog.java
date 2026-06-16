@@ -58,6 +58,10 @@ public class InningLog {
     @Column(name = "selected_coordinate_card_id", nullable = false)
     private Long selectedCoordinateCardId;
 
+    /** 타자가 예측하여 선택한 최종 좌표 카드 ID */
+    @Column(name = "selected_batter_coordinate_card_id", nullable = false)
+    private Long selectedBatterCoordinateCardId;
+
     /** 타자가 낸 타이밍 카드 ID */
     @Column(name = "selected_timing_card_id", nullable = false)
     private Long selectedTimingCardId;
@@ -80,7 +84,8 @@ public class InningLog {
                      Long pitcherUserId, Long batterUserId,
                      int inning, boolean isTop,
                      Long selectedPitchCardId, Long selectedCoordinateCardId,
-                     Long selectedTimingCardId, TurnResult turnResult) {
+                     Long selectedBatterCoordinateCardId, Long selectedTimingCardId,
+                     TurnResult turnResult) {
         this.matchSessionId = matchSessionId;
         this.turnNumber = turnNumber;
         this.pitcherUserId = pitcherUserId;
@@ -89,6 +94,7 @@ public class InningLog {
         this.isTop = isTop;
         this.selectedPitchCardId = selectedPitchCardId;
         this.selectedCoordinateCardId = selectedCoordinateCardId;
+        this.selectedBatterCoordinateCardId = selectedBatterCoordinateCardId;
         this.selectedTimingCardId = selectedTimingCardId;
         this.turnResult = turnResult;
     }
