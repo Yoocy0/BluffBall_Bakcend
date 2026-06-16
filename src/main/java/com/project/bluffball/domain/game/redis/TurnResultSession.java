@@ -8,7 +8,6 @@ import lombok.Builder;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import org.springframework.data.annotation.Id;
-import org.springframework.data.annotation.Indexed;
 import org.springframework.data.redis.core.RedisHash;
 
 /**
@@ -24,7 +23,8 @@ import org.springframework.data.redis.core.RedisHash;
  * KEY   : TurnResultSession:{matchSessionId}:{turnNumber}
  * FIELD : matchSessionId, turnNumber, inning, isTop,
  *         currentPitcherUserId, currentBatterUserId,
- *         selectedPitchCardId, selectedCoordinateCardId, selectedTimingCardId,
+ *         selectedPitchCardId, selectedCoordinateCardId,
+ *         selectedBatterCoordinateCardId, selectedTimingCardId,
  *         turnResult
  * </pre>
  */
@@ -40,8 +40,7 @@ public class TurnResultSession {
     @Id
     private String id;
 
-    /** 소속 매치 세션 ID — 경기 종료 시 일괄 조회 키 */
-    @Indexed
+    /** 소속 매치 세션 ID — 경기 종료 시 일괄 조회 키 (Redis Set "MATCH_TURN_IDS:{matchSessionId}"로 관리) */
     private String matchSessionId;
 
     /** 턴 번호 (경기 내 투구 순서) */
@@ -65,6 +64,9 @@ public class TurnResultSession {
     /** 투수가 낸 좌표 카드 ID */
     private Long selectedCoordinateCardId;
 
+    /** 타자가 예측하여 선택한 최종 좌표 카드 ID */
+    private Long selectedBatterCoordinateCardId;
+
     /** 타자가 낸 타이밍 카드 ID */
     private Long selectedTimingCardId;
 
@@ -76,7 +78,8 @@ public class TurnResultSession {
     public TurnResultSession(String matchSessionId, int turnNumber, int inning, boolean isTop,
                              Long currentPitcherUserId, Long currentBatterUserId,
                              Long selectedPitchCardId, Long selectedCoordinateCardId,
-                             Long selectedTimingCardId, TurnResult turnResult) {
+                             Long selectedBatterCoordinateCardId, Long selectedTimingCardId,
+                             TurnResult turnResult) {
         this.id = matchSessionId + ":" + turnNumber;
         this.matchSessionId = matchSessionId;
         this.turnNumber = turnNumber;
@@ -86,6 +89,7 @@ public class TurnResultSession {
         this.currentBatterUserId = currentBatterUserId;
         this.selectedPitchCardId = selectedPitchCardId;
         this.selectedCoordinateCardId = selectedCoordinateCardId;
+        this.selectedBatterCoordinateCardId = selectedBatterCoordinateCardId;
         this.selectedTimingCardId = selectedTimingCardId;
         this.turnResult = turnResult;
     }
