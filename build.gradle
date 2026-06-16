@@ -43,6 +43,9 @@ dependencies {
     // Spring Data Redis
     implementation 'org.springframework.boot:spring-boot-starter-data-redis'
 
+    // WebSocket (STOMP)
+    implementation 'org.springframework.boot:spring-boot-starter-websocket'
+
     // Test
     testImplementation 'org.springframework.boot:spring-boot-starter-test'
     testRuntimeOnly 'org.junit.platform:junit-platform-launcher'
