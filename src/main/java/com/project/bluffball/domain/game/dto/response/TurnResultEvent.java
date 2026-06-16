@@ -6,6 +6,8 @@ import lombok.Builder;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 
+import java.util.List;
+
 /**
  * 턴 결과 WebSocket 송신 이벤트.
  * 양측 선택 완료 후 결과 계산이 끝나면 투수와 타자 모두에게 전송된다.
@@ -19,6 +21,13 @@ public class TurnResultEvent {
 
     /** 투수 공의 실제 최종 좌표 번호 (결과 공개 / 0 = 폭투) */
     private int finalCoordinateNumber;
+
+    /**
+     * 이 턴에 굴린 주사위 눈금 결과 목록 (1~12).
+     * 완벽 일치 시 2개, 빗맞음(1칸 어긋남) 시 1개, 헛스윙/타임아웃 시 빈 리스트.
+     * 클라이언트의 주사위 굴리기 애니메이션 연출에 사용된다.
+     */
+    private List<Integer> diceResults;
 
     /** 현재 이닝 수 */
     private int inning;
@@ -52,12 +61,14 @@ public class TurnResultEvent {
 
     @Builder
     public TurnResultEvent(TurnResult turnResult, int finalCoordinateNumber,
+                           List<Integer> diceResults,
                            int inning, boolean isTop,
                            int homeScore, int awayScore,
                            int balls, int strikes, int outs,
                            boolean firstBase, boolean secondBase, boolean thirdBase) {
         this.turnResult = turnResult;
         this.finalCoordinateNumber = finalCoordinateNumber;
+        this.diceResults = diceResults;
         this.inning = inning;
         this.isTop = isTop;
         this.homeScore = homeScore;

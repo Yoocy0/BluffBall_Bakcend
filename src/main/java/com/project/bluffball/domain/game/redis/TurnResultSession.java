@@ -1,5 +1,6 @@
 package com.project.bluffball.domain.game.redis;
 
+import com.project.bluffball.domain.game.enums.Timing;
 import com.project.bluffball.domain.game.enums.TurnResult;
 import jakarta.persistence.EnumType;
 import jakarta.persistence.Enumerated;
@@ -9,6 +10,8 @@ import lombok.Getter;
 import lombok.NoArgsConstructor;
 import org.springframework.data.annotation.Id;
 import org.springframework.data.redis.core.RedisHash;
+
+import java.util.List;
 
 /**
  * Redis 저장용 턴 단위 결과 세션 객체.
@@ -67,8 +70,19 @@ public class TurnResultSession {
     /** 타자가 예측하여 선택한 최종 좌표 카드 ID */
     private Long selectedBatterCoordinateCardId;
 
-    /** 타자가 낸 타이밍 카드 ID */
-    private Long selectedTimingCardId;
+    /**
+     * 타자가 선택한 타이밍 칸 — Redis에 ordinal 정수로 저장.
+     * 타임아웃 또는 스윙 미발동 시 null.
+     */
+    @Enumerated(EnumType.ORDINAL)
+    private Timing selectedTiming;
+
+    /**
+     * 이 턴에 부여된 주사위 눈금 결과 목록.
+     * 완벽 일치: 2개, 빗맞음(1칸 어긋남): 1개, 헛스윙/타임아웃: 빈 리스트.
+     * 결과 애니메이션 재생 및 감사 로그 목적으로 저장된다.
+     */
+    private List<Integer> diceResults;
 
     /** 이 턴의 최종 판정 결과 — Redis에 ordinal 정수로 저장 */
     @Enumerated(EnumType.ORDINAL)
@@ -78,8 +92,8 @@ public class TurnResultSession {
     public TurnResultSession(String matchSessionId, int turnNumber, int inning, boolean isTop,
                              Long currentPitcherUserId, Long currentBatterUserId,
                              Long selectedPitchCardId, Long selectedCoordinateCardId,
-                             Long selectedBatterCoordinateCardId, Long selectedTimingCardId,
-                             TurnResult turnResult) {
+                             Long selectedBatterCoordinateCardId, Timing selectedTiming,
+                             List<Integer> diceResults, TurnResult turnResult) {
         this.id = matchSessionId + ":" + turnNumber;
         this.matchSessionId = matchSessionId;
         this.turnNumber = turnNumber;
@@ -90,7 +104,8 @@ public class TurnResultSession {
         this.selectedPitchCardId = selectedPitchCardId;
         this.selectedCoordinateCardId = selectedCoordinateCardId;
         this.selectedBatterCoordinateCardId = selectedBatterCoordinateCardId;
-        this.selectedTimingCardId = selectedTimingCardId;
+        this.selectedTiming = selectedTiming;
+        this.diceResults = diceResults;
         this.turnResult = turnResult;
     }
 }
