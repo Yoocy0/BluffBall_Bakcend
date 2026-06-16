@@ -2,6 +2,7 @@ package com.project.bluffball.domain.card.entity;
 
 import com.project.bluffball.domain.card.enums.ChangeDirection;
 import com.project.bluffball.domain.card.enums.UserType;
+import com.project.bluffball.domain.game.enums.Timing;
 import jakarta.persistence.*;
 import lombok.AccessLevel;
 import lombok.Getter;
@@ -35,24 +36,29 @@ public class PitchCard extends Card {
     @Column(name = "direction", nullable = false)
     private ChangeDirection direction;
 
-    /** 이 구종 카드가 참조하는 타이밍 카드의 ID */
-    @Column(name = "timing_card_id")
-    private Long timingCardId;
+    /**
+     * 이 구종의 고유 타이밍 — DB에 ordinal(0=TOO_EARLY ~ 4=TOO_LATE) 정수로 저장.
+     * 타자는 타격 화면의 5개 타이밍 칸 중 하나에 좌표 카드를 올려 타이밍을 지정하며,
+     * 이 값과의 ordinal 차이로 주사위 개수가 결정된다.
+     */
+    @Enumerated(EnumType.ORDINAL)
+    @Column(name = "timing", nullable = false)
+    private Timing timing;
 
     /** userType 기본값 PITCHER */
-    public PitchCard(String name, int changeAmount, ChangeDirection direction, Long timingCardId) {
+    public PitchCard(String name, int changeAmount, ChangeDirection direction, Timing timing) {
         super(name, UserType.PITCHER);
         this.changeAmount = changeAmount;
         this.direction = direction;
-        this.timingCardId = timingCardId;
+        this.timing = timing;
     }
 
     public PitchCard(String name, UserType userType,
-                        int changeAmount, ChangeDirection direction, Long timingCardId) {
+                     int changeAmount, ChangeDirection direction, Timing timing) {
         super(name, userType);
         this.changeAmount = changeAmount;
         this.direction = direction;
-        this.timingCardId = timingCardId;
+        this.timing = timing;
     }
 
     /**

@@ -1,5 +1,6 @@
 package com.project.bluffball.domain.game.entity;
 
+import com.project.bluffball.domain.game.enums.Timing;
 import com.project.bluffball.domain.game.enums.TurnResult;
 import jakarta.persistence.*;
 import lombok.AccessLevel;
@@ -62,9 +63,13 @@ public class InningLog {
     @Column(name = "selected_batter_coordinate_card_id", nullable = false)
     private Long selectedBatterCoordinateCardId;
 
-    /** 타자가 낸 타이밍 카드 ID */
-    @Column(name = "selected_timing_card_id", nullable = false)
-    private Long selectedTimingCardId;
+    /**
+     * 타자가 선택한 타이밍 칸 — DB에 ordinal 정수로 저장.
+     * 타임아웃 또는 스윙 미발동 시 null.
+     */
+    @Enumerated(EnumType.ORDINAL)
+    @Column(name = "selected_timing")
+    private Timing selectedTiming;
 
     /** 이 턴의 최종 판정 결과 — DB에 ordinal 정수로 저장 */
     @Enumerated(EnumType.ORDINAL)
@@ -84,7 +89,7 @@ public class InningLog {
                      Long pitcherUserId, Long batterUserId,
                      int inning, boolean isTop,
                      Long selectedPitchCardId, Long selectedCoordinateCardId,
-                     Long selectedBatterCoordinateCardId, Long selectedTimingCardId,
+                     Long selectedBatterCoordinateCardId, Timing selectedTiming,
                      TurnResult turnResult) {
         this.matchSessionId = matchSessionId;
         this.turnNumber = turnNumber;
@@ -95,7 +100,7 @@ public class InningLog {
         this.selectedPitchCardId = selectedPitchCardId;
         this.selectedCoordinateCardId = selectedCoordinateCardId;
         this.selectedBatterCoordinateCardId = selectedBatterCoordinateCardId;
-        this.selectedTimingCardId = selectedTimingCardId;
+        this.selectedTiming = selectedTiming;
         this.turnResult = turnResult;
     }
 }

@@ -1,6 +1,7 @@
 package com.project.bluffball.domain.game.dto.response;
 
 import com.project.bluffball.domain.card.enums.ChangeDirection;
+import com.project.bluffball.domain.game.enums.Timing;
 import lombok.AccessLevel;
 import lombok.Builder;
 import lombok.Getter;
@@ -26,20 +27,20 @@ public class CardInfo {
     /** 변화 방향 — NONE(직구), SIDE(횡), DOWN(종) */
     private ChangeDirection direction;
 
-    /** 이 구종에 연결된 타이밍 카드 ID */
-    private Long timingCardId;
-
-    /** 이 구종의 타이밍 카드 이름 (예: "빠름", "중간", "느림") */
-    private String timingName;
+    /**
+     * 이 구종의 고유 타이밍.
+     * 타자는 타격 화면의 5개 타이밍 칸 중 하나를 선택하며,
+     * 이 값과 ordinal 차이가 0이면 주사위 2개, 1이면 주사위 1개(빗맞음), 2 이상이면 헛스윙이다.
+     */
+    private Timing timing;
 
     @Builder
-    public CardInfo(Long cardId, String name, int changeAmount, ChangeDirection direction,
-                    Long timingCardId, String timingName) {
+    public CardInfo(Long cardId, String name, int changeAmount,
+                    ChangeDirection direction, Timing timing) {
         this.cardId = cardId;
         this.name = name;
         this.changeAmount = changeAmount;
         this.direction = direction;
-        this.timingCardId = timingCardId;
-        this.timingName = timingName;
+        this.timing = timing;
     }
 }
