@@ -61,11 +61,16 @@ public class GameState {
     /** 3루 주자 유무 */
     private boolean thirdBase;
 
+    /** 현재 진행 중인 턴 번호 (1부터 시작) */
+    @Builder.Default
+    private int turnNumber = 1;
+
     @Builder
     public GameState(String id, int currentInning, boolean isTop,
                      int homeScore, int awayScore,
                      int balls, int strikes, int outs,
-                     boolean firstBase, boolean secondBase, boolean thirdBase) {
+                     boolean firstBase, boolean secondBase, boolean thirdBase,
+                     int turnNumber) {
         this.id = id;
         this.currentInning = currentInning;
         this.isTop = isTop;
@@ -77,5 +82,6 @@ public class GameState {
         this.firstBase = firstBase;
         this.secondBase = secondBase;
         this.thirdBase = thirdBase;
+        this.turnNumber = turnNumber > 0 ? turnNumber : 1;
     }
 }

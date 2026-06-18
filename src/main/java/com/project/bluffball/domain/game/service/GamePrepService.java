@@ -20,16 +20,21 @@ import org.springframework.stereotype.Service;
 import java.util.List;
 
 /**
- * 인게임 흐름 서비스.
+ * 인게임 준비 단계 서비스.
+ *
+ * <p>블러핑 숫자 셋업, 카드 드로우(초기 뽑기 + 멀리건)를 담당한다.
+ * 투수 교체 시마다 drawCardHand → processMulligan 흐름이 반복될 수 있다.</p>
  *
  * <p>Entity·Repository에 직접 접근하지 않는다.
  * 모든 검증은 Validator, 상태 변경은 Executor, 조회는 Reader에 위임한다.</p>
  *
  * <p>WebSocket 이벤트 발행(SimpMessagingTemplate)은 이 Service에서만 수행한다.</p>
+ *
+ * @see GameTurnService 반복 턴 실행(투수/타자 카드 선택, 타격 판정)
  */
 @Service
 @RequiredArgsConstructor
-public class GameService {
+public class GamePrepService {
 
     private final SetupNumberValidator setupNumberValidator;
     private final SetupNumberExecutor setupNumberExecutor;
@@ -59,14 +64,14 @@ public class GameService {
     /**
      * 초기 카드 패를 뽑아 MatchInfo에 저장하고 투수에게 CardHandEvent를 전송한다.
      *
-     * <p>양측의 setup-numbers 제출이 완료되면 {@link #setupNumbers}에서 자동 호출된다.
-     * 뽑기가 완료되면 즉시 {@code /topic/game/{matchSessionId}}로 브로드캐스트한다.</p>
+     * <p>양측 setup-numbers 완료 시 {@link com.project.bluffball.domain.game.service.listener.GamePhaseListener}가 호출한다.
+     * 투수 교체 시에도 재호출된다.</p>
      */
     public void drawCardHand(String matchSessionId) {
         List<Long> drawnIds = cardHandDrawExecutor.execute(matchSessionId);
         List<CardInfo> cardInfos = pitchCardReader.getPitchCardDetails(drawnIds);
-        CardHandEvent event = CardHandEvent.builder().cards(cardInfos).build();
-        messagingTemplate.convertAndSend(GAME_TOPIC + matchSessionId, event);
+        messagingTemplate.convertAndSend(GAME_TOPIC + matchSessionId,
+                CardHandEvent.builder().cards(cardInfos).build());
     }
 
     /**
@@ -80,7 +85,7 @@ public class GameService {
      */
     public void processMulligan(String matchSessionId, Long userId, MulliganRequest request) {
         if (matchInfoReader.isMulliganDone(matchSessionId)) {
-            throw new IllegalStateException("멀리건은 경기 당 1회만 가능합니다.");
+            throw new IllegalStateException("멀리건은 투수 등판 당 1회만 가능합니다.");
         }
 
         List<Long> currentHand = matchInfoReader.getPitcherCardHand(matchSessionId);

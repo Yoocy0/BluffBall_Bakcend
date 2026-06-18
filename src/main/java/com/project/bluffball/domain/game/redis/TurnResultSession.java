@@ -27,7 +27,8 @@ import java.util.List;
  * FIELD : matchSessionId, turnNumber, inning, isTop,
  *         currentPitcherUserId, currentBatterUserId,
  *         selectedPitchCardId, selectedCoordinateCardId,
- *         selectedBatterCoordinateCardId, selectedTimingCardId,
+ *         startCoordinateNumber, finalCoordinateNumber, pitchTiming,
+ *         selectedBatterCoordinateCardId, selectedTiming,
  *         turnResult
  * </pre>
  */
@@ -67,6 +68,22 @@ public class TurnResultSession {
     /** 투수가 낸 좌표 카드 ID */
     private Long selectedCoordinateCardId;
 
+    /** 투수가 선택한 시작 좌표 번호 (1~25) */
+    private int startCoordinateNumber;
+
+    /**
+     * 구종 변화 적용 후 투수 공의 최종 좌표 번호 (1~25, 격자 이탈 시 0).
+     * 투수 선택 직후 {@link com.project.bluffball.domain.card.entity.PitchCard#calculateFinalCoordinateNumber}로 확정·저장한다.
+     */
+    private int finalCoordinateNumber;
+
+    /**
+     * 선택한 구종 카드의 고유 타이밍 — Redis에 ordinal 정수로 저장.
+     * 타자 선택 후 판정 시 {@link #selectedTiming}과 비교한다.
+     */
+    @Enumerated(EnumType.ORDINAL)
+    private Timing pitchTiming;
+
     /** 타자가 예측하여 선택한 최종 좌표 카드 ID */
     private Long selectedBatterCoordinateCardId;
 
@@ -92,6 +109,7 @@ public class TurnResultSession {
     public TurnResultSession(String matchSessionId, int turnNumber, int inning, boolean isTop,
                              Long currentPitcherUserId, Long currentBatterUserId,
                              Long selectedPitchCardId, Long selectedCoordinateCardId,
+                             int startCoordinateNumber, int finalCoordinateNumber, Timing pitchTiming,
                              Long selectedBatterCoordinateCardId, Timing selectedTiming,
                              List<Integer> diceResults, TurnResult turnResult) {
         this.id = matchSessionId + ":" + turnNumber;
@@ -103,6 +121,9 @@ public class TurnResultSession {
         this.currentBatterUserId = currentBatterUserId;
         this.selectedPitchCardId = selectedPitchCardId;
         this.selectedCoordinateCardId = selectedCoordinateCardId;
+        this.startCoordinateNumber = startCoordinateNumber;
+        this.finalCoordinateNumber = finalCoordinateNumber;
+        this.pitchTiming = pitchTiming;
         this.selectedBatterCoordinateCardId = selectedBatterCoordinateCardId;
         this.selectedTiming = selectedTiming;
         this.diceResults = diceResults;

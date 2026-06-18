@@ -3,6 +3,7 @@ package com.project.bluffball.domain.game.service.usecase.reader;
 import com.project.bluffball.domain.card.entity.PitchCard;
 import com.project.bluffball.domain.card.repository.PitchCardRepository;
 import com.project.bluffball.domain.game.dto.response.CardInfo;
+import com.project.bluffball.domain.game.enums.Timing;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Component;
 
@@ -54,5 +55,17 @@ public class PitchCardReader {
         return pitchCardRepository.findById(cardId)
                 .orElseThrow(() -> new IllegalArgumentException(
                         "구종 카드를 찾을 수 없습니다. cardId=" + cardId));
+    }
+
+    /**
+     * 시작 좌표에 구종 변화를 적용한 최종 좌표 번호를 반환한다. (Executor·Reader 내부)
+     */
+    public int calculateFinalCoordinateNumber(Long pitchCardId, int startCoordinateNumber) {
+        return getById(pitchCardId).calculateFinalCoordinateNumber(startCoordinateNumber);
+    }
+
+    /** 구종 카드의 고유 타이밍을 반환한다. (Executor·Reader 내부) */
+    public Timing getPitchTiming(Long pitchCardId) {
+        return getById(pitchCardId).getTiming();
     }
 }

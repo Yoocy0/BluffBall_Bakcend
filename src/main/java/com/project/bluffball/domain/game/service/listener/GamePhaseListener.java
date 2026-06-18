@@ -1,7 +1,7 @@
 package com.project.bluffball.domain.game.service.listener;
 
 import com.project.bluffball.domain.game.event.SetupNumbersSubmittedEvent;
-import com.project.bluffball.domain.game.service.GameService;
+import com.project.bluffball.domain.game.service.GamePrepService;
 import com.project.bluffball.domain.game.service.usecase.reader.MatchInfoReader;
 import lombok.RequiredArgsConstructor;
 import org.springframework.context.event.EventListener;
@@ -19,7 +19,7 @@ import org.springframework.stereotype.Component;
 public class GamePhaseListener {
 
     private final MatchInfoReader matchInfoReader;
-    private final GameService gameService;
+    private final GamePrepService gamePrepService;
 
     /**
      * 블러핑 숫자 제출 이벤트 수신.
@@ -29,7 +29,7 @@ public class GamePhaseListener {
     @EventListener
     public void onSetupNumbersSubmitted(SetupNumbersSubmittedEvent event) {
         if (matchInfoReader.isSetupNumbersComplete(event.matchSessionId())) {
-            gameService.drawCardHand(event.matchSessionId());
+            gamePrepService.drawCardHand(event.matchSessionId());
         }
     }
 }

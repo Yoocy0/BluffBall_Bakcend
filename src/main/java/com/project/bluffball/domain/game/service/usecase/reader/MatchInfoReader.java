@@ -45,6 +45,21 @@ public class MatchInfoReader {
         return getById(matchSessionId).isMulliganDone();
     }
 
+    /** 현재 등판 투수 userId 반환 (Service ✅) */
+    public Long getPitcherUserId(String matchSessionId) {
+        return getById(matchSessionId).getPitcherUserId();
+    }
+
+    /** 현재 타석 타자 userId 반환 (Service ✅) */
+    public Long getCurrentBatterUserId(String matchSessionId) {
+        MatchInfo matchInfo = getById(matchSessionId);
+        List<Long> lineup = matchInfo.getBatterLineup();
+        if (lineup.isEmpty()) {
+            throw new IllegalStateException("타순이 비어 있습니다. matchSessionId=" + matchSessionId);
+        }
+        return lineup.get(matchInfo.getCurrentBatterIndex());
+    }
+
     /**
      * 모든 플레이어의 블러핑 숫자 제출이 완료됐는지 확인한다. (Service ✅)
      *

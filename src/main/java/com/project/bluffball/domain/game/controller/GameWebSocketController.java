@@ -4,7 +4,8 @@ import com.project.bluffball.domain.game.dto.request.BatterCardSelectRequest;
 import com.project.bluffball.domain.game.dto.request.MulliganRequest;
 import com.project.bluffball.domain.game.dto.request.PitcherCardSelectRequest;
 import com.project.bluffball.domain.game.dto.request.SetupNumberRequest;
-import com.project.bluffball.domain.game.service.GameService;
+import com.project.bluffball.domain.game.service.GamePrepService;
+import com.project.bluffball.domain.game.service.GameTurnService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.messaging.handler.annotation.DestinationVariable;
 import org.springframework.messaging.handler.annotation.MessageMapping;
@@ -49,7 +50,8 @@ import org.springframework.stereotype.Controller;
 @RequiredArgsConstructor
 public class GameWebSocketController {
 
-    private final GameService gameService;
+    private final GamePrepService gamePrepService;
+    private final GameTurnService gameTurnService;
 
     /**
      * [Phase 2] 블러핑 고유 숫자 제출.
@@ -75,7 +77,7 @@ public class GameWebSocketController {
             @Payload SetupNumberRequest request) {
         // TODO: userId — Spring Security Principal에서 추출 예정
         Long userId = 1L;
-        gameService.setupNumbers(matchSessionId, userId, request);
+        gamePrepService.setupNumbers(matchSessionId, userId, request);
     }
 
     /**
@@ -102,7 +104,7 @@ public class GameWebSocketController {
             @Payload MulliganRequest request) {
         // TODO: userId — Spring Security Principal에서 추출 예정
         Long userId = 1L;
-        gameService.processMulligan(matchSessionId, userId, request);
+        gamePrepService.processMulligan(matchSessionId, userId, request);
     }
 
     /**
@@ -122,7 +124,9 @@ public class GameWebSocketController {
     public void pitcherSelectCard(
             @DestinationVariable String matchSessionId,
             @Payload PitcherCardSelectRequest request) {
-        // TODO: GameService.pitcherSelectCard(matchSessionId, request)
+        // TODO: userId — Spring Security Principal에서 추출 예정
+        Long userId = 1L;
+        gameTurnService.pitcherSelectCard(matchSessionId, userId, request);
     }
 
     /**
