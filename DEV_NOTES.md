@@ -59,32 +59,3 @@ public String createSingleMatch(...) {
 | `getPitchCardDetails(List<Long>)` | DTO(record) | Service ✅ |
 
 **규칙**: Service 코드에서 Entity 타입 변수가 존재하면 안 된다.
-
----
-
-## 싱글 모드 게임 구조
-
-- 두 플레이어(home, away)가 투수/타자를 **번갈아** 담당한다.
-- 이닝 초(isTop=true): away가 타자, home이 투수
-- 이닝 말(isTop=false): home이 타자, away가 투수
-- MatchInfo에서 역할 식별자는 `pitcherUserId`/`batterLineup`이 아닌 `homeUserId`/`awayUserId`를 사용한다.
-- 현재 투수/타자는 GameState의 `isTop`으로 도출한다.
-
----
-
-## 블러핑 숫자 구조
-
-- 싱글 모드: 두 플레이어 모두 투수/타자 숫자를 **전부** 제출한다 (게임 시작 직후).
-- 모든 블러핑 숫자는 `Map<Long, T>` (userId 키) 구조로 저장한다.
-  - `pitcherOutNumbers: Map<Long, List<Integer>>`
-  - `pitcherDoublePlayNumbers: Map<Long, Integer>`
-  - `batterTripleNumbers: Map<Long, Integer>`
-  - `batterHomerunNumbers: Map<Long, Integer>`
-- 이 구조는 팀전(다수 타자, 투수 교체) 확장 시에도 수정 없이 동작한다.
-
----
-
-## 추후 추가 예정
-
-- [ ] 예외 처리 전략 (GlobalExceptionHandler)
-- [ ] 인증(userId 추출) 방식 확정 후 기록

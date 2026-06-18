@@ -63,6 +63,9 @@ public class MatchInfo {
      */
     private List<Long> pitcherCardHand;
 
+    /** 멀리건(카드 교체) 완료 여부 — 경기 당 1회만 허용. */
+    private boolean mulliganDone;
+
     /**
      * 이 경기에서 투수로 등판했던 유저 ID 목록.
      * 교체 룰: 한 번 등판한 투수는 재등판 불가.
@@ -95,6 +98,11 @@ public class MatchInfo {
      */
     private Map<Long, List<Integer>> hrNumbers;
 
+    /** 멀리건 완료 처리 — MulliganExecutor에서만 호출한다. */
+    public void completeMulligan() {
+        this.mulliganDone = true;
+    }
+
     @Builder
     public MatchInfo(String id, GameMode gameMode, Long pitcherUserId, List<Long> batterLineup) {
         this.id = id;
@@ -104,6 +112,7 @@ public class MatchInfo {
         this.batterLineup = batterLineup != null ? batterLineup : new ArrayList<>();
         this.currentBatterIndex = 0;
         this.pitcherCardHand = new ArrayList<>();
+        this.mulliganDone = false;
         this.usedAsPitcherIds = new ArrayList<>();
         this.outNumbers = new HashMap<>();
         this.dpNumbers = new HashMap<>();
