@@ -154,6 +154,8 @@ public class GameWebSocketController {
     public void batterSelectCard(
             @DestinationVariable String matchSessionId,
             @Payload BatterCardSelectRequest request) {
-        // TODO: GameService.batterSelectCard(matchSessionId, request)
+        // TODO: userId — Spring Security Principal에서 추출 예정
+        Long userId = 1L;
+        gameTurnService.batterSelectCard(matchSessionId, userId, request);
     }
 }

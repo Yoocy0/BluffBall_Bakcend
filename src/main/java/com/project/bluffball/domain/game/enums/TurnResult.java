@@ -15,7 +15,8 @@ public enum TurnResult {
     WALK(6),            // 볼넷 (사구 없음)
     STRIKE_OUT(7),      // 삼진 아웃
     OUT(8),             // 일반 아웃 (땅볼/플라이 구분 없음)
-    DOUBLE_PLAY(9);     // 병살타
+    DOUBLE_PLAY(9),     // 병살타
+    WILD_PITCH(10);     // 폭투 (MVP — 추후 주자 진루 등 확장 예정)
 
     private final int value;
 

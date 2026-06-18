@@ -2,9 +2,16 @@ package com.project.bluffball.domain.game.service;
 
 import com.project.bluffball.domain.game.dto.request.BatterCardSelectRequest;
 import com.project.bluffball.domain.game.dto.request.PitcherCardSelectRequest;
+import com.project.bluffball.domain.game.dto.response.GameStateSnapshot;
 import com.project.bluffball.domain.game.dto.response.PitcherReadyEvent;
+import com.project.bluffball.domain.game.dto.response.TurnResultEvent;
+import com.project.bluffball.domain.game.service.usecase.executor.BatterCardSelectExecutor;
 import com.project.bluffball.domain.game.service.usecase.executor.PitcherCardSelectExecutor;
+import com.project.bluffball.domain.game.service.usecase.judgment.TurnJudgmentResult;
+import com.project.bluffball.domain.game.service.usecase.reader.GameStateReader;
 import com.project.bluffball.domain.game.service.usecase.reader.MatchInfoReader;
+import com.project.bluffball.domain.game.service.usecase.reader.TurnResultSessionReader;
+import com.project.bluffball.domain.game.service.usecase.validator.BatterCardSelectValidator;
 import com.project.bluffball.domain.game.service.usecase.validator.PitcherCardSelectValidator;
 import lombok.RequiredArgsConstructor;
 import org.springframework.messaging.simp.SimpMessagingTemplate;
@@ -29,10 +36,15 @@ public class GameTurnService {
 
     private final PitcherCardSelectValidator pitcherCardSelectValidator;
     private final PitcherCardSelectExecutor pitcherCardSelectExecutor;
+    private final BatterCardSelectValidator batterCardSelectValidator;
+    private final BatterCardSelectExecutor batterCardSelectExecutor;
     private final MatchInfoReader matchInfoReader;
+    private final TurnResultSessionReader turnResultSessionReader;
+    private final GameStateReader gameStateReader;
     private final SimpMessagingTemplate messagingTemplate;
 
     private static final String GAME_TOPIC = "/topic/game/";
+    private static final String RESULT_TOPIC_SUFFIX = "/result";
 
     /**
      * 투수 구종 카드 및 시작 좌표 카드 선택을 처리한다.
@@ -66,9 +78,45 @@ public class GameTurnService {
     /**
      * 타자 예측 좌표 및 타이밍 선택을 처리하고 타격 이벤트를 판정한다.
      *
-     * <p>판정 완료 후 투수와 타자 양측에 {@code TurnResultEvent}를 브로드캐스트한다.</p>
+     * <p>판정 완료 후 투수와 타자 양측에 {@code TurnResultEvent}를 브로드캐스트한다.
+     * {@code responseTimeSec}이 5초를 초과하면 스윙 미발동(스트라이크)으로 처리한다.</p>
      */
     public void batterSelectCard(String matchSessionId, Long userId, BatterCardSelectRequest request) {
-        // TODO
+        Long batterUserId = matchInfoReader.getCurrentBatterUserId(matchSessionId);
+
+        batterCardSelectValidator.validate(
+                batterUserId,
+                userId,
+                request.getResponseTimeSec(),
+                request.getBatterCoordinateNumber(),
+                request.getTiming(),
+                turnResultSessionReader.isPitcherSelectionComplete(matchSessionId));
+
+        TurnJudgmentResult result = batterCardSelectExecutor.execute(
+                matchSessionId,
+                request.getBatterCoordinateNumber(),
+                request.getTiming(),
+                request.getResponseTimeSec());
+
+        GameStateSnapshot snapshot = gameStateReader.getSnapshot(matchSessionId);
+
+        TurnResultEvent event = TurnResultEvent.builder()
+                .turnResult(result.turnResult())
+                .finalCoordinateNumber(result.finalCoordinateNumber())
+                .pitchTiming(result.pitchTiming())
+                .diceResults(result.diceResults())
+                .inning(snapshot.getInning())
+                .isTop(snapshot.isTop())
+                .homeScore(snapshot.getHomeScore())
+                .awayScore(snapshot.getAwayScore())
+                .balls(snapshot.getBalls())
+                .strikes(snapshot.getStrikes())
+                .outs(snapshot.getOuts())
+                .firstBase(snapshot.isFirstBase())
+                .secondBase(snapshot.isSecondBase())
+                .thirdBase(snapshot.isThirdBase())
+                .build();
+
+        messagingTemplate.convertAndSend(GAME_TOPIC + matchSessionId + RESULT_TOPIC_SUFFIX, event);
     }
 }

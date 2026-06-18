@@ -62,8 +62,22 @@ public class GameState {
     private boolean thirdBase;
 
     /** 현재 진행 중인 턴 번호 (1부터 시작) */
-    @Builder.Default
     private int turnNumber = 1;
+
+    /** 스트라이크 1개 추가 (3스트라이크 시 아웃·카운트 리셋 — MVP 단순 처리) */
+    public void addStrike() {
+        this.strikes++;
+        if (this.strikes >= 3) {
+            this.strikes = 0;
+            this.balls = 0;
+            this.outs++;
+        }
+    }
+
+    /** 다음 턴으로 진행 */
+    public void advanceTurn() {
+        this.turnNumber++;
+    }
 
     @Builder
     public GameState(String id, int currentInning, boolean isTop,

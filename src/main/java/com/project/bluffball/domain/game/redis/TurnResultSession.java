@@ -84,7 +84,10 @@ public class TurnResultSession {
     @Enumerated(EnumType.ORDINAL)
     private Timing pitchTiming;
 
-    /** 타자가 예측하여 선택한 최종 좌표 카드 ID */
+    /** 타자가 예측하여 선택한 최종 좌표 번호 (0 = 폭투 존) */
+    private int batterSelectedCoordinateNumber;
+
+    /** 타자가 예측하여 선택한 최종 좌표 카드 ID (레거시·선택) */
     private Long selectedBatterCoordinateCardId;
 
     /**
@@ -95,9 +98,8 @@ public class TurnResultSession {
     private Timing selectedTiming;
 
     /**
-     * 이 턴에 부여된 주사위 눈금 결과 목록.
-     * 완벽 일치: 2개, 빗맞음(1칸 어긋남): 1개, 헛스윙/타임아웃: 빈 리스트.
-     * 결과 애니메이션 재생 및 감사 로그 목적으로 저장된다.
+     * 이 턴에 부여된 주사위 눈금 결과 목록 — 주사위마다 1~6.
+     * 완벽 일치: 2개(합 2~12), 빗맞음: 1개(합 1~6), 헛스윙/타임아웃: 빈 리스트.
      */
     private List<Integer> diceResults;
 
@@ -125,6 +127,17 @@ public class TurnResultSession {
         this.finalCoordinateNumber = finalCoordinateNumber;
         this.pitchTiming = pitchTiming;
         this.selectedBatterCoordinateCardId = selectedBatterCoordinateCardId;
+        this.selectedTiming = selectedTiming;
+        this.diceResults = diceResults;
+        this.turnResult = turnResult;
+    }
+
+    /** 타자 선택 및 판정 결과를 반영한다. BatterCardSelectExecutor에서만 호출한다. */
+    public void applyBatterTurn(int batterSelectedCoordinateNumber,
+                                Timing selectedTiming,
+                                List<Integer> diceResults,
+                                TurnResult turnResult) {
+        this.batterSelectedCoordinateNumber = batterSelectedCoordinateNumber;
         this.selectedTiming = selectedTiming;
         this.diceResults = diceResults;
         this.turnResult = turnResult;
