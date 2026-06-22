@@ -32,10 +32,13 @@ public class PitcherCardSelectExecutor {
     public int execute(String matchSessionId,
                        Long pitchCardId,
                        Long coordinateCardId) {
+        // 1. 투수가 제시한 카드 조합을 바탕으로 투구 데이터(시작/최종 위치, 구속 타이밍) 계산
         int startCoordinateNumber = coordinateCardReader.getPitcherStartCoordinateNumber(coordinateCardId);
         int finalCoordinateNumber = pitchCardReader.calculateFinalCoordinateNumber(pitchCardId, startCoordinateNumber);
         Timing pitchTiming = pitchCardReader.getPitchTiming(pitchCardId);
 
+        // 2. 현재 게임의 진행 상황(이닝, 턴, 투수/타자 정보)과 투구 계산 결과를 묶어 턴 결과 세션 데이터 생성
+        //    (이 정보들은 타자가 선택을 마칠 때까지 서버에 보안 상태로 유지됨)
         TurnResultSession session = TurnResultSession.builder()
                 .matchSessionId(matchSessionId)
                 .turnNumber(gameStateReader.getTurnNumber(matchSessionId))
@@ -50,7 +53,10 @@ public class PitcherCardSelectExecutor {
                 .pitchTiming(pitchTiming)
                 .build();
 
+        // 3. 타자의 선택 및 최종 턴 결과 판정을 위해 세션 저장소(Redis/DB)에 임시 저장
         turnResultSessionRepository.save(session);
+
+        // 4. 타자에게 심리전용으로 선공개할 시작 좌표 번호만 반환
         return startCoordinateNumber;
     }
 }
