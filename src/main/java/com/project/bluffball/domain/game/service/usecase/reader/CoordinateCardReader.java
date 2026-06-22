@@ -31,6 +31,20 @@ public class CoordinateCardReader {
         return card.getCoordinateNumber();
     }
 
+    /**
+     * 좌표 번호의 스트라이크 존 여부 (Executor·Calculator 입력용).
+     * 좌표 0(폭투 존)은 볼 존으로 본다.
+     */
+    public boolean isStrikeZone(int coordinateNumber) {
+        if (coordinateNumber == 0) {
+            return false;
+        }
+        return coordinateCardRepository.findByCoordinateNumber(coordinateNumber)
+                .map(CoordinateCard::isStrike)
+                .orElseThrow(() -> new IllegalStateException(
+                        "좌표 카드 마스터가 없습니다. coordinateNumber=" + coordinateNumber));
+    }
+
     /** Executor·Reader 내부 전용 — Service에서 호출 금지 */
     public CoordinateCard getById(Long cardId) {
         return coordinateCardRepository.findById(cardId)
