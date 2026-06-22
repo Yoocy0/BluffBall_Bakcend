@@ -31,14 +31,21 @@ public class CardHandDrawExecutor {
      * @return 뽑힌 카드 ID 목록
      */
     public List<Long> execute(String matchSessionId) {
+        // 매치 조회 및 확인
         MatchInfo matchInfo = matchInfoReader.getById(matchSessionId);
 
+        // 모드에 따른 초기 드로우 장수
         int handSize = gameModeRule.getHandSize(matchInfo.getGameMode());
+        // 전체 투수 구종 카드 리스트
         List<Long> allIds = pitchCardReader.findAllIds();
+        // 투수가 뽑은 구종 카드 리스트
         List<Long> drawnIds = cardHandDrawer.draw(allIds, handSize);
 
+        // 투수가 뽑은 카드 초기화
         matchInfo.getPitcherCardHand().clear();
+        // 투수가 뽑은 카드로 추가
         matchInfo.getPitcherCardHand().addAll(drawnIds);
+        // 초기 드로우 카드 레포지토리에 저장
         matchInfoRepository.save(matchInfo);
 
         return drawnIds;

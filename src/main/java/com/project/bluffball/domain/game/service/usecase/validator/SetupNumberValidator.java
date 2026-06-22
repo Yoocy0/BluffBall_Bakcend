@@ -31,19 +31,19 @@ public class SetupNumberValidator {
      */
     public void validate(SetupNumberRequest request) {
         // 값의 범위 유효성 검증(1~12)
-        validateRange(request.getOutNumList(), "아웃 번호");
-        validateRange(request.getDpNumList(), "병살 번호");
-        validateRange(request.getTripleNumList(), "3루타 번호");
-        validateRange(request.getHrNumList(), "홈런 번호");
+        validateRange(request.outNumList(), "아웃 번호");
+        validateRange(request.dpNumList(), "병살 번호");
+        validateRange(request.tripleNumList(), "3루타 번호");
+        validateRange(request.hrNumList(), "홈런 번호");
 
-        validateNoDuplicatesInList(request.getOutNumList(), "아웃 번호");
-        validateNoDuplicatesInList(request.getDpNumList(), "병살 번호");
-        validateNoDuplicatesInList(request.getTripleNumList(), "3루타 번호");
-        validateNoDuplicatesInList(request.getHrNumList(), "홈런 번호");
+        validateNoDuplicatesInList(request.outNumList(), "아웃 번호");
+        validateNoDuplicatesInList(request.dpNumList(), "병살 번호");
+        validateNoDuplicatesInList(request.tripleNumList(), "3루타 번호");
+        validateNoDuplicatesInList(request.hrNumList(), "홈런 번호");
 
-        validateNoOverlap(request.getOutNumList(), request.getDpNumList(),
+        validateNoOverlap(request.outNumList(), request.dpNumList(),
                 "아웃 번호", "병살 번호");
-        validateNoOverlap(request.getTripleNumList(), request.getHrNumList(),
+        validateNoOverlap(request.tripleNumList(), request.hrNumList(),
                 "3루타 번호", "홈런 번호");
     }
 

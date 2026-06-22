@@ -77,10 +77,13 @@ public class GamePrepService {
      * 투수 교체 시에도 재호출된다.</p>
      */
     public void drawCardHand(String matchSessionId) {
+        // 초기 드로우된 카드 리스트(id)
         List<Long> drawnIds = cardHandDrawExecutor.execute(matchSessionId);
+        // 초기 드로우된 카드의 정보 리스트(dto)
         List<CardInfo> cardInfos = pitchCardReader.getPitchCardDetails(drawnIds);
+
         messagingTemplate.convertAndSend(GAME_TOPIC + matchSessionId,
-                CardHandEvent.builder().cards(cardInfos).build());
+                new CardHandEvent(cardInfos));
     }
 
     /**
@@ -92,26 +95,36 @@ public class GamePrepService {
      * @param request 교체할 카드 ID 목록 (빈 리스트 = 교체 없이 확정)
      */
     public void processMulligan(String matchSessionId, Long userId, MulliganRequest request) {
-        if (matchInfoReader.isMulliganDone(matchSessionId)) {
-            throw new IllegalStateException("멀리건은 투수 등판 당 1회만 가능합니다.");
-        }
+        // 카드 교체는 1회만 가능(검증 로직)
+        mulliganValidator.validateMulliganAllowed(matchInfoReader.isMulliganDone(matchSessionId));
 
+        // 초기 드로우 카드 리스트(id)
         List<Long> currentHand = matchInfoReader.getPitcherCardHand(matchSessionId);
-        List<Long> cardIdsToSwap = request.getCardIdsToSwap();
+        // 교체 요청된 카드 리스트(id)
+        List<Long> cardIdsToSwap = request.cardIdsToSwap();
 
+        // 최종 결정된 카드 리스트(id)
         List<Long> finalHand;
+        // 교체 요청된 카드가 없는 경우(null, isEmpty)
         if (cardIdsToSwap == null || cardIdsToSwap.isEmpty()) {
+            // 교체 없이 확정되는 경우
             mulliganExecutor.confirm(matchSessionId);
+            // 현재 카드를 최종 카드로 일치
             finalHand = currentHand;
         } else {
+            // 교체 요청되는 카드에 대한 유효값 검증
             mulliganValidator.validate(currentHand, cardIdsToSwap);
+            // 최종적으로 카드 리스트 확정
             finalHand = mulliganExecutor.execute(matchSessionId, cardIdsToSwap);
         }
 
+        // 최종 결정된 카드 리스트 정보 리스트(dto)
         List<CardInfo> cardInfos = pitchCardReader.getPitchCardDetails(finalHand);
-        messagingTemplate.convertAndSend(GAME_TOPIC + matchSessionId,
-                CardHandEvent.builder().cards(cardInfos).build());
 
+        messagingTemplate.convertAndSend(GAME_TOPIC + matchSessionId,
+                new CardHandEvent(cardInfos));
+
+        // 경기 진행 도중 카드 교체 작업이 다시 수행되더라도 경기 내용 초기화 x를 보장하는 메서드
         gameProgressService.ensureGameStarted(matchSessionId, matchInfoReader.getGameMode(matchSessionId));
     }
 }

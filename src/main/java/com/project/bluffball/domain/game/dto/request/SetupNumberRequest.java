@@ -3,8 +3,6 @@ package com.project.bluffball.domain.game.dto.request;
 import jakarta.validation.constraints.Max;
 import jakarta.validation.constraints.Min;
 import jakarta.validation.constraints.NotNull;
-import lombok.Getter;
-import lombok.NoArgsConstructor;
 
 import java.util.List;
 
@@ -22,39 +20,18 @@ import java.util.List;
  * 기본 싱글 모드 기준: outNumList 5개 / dpNumList 1개 / tripleNumList 1개 / hrNumList 1개
  * </p>
  */
-@Getter
-@NoArgsConstructor
-public class SetupNumberRequest {
-
-    /**
-     * 투수의 아웃 유발 번호 목록.
-     * 주사위 눈금이 이 중 하나와 일치하면 '아웃' 판정.
-     * 기본 5개, 교체 등판 시 4개 또는 5개.
-     */
-    @NotNull
-    private List<@Min(1) @Max(12) Integer> outNumList;
-
-    /**
-     * 투수의 병살 유발 번호 목록.
-     * 주자가 있는 상황에서 주사위 눈금이 일치하면 '병살타' 판정.
-     * 기본 1개, 스킬 등으로 확장 가능.
-     */
-    @NotNull
-    private List<@Min(1) @Max(12) Integer> dpNumList;
-
-    /**
-     * 타자의 3루타 유발 번호 목록.
-     * 주사위 눈금이 일치하면 '3루타' 판정.
-     * 기본 1개, 스킬 등으로 확장 가능.
-     */
-    @NotNull
-    private List<@Min(1) @Max(12) Integer> tripleNumList;
-
-    /**
-     * 타자의 홈런 유발 번호 목록.
-     * 주사위 눈금이 일치하면 '홈런' 판정.
-     * 기본 1개, 스킬 등으로 확장 가능.
-     */
-    @NotNull
-    private List<@Min(1) @Max(12) Integer> hrNumList;
+public record SetupNumberRequest(
+        /** 투수의 아웃 유발 번호 목록 */
+        @NotNull
+        List<@Min(1) @Max(12) Integer> outNumList,
+        /** 투수의 병살 유발 번호 목록 */
+        @NotNull
+        List<@Min(1) @Max(12) Integer> dpNumList,
+        /** 타자의 3루타 유발 번호 목록 */
+        @NotNull
+        List<@Min(1) @Max(12) Integer> tripleNumList,
+        /** 타자의 홈런 유발 번호 목록 */
+        @NotNull
+        List<@Min(1) @Max(12) Integer> hrNumList
+) {
 }

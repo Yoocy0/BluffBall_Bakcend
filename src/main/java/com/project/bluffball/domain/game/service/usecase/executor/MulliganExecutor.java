@@ -39,21 +39,31 @@ public class MulliganExecutor {
      * @return 교체 후 최종 카드 패 ID 목록
      */
     public List<Long> execute(String matchSessionId, List<Long> cardIdsToSwap) {
+        // 매치 정보 조회 및 존재 여부 확인
         MatchInfo matchInfo = matchInfoReader.getById(matchSessionId);
+        // 초기 카드 리스트(id)
         List<Long> currentHand = matchInfo.getPitcherCardHand();
 
+        // 매치에 따른 카드 장수
         int handSize = gameModeRule.getHandSize(matchInfo.getGameMode());
 
+        // 교체 요청된 카드 셋(id)
         Set<Long> swapSet = new HashSet<>(cardIdsToSwap);
+        // 교체 요청되지 않은 카드 리스트(id)
         List<Long> keepIds = currentHand.stream()
                 .filter(id -> !swapSet.contains(id))
                 .collect(Collectors.toList());
 
+        // 전체 카드 리스트(id)
         List<Long> allCardIds = pitchCardReader.findAllIds();
+        // 새롭게 뽑을 카드 리스트(id)
         List<Long> newHand = cardHandDrawer.redraw(allCardIds, keepIds, handSize);
 
+        // 현재 들고있는 카드 초기화
         currentHand.clear();
+        // 최종 결정된 카드 추가
         currentHand.addAll(newHand);
+        // 매치에 멀리건 작업 완료 전달
         matchInfo.completeMulligan();
         matchInfoRepository.save(matchInfo);
 

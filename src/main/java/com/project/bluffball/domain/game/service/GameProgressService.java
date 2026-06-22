@@ -110,11 +110,10 @@ public class GameProgressService {
      * <p>TODO: 승자 판정(winnerUserId) — 모드별 홈/어웨이·팀 매핑 후 구현</p>
      */
     private void publishGameEndEvent(String matchSessionId, GameStateSnapshot snapshot) {
-        GameEndEvent event = GameEndEvent.builder()
-                .homeScore(snapshot.getHomeScore())
-                .awayScore(snapshot.getAwayScore())
-                .winnerUserId(null)
-                .build();
+        GameEndEvent event = new GameEndEvent(
+                snapshot.homeScore(),
+                snapshot.awayScore(),
+                null);
         messagingTemplate.convertAndSend(GAME_TOPIC + matchSessionId + END_TOPIC_SUFFIX, event);
     }
 }

@@ -31,11 +31,14 @@ public class CardHandDrawer {
      * @throws IllegalStateException 풀의 카드 수가 handSize보다 적을 때
      */
     public List<Long> draw(List<Long> allCardIds, int handSize) {
+        // 드로우된 카드의 크기 검증
         if (allCardIds.size() < handSize) {
             throw new IllegalStateException(
                     "구종 카드 수(" + allCardIds.size() + ")가 핸드 장수(" + handSize + ")보다 적습니다.");
         }
+        // 섞을 전체 구종 카드 리스트 변수
         List<Long> shuffled = new ArrayList<>(allCardIds);
+        // 전체 구종 카드 리스트 셔플
         Collections.shuffle(shuffled);
         return new ArrayList<>(shuffled.subList(0, handSize));
     }
@@ -53,23 +56,31 @@ public class CardHandDrawer {
      * @throws IllegalStateException 재뽑기 풀의 카드 수가 부족할 때
      */
     public List<Long> redraw(List<Long> allCardIds, List<Long> keepIds, int handSize) {
+        // 새로 뽑아야 할 카드의 장수(전체 장수 - 교체 요청되지 않은 카드 장수)
         int drawCount = handSize - keepIds.size();
 
+        // 교체 요청되지 않은 카드 셋(id)
         Set<Long> keepSet = new HashSet<>(keepIds);
+        // 새롭게 뽑을 카드를 위한 빈 리스트
         List<Long> pool = new ArrayList<>();
+        // 반복문을 통해 교체 요청되지 않은 카드(유지할 카드)를 제외한 '나머지 모든 후보 카드'를 리스트에 추가
         for (Long id : allCardIds) {
             if (!keepSet.contains(id)) {
                 pool.add(id);
             }
         }
 
+        // 필요 장수만큼 남아있는지 검증
         if (pool.size() < drawCount) {
             throw new IllegalStateException(
                     "재뽑기 풀의 카드 수(" + pool.size() + ")가 부족합니다. 필요=" + drawCount);
         }
 
+        // 새로 뽑을 카드 더미 셔플
         Collections.shuffle(pool);
+        // 최종 카드 리스트 생성(기존 카드 id 포함)
         List<Long> result = new ArrayList<>(keepIds);
+        // 셔플된 후보 풀에서 새로 필요한 장수만큼만 잘라서 최종 리스트에 추가
         result.addAll(pool.subList(0, drawCount));
         return result;
     }
