@@ -58,8 +58,15 @@ public class GamePrepService {
      * {@link com.project.bluffball.domain.game.service.listener.GamePhaseListener}가 처리한다.</p>
      */
     public void setupNumbers(String matchSessionId, Long userId, SetupNumberRequest request) {
+
+        // 주사위 눈금의 합 예측 값 유효성 검증
         setupNumberValidator.validate(request);
-        setupNumberExecutor.save(matchSessionId, userId, request);
+        // 매치 조회(Reader) 후 블러핑 숫자 저장 — Executor는 쓰기만 담당
+        setupNumberExecutor.save(
+                matchInfoReader.getById(matchSessionId),
+                userId,
+                request);
+        // 예측값 셋업 완료 시 초기 드로우 이벤트 진행
         eventPublisher.publishEvent(new SetupNumbersSubmittedEvent(matchSessionId));
     }
 

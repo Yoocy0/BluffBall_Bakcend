@@ -30,6 +30,7 @@ public class SetupNumberValidator {
      * @throws IllegalArgumentException 규칙 위반 시
      */
     public void validate(SetupNumberRequest request) {
+        // 값의 범위 유효성 검증(1~12)
         validateRange(request.getOutNumList(), "아웃 번호");
         validateRange(request.getDpNumList(), "병살 번호");
         validateRange(request.getTripleNumList(), "3루타 번호");
