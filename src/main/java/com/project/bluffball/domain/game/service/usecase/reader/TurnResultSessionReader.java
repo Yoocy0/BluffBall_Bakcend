@@ -1,12 +1,11 @@
 package com.project.bluffball.domain.game.service.usecase.reader;
 
-import com.project.bluffball.domain.game.dto.response.GameStateSnapshot;
-import com.project.bluffball.domain.game.redis.GameState;
 import com.project.bluffball.domain.game.redis.TurnResultSession;
-import com.project.bluffball.domain.game.repository.GameStateRepository;
 import com.project.bluffball.domain.game.repository.TurnResultSessionRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Component;
+
+import java.util.Optional;
 
 /**
  * TurnResultSession Redis 엔티티 읽기 전담 리더.
@@ -31,10 +30,23 @@ public class TurnResultSessionReader {
         return getById(matchSessionId + ":" + turnNumber);
     }
 
-    /** 투수 선택이 완료된 현재 턴 세션인지 확인 (Service ✅) */
+    /** 현재 턴에 투수 카드 선택이 완료되었는지 (Service ✅) */
     public boolean isPitcherSelectionComplete(String matchSessionId) {
-        TurnResultSession session = getCurrentSession(matchSessionId);
-        return session.getSelectedPitchCardId() != null
-                && session.getSelectedCoordinateCardId() != null;
+        return findCurrentSession(matchSessionId)
+                .map(session -> session.getSelectedPitchCardId() != null
+                        && session.getSelectedCoordinateCardId() != null)
+                .orElse(false);
+    }
+
+    /** 현재 턴에 타자 선택·판정이 완료되었는지 (Service ✅) */
+    public boolean isBatterSelectionComplete(String matchSessionId) {
+        return findCurrentSession(matchSessionId)
+                .map(session -> session.getTurnResult() != null)
+                .orElse(false);
+    }
+
+    private Optional<TurnResultSession> findCurrentSession(String matchSessionId) {
+        int turnNumber = gameStateReader.getTurnNumber(matchSessionId);
+        return turnResultSessionRepository.findById(matchSessionId + ":" + turnNumber);
     }
 }

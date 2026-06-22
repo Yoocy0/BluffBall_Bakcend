@@ -7,7 +7,9 @@ import com.project.bluffball.domain.user.record.enums.GameMode;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Component;
 
+import java.util.Collections;
 import java.util.List;
+import java.util.Map;
 
 /**
  * MatchInfo Redis 엔티티 읽기 전담 리더.
@@ -71,5 +73,30 @@ public class MatchInfoReader {
         MatchInfo matchInfo = getById(matchSessionId);
         int required = gameModeRule.getRequiredSetupCount(matchInfo.getGameMode());
         return matchInfo.getOutNumbers().size() >= required;
+    }
+
+    /** 투수 아웃 유발 블러핑 숫자 (Executor·Calculator 내부용) */
+    public List<Integer> getOutNumbers(String matchSessionId, Long pitcherUserId) {
+        return getBluffingNumbers(getById(matchSessionId).getOutNumbers(), pitcherUserId);
+    }
+
+    /** 투수 병살 유발 블러핑 숫자 (Executor·Calculator 내부용) */
+    public List<Integer> getDpNumbers(String matchSessionId, Long pitcherUserId) {
+        return getBluffingNumbers(getById(matchSessionId).getDpNumbers(), pitcherUserId);
+    }
+
+    /** 타자 3루타 유발 블러핑 숫자 (Executor·Calculator 내부용) */
+    public List<Integer> getTripleNumbers(String matchSessionId, Long batterUserId) {
+        return getBluffingNumbers(getById(matchSessionId).getTripleNumbers(), batterUserId);
+    }
+
+    /** 타자 홈런 유발 블러핑 숫자 (Executor·Calculator 내부용) */
+    public List<Integer> getHrNumbers(String matchSessionId, Long batterUserId) {
+        return getBluffingNumbers(getById(matchSessionId).getHrNumbers(), batterUserId);
+    }
+
+    private List<Integer> getBluffingNumbers(Map<Long, List<Integer>> numbersByUserId, Long userId) {
+        List<Integer> numbers = numbersByUserId.get(userId);
+        return numbers != null ? numbers : Collections.emptyList();
     }
 }

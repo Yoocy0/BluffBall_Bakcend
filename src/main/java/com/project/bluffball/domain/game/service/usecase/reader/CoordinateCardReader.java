@@ -24,6 +24,10 @@ public class CoordinateCardReader {
             throw new IllegalArgumentException(
                     "투수 시작 좌표 카드가 아닙니다. cardId=" + cardId);
         }
+        if (card.getCoordinateNumber() == 0) {
+            throw new IllegalArgumentException(
+                    "투수는 좌표 0을 시작 좌표로 선택할 수 없습니다. cardId=" + cardId);
+        }
         return card.getCoordinateNumber();
     }
 

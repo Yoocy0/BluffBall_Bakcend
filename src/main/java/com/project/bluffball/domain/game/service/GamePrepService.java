@@ -31,6 +31,7 @@ import java.util.List;
  * <p>WebSocket 이벤트 발행(SimpMessagingTemplate)은 이 Service에서만 수행한다.</p>
  *
  * @see GameTurnService 반복 턴 실행(투수/타자 카드 선택, 타격 판정)
+ * @see GameProgressService 경기 진행(턴 결과 → 야구 룰 반영)
  */
 @Service
 @RequiredArgsConstructor
@@ -43,6 +44,7 @@ public class GamePrepService {
     private final CardHandDrawExecutor cardHandDrawExecutor;
     private final MatchInfoReader matchInfoReader;
     private final PitchCardReader pitchCardReader;
+    private final GameProgressService gameProgressService;
     private final SimpMessagingTemplate messagingTemplate;
     private final ApplicationEventPublisher eventPublisher;
 
@@ -77,9 +79,8 @@ public class GamePrepService {
     /**
      * drawCardHand 페이즈의 두 번째 단계 — 멀리건(교체 확정).
      *
-     * <p>교체할 카드가 없으면 현재 패를 그대로 확정하고,
-     * 있으면 Executor에 위임하여 교체 후 확정한다.
-     * 어느 경우든 최종 확정된 패를 {@code /topic/game/{matchSessionId}}로 전송한다.</p>
+     * <p>멀리건 확정 후 {@link GameProgressService#ensureGameStarted}로 경기 진행을 초기화한다.
+     * 이후 {@link GameTurnService}에서 투구·타격 턴이 시작된다.</p>
      *
      * @param request 교체할 카드 ID 목록 (빈 리스트 = 교체 없이 확정)
      */
@@ -103,5 +104,7 @@ public class GamePrepService {
         List<CardInfo> cardInfos = pitchCardReader.getPitchCardDetails(finalHand);
         messagingTemplate.convertAndSend(GAME_TOPIC + matchSessionId,
                 CardHandEvent.builder().cards(cardInfos).build());
+
+        gameProgressService.ensureGameStarted(matchSessionId, matchInfoReader.getGameMode(matchSessionId));
     }
 }

@@ -16,7 +16,11 @@ public class BatterCardSelectValidator {
                          double responseTimeSec,
                          int batterCoordinateNumber,
                          Timing timing,
-                         boolean pitcherSelectionComplete) {
+                         boolean pitcherSelectionComplete,
+                         boolean batterAlreadySelected) {
+        if (batterAlreadySelected) {
+            throw new IllegalStateException("이미 타자 선택이 완료된 턴입니다.");
+        }
         if (!pitcherSelectionComplete) {
             throw new IllegalStateException("투수의 카드 선택이 완료되지 않았습니다.");
         }

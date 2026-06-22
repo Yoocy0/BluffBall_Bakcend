@@ -35,4 +35,14 @@ public class GameModeRule {
     public int getRequiredSetupCount(GameMode gameMode) {
         return 2;
     }
+
+    /** 모드별 기본 총 이닝 수 — 커스텀 모드는 매치 설정값을 직접 전달한다. */
+    public int getDefaultInnings(GameMode gameMode) {
+        return switch (gameMode) {
+            case GENERAL -> 1;
+            case CLAN_MINI -> 3;
+            case CLAN_GENERAL -> 9;
+            case CUSTOM -> 1;
+        };
+    }
 }
