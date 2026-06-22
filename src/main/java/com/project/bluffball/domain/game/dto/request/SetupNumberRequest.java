@@ -3,63 +3,58 @@ package com.project.bluffball.domain.game.dto.request;
 import jakarta.validation.constraints.Max;
 import jakarta.validation.constraints.Min;
 import jakarta.validation.constraints.NotNull;
-import jakarta.validation.constraints.Size;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 
 import java.util.List;
 
 /**
- * 블러핑 고유 숫자 선택 WebSocket 수신 DTO.
+ * 블러핑 고유 숫자 제출 WebSocket 수신 DTO.
  *
- * <p>게임 시작 직후(카드 드로우 전) 양측이 제출하는 비밀 숫자 설정 요청이다.
- * 선택한 숫자는 주사위 결과 판정 시 특수 결과를 발동시키는 트리거로 사용된다.</p>
+ * <p>인게임 시작 직후 각 플레이어가 1~12 중에서 예측 숫자를 제출한다.
+ * 주사위 눈금 합이 이 숫자들과 일치하면 특수 판정이 발동된다.</p>
  *
+ * <p>모든 필드를 List로 받는 이유:
  * <ul>
- *   <li><b>투수 역할</b>: 아웃 유발 번호(5개) + 병살 유발 번호(1개)를 선택한다.
- *       주사위 결과가 이 번호들과 일치하면 타자에게 불리한 판정이 발생한다.</li>
- *   <li><b>타자 역할</b>: 3루타 번호(1개) + 홈런 번호(1개)를 선택한다.
- *       주사위 결과가 이 번호들과 일치하면 타자에게 유리한 판정이 발생한다.</li>
- *   <li><b>싱글 모드</b>: 한 유저가 투수/타자를 모두 담당하므로 4개 필드를 동시에 제출한다.</li>
- *   <li><b>팀전 모드</b>: 투수 유저는 pitcher 필드만, 타자 유저는 batter 필드만 제출한다.</li>
+ *   <li>투수 교체 등판 시 아웃/병살 숫자 개수가 줄어들 수 있다.</li>
+ *   <li>클랜전 스킬로 숫자를 1개 더 추가하는 확장을 수용하기 위해서다.</li>
  * </ul>
- *
- * <p>모든 숫자는 1~12 범위 내에서 선택하며, 같은 역할 내에서 중복 선택은 불가하다.</p>
+ * 기본 싱글 모드 기준: outNumList 5개 / dpNumList 1개 / tripleNumList 1개 / hrNumList 1개
+ * </p>
  */
 @Getter
 @NoArgsConstructor
 public class SetupNumberRequest {
 
     /**
-     * 투수가 지정하는 아웃 유발 번호 목록 (5개 고정).
-     * 주사위 결과가 이 중 하나와 일치하면 '아웃' 판정이 발생한다.
+     * 투수의 아웃 유발 번호 목록.
+     * 주사위 눈금이 이 중 하나와 일치하면 '아웃' 판정.
+     * 기본 5개, 교체 등판 시 4개 또는 5개.
      */
-    @Size(min = 5, max = 5, message = "아웃 번호는 정확히 5개 선택해야 합니다.")
-    private List<@Min(1) @Max(12) Integer> pitcherOutNumbers;
+    @NotNull
+    private List<@Min(1) @Max(12) Integer> outNumList;
 
     /**
-     * 투수가 지정하는 병살 유발 번호 (1개 고정).
-     * 주자가 있는 상황에서 주사위 결과가 이 번호와 일치하면 '병살타' 판정이 발생한다.
+     * 투수의 병살 유발 번호 목록.
+     * 주자가 있는 상황에서 주사위 눈금이 일치하면 '병살타' 판정.
+     * 기본 1개, 스킬 등으로 확장 가능.
      */
-    @Min(value = 1, message = "번호는 1 이상이어야 합니다.")
-    @Max(value = 12, message = "번호는 12 이하여야 합니다.")
-    private Integer pitcherDoublePlayNumber;
+    @NotNull
+    private List<@Min(1) @Max(12) Integer> dpNumList;
 
     /**
-     * 타자가 지정하는 3루타 번호 (1개 고정).
-     * 주사위 결과가 이 번호와 일치하면 '3루타' 판정이 발생한다.
-     * 서버는 이 값을 {@code MatchInfo.batterTripleNumbers}에 요청자의 userId를 키로 저장한다.
+     * 타자의 3루타 유발 번호 목록.
+     * 주사위 눈금이 일치하면 '3루타' 판정.
+     * 기본 1개, 스킬 등으로 확장 가능.
      */
-    @Min(value = 1, message = "번호는 1 이상이어야 합니다.")
-    @Max(value = 12, message = "번호는 12 이하여야 합니다.")
-    private Integer batterTripleNumber;
+    @NotNull
+    private List<@Min(1) @Max(12) Integer> tripleNumList;
 
     /**
-     * 타자가 지정하는 홈런 번호 (1개 고정).
-     * 주사위 결과가 이 번호와 일치하면 '홈런' 판정이 발생한다.
-     * 서버는 이 값을 {@code MatchInfo.batterHomerunNumbers}에 요청자의 userId를 키로 저장한다.
+     * 타자의 홈런 유발 번호 목록.
+     * 주사위 눈금이 일치하면 '홈런' 판정.
+     * 기본 1개, 스킬 등으로 확장 가능.
      */
-    @Min(value = 1, message = "번호는 1 이상이어야 합니다.")
-    @Max(value = 12, message = "번호는 12 이하여야 합니다.")
-    private Integer batterHomerunNumber;
+    @NotNull
+    private List<@Min(1) @Max(12) Integer> hrNumList;
 }

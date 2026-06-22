@@ -27,7 +27,8 @@ import java.util.List;
  * FIELD : matchSessionId, turnNumber, inning, isTop,
  *         currentPitcherUserId, currentBatterUserId,
  *         selectedPitchCardId, selectedCoordinateCardId,
- *         selectedBatterCoordinateCardId, selectedTimingCardId,
+ *         startCoordinateNumber, finalCoordinateNumber, pitchTiming,
+ *         selectedBatterCoordinateCardId, selectedTiming,
  *         turnResult
  * </pre>
  */
@@ -67,7 +68,26 @@ public class TurnResultSession {
     /** 투수가 낸 좌표 카드 ID */
     private Long selectedCoordinateCardId;
 
-    /** 타자가 예측하여 선택한 최종 좌표 카드 ID */
+    /** 투수가 선택한 시작 좌표 번호 (1~25) */
+    private int startCoordinateNumber;
+
+    /**
+     * 구종 변화 적용 후 투수 공의 최종 좌표 번호 (1~25, 격자 이탈 시 0).
+     * 투수 선택 직후 {@link com.project.bluffball.domain.card.entity.PitchCard#calculateFinalCoordinateNumber}로 확정·저장한다.
+     */
+    private int finalCoordinateNumber;
+
+    /**
+     * 선택한 구종 카드의 고유 타이밍 — Redis에 ordinal 정수로 저장.
+     * 타자 선택 후 판정 시 {@link #selectedTiming}과 비교한다.
+     */
+    @Enumerated(EnumType.ORDINAL)
+    private Timing pitchTiming;
+
+    /** 타자가 예측하여 선택한 최종 좌표 번호 (0 = 폭투 존) */
+    private int batterSelectedCoordinateNumber;
+
+    /** 타자가 예측하여 선택한 최종 좌표 카드 ID (레거시·선택) */
     private Long selectedBatterCoordinateCardId;
 
     /**
@@ -78,9 +98,8 @@ public class TurnResultSession {
     private Timing selectedTiming;
 
     /**
-     * 이 턴에 부여된 주사위 눈금 결과 목록.
-     * 완벽 일치: 2개, 빗맞음(1칸 어긋남): 1개, 헛스윙/타임아웃: 빈 리스트.
-     * 결과 애니메이션 재생 및 감사 로그 목적으로 저장된다.
+     * 이 턴에 부여된 주사위 눈금 결과 목록 — 주사위마다 1~6.
+     * 완벽 일치: 2개(합 2~12), 빗맞음: 1개(합 1~6), 헛스윙/타임아웃: 빈 리스트.
      */
     private List<Integer> diceResults;
 
@@ -92,6 +111,7 @@ public class TurnResultSession {
     public TurnResultSession(String matchSessionId, int turnNumber, int inning, boolean isTop,
                              Long currentPitcherUserId, Long currentBatterUserId,
                              Long selectedPitchCardId, Long selectedCoordinateCardId,
+                             int startCoordinateNumber, int finalCoordinateNumber, Timing pitchTiming,
                              Long selectedBatterCoordinateCardId, Timing selectedTiming,
                              List<Integer> diceResults, TurnResult turnResult) {
         this.id = matchSessionId + ":" + turnNumber;
@@ -103,7 +123,21 @@ public class TurnResultSession {
         this.currentBatterUserId = currentBatterUserId;
         this.selectedPitchCardId = selectedPitchCardId;
         this.selectedCoordinateCardId = selectedCoordinateCardId;
+        this.startCoordinateNumber = startCoordinateNumber;
+        this.finalCoordinateNumber = finalCoordinateNumber;
+        this.pitchTiming = pitchTiming;
         this.selectedBatterCoordinateCardId = selectedBatterCoordinateCardId;
+        this.selectedTiming = selectedTiming;
+        this.diceResults = diceResults;
+        this.turnResult = turnResult;
+    }
+
+    /** 타자 선택 및 판정 결과를 반영한다. BatterCardSelectExecutor에서만 호출한다. */
+    public void applyBatterTurn(int batterSelectedCoordinateNumber,
+                                Timing selectedTiming,
+                                List<Integer> diceResults,
+                                TurnResult turnResult) {
+        this.batterSelectedCoordinateNumber = batterSelectedCoordinateNumber;
         this.selectedTiming = selectedTiming;
         this.diceResults = diceResults;
         this.turnResult = turnResult;

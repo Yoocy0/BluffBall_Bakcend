@@ -1,5 +1,6 @@
 package com.project.bluffball.domain.game.dto.response;
 
+import com.project.bluffball.domain.game.enums.Timing;
 import com.project.bluffball.domain.game.enums.TurnResult;
 import lombok.AccessLevel;
 import lombok.Builder;
@@ -22,10 +23,13 @@ public class TurnResultEvent {
     /** 투수 공의 실제 최종 좌표 번호 (결과 공개 / 0 = 폭투) */
     private int finalCoordinateNumber;
 
+    /** 선택한 구종의 고유 타이밍 — 타자 선택 후 결과 공개 */
+    private Timing pitchTiming;
+
     /**
-     * 이 턴에 굴린 주사위 눈금 결과 목록 (1~12).
-     * 완벽 일치 시 2개, 빗맞음(1칸 어긋남) 시 1개, 헛스윙/타임아웃 시 빈 리스트.
-     * 클라이언트의 주사위 굴리기 애니메이션 연출에 사용된다.
+     * 이 턴에 굴린 주사위 눈금 결과 목록 — 주사위마다 1~6.
+     * 완벽 일치 시 2개(합 2~12), 빗맞음 시 1개(합 1~6), 헛스윙/타임아웃 시 빈 리스트.
+     * 클라이언트는 각 원소로 주사위 애니메이션을 재생한다.
      */
     private List<Integer> diceResults;
 
@@ -60,7 +64,7 @@ public class TurnResultEvent {
     private boolean thirdBase;
 
     @Builder
-    public TurnResultEvent(TurnResult turnResult, int finalCoordinateNumber,
+    public TurnResultEvent(TurnResult turnResult, int finalCoordinateNumber, Timing pitchTiming,
                            List<Integer> diceResults,
                            int inning, boolean isTop,
                            int homeScore, int awayScore,
@@ -68,6 +72,7 @@ public class TurnResultEvent {
                            boolean firstBase, boolean secondBase, boolean thirdBase) {
         this.turnResult = turnResult;
         this.finalCoordinateNumber = finalCoordinateNumber;
+        this.pitchTiming = pitchTiming;
         this.diceResults = diceResults;
         this.inning = inning;
         this.isTop = isTop;

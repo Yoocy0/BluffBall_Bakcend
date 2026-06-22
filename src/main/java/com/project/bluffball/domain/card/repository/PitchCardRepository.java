@@ -2,6 +2,16 @@ package com.project.bluffball.domain.card.repository;
 
 import com.project.bluffball.domain.card.entity.PitchCard;
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Query;
+import org.springframework.data.repository.query.Param;
+
+import java.util.List;
 
 public interface PitchCardRepository extends JpaRepository<PitchCard, Long> {
+
+    @Query("SELECT p.id FROM PitchCard p")
+    List<Long> findAllIds();
+
+    @Query("SELECT p FROM PitchCard p WHERE p.id IN :ids")
+    List<PitchCard> findAllByIds(@Param("ids") List<Long> ids);
 }

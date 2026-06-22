@@ -67,8 +67,8 @@ public class CardController {
      * 각 카드에는 좌표 번호({@code coordinateNumber} 1~25)와
      * 스트라이크 존 여부({@code isStrike})가 포함된다.</p>
      *
-     * <p>특수 좌표 0(폭투 존)은 별도 카드로 존재하지 않으며,
-     * 서버가 변화구 이탈 시 자동 반환한다.</p>
+     * <p>좌표 0(폭투 존) 카드는 {@code userType=BATTER} 전용이며 타자 UI에서만 사용한다.
+     * 투수의 최종 좌표 0은 구종 변화 계산 결과로만 확정된다.</p>
      *
      * <p>클라이언트는 이 데이터를 prefetch하여
      * 투수 좌표 선택 화면(Phase 4) 및 타자 좌표 선택 화면(Phase 5)에서 사용한다.</p>

@@ -4,6 +4,8 @@ import com.project.bluffball.domain.game.dto.request.BatterCardSelectRequest;
 import com.project.bluffball.domain.game.dto.request.MulliganRequest;
 import com.project.bluffball.domain.game.dto.request.PitcherCardSelectRequest;
 import com.project.bluffball.domain.game.dto.request.SetupNumberRequest;
+import com.project.bluffball.domain.game.service.GamePrepService;
+import com.project.bluffball.domain.game.service.GameTurnService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.messaging.handler.annotation.DestinationVariable;
 import org.springframework.messaging.handler.annotation.MessageMapping;
@@ -20,11 +22,12 @@ import org.springframework.stereotype.Controller;
  * ┌──────────────────────────────────────────────────────────────────────────┐
  * │  인게임 WebSocket 흐름 (싱글 모드 기준 / MVP)                              │
  * ├───┬──────────────────────────────────────────────────────────────────────┤
- * │ 1 │ [서버 → 투수] CardHandEvent       /topic/game/{id}                   │
- * │   │  └ 매치 생성 직후 서버가 카드 3장(싱글) 드로우하여 투수에게 전송         │
- * ├───┼──────────────────────────────────────────────────────────────────────┤
- * │ 2 │ [투수/타자 → 서버] setup-numbers  /app/game/{id}/setup-numbers       │
+ * │ 1 │ [투수/타자 → 서버] setup-numbers  /app/game/{id}/setup-numbers       │
  * │   │  └ 블러핑 고유 숫자 제출 (싱글: 4개 필드 동시 / 팀전: 역할별 분리)      │
+ * │   │  └ 양측 제출 완료 시 서버가 자동으로 카드 드로우 실행 (Phase 2 진입)    │
+ * ├───┼──────────────────────────────────────────────────────────────────────┤
+ * │ 2 │ [서버 → 투수] CardHandEvent       /topic/game/{id}                   │
+ * │   │  └ 양측 setup-numbers 완료 직후 서버가 초기 카드 패를 드로우하여 전송   │
  * ├───┼──────────────────────────────────────────────────────────────────────┤
  * │ 3 │ [투수 → 서버] cards/mulligan      /app/game/{id}/cards/mulligan      │
  * │   │  └ 교체할 카드 ID 목록 제출 (빈 리스트 = 교체 없이 확정)               │
@@ -46,6 +49,9 @@ import org.springframework.stereotype.Controller;
 @Controller
 @RequiredArgsConstructor
 public class GameWebSocketController {
+
+    private final GamePrepService gamePrepService;
+    private final GameTurnService gameTurnService;
 
     /**
      * [Phase 2] 블러핑 고유 숫자 제출.
@@ -69,7 +75,9 @@ public class GameWebSocketController {
     public void setupNumbers(
             @DestinationVariable String matchSessionId,
             @Payload SetupNumberRequest request) {
-        // TODO: GameService.setupNumbers(matchSessionId, request)
+        // TODO: userId — Spring Security Principal에서 추출 예정
+        Long userId = 1L;
+        gamePrepService.setupNumbers(matchSessionId, userId, request);
     }
 
     /**
@@ -94,7 +102,9 @@ public class GameWebSocketController {
     public void mulligan(
             @DestinationVariable String matchSessionId,
             @Payload MulliganRequest request) {
-        // TODO: GameService.processMulligan(matchSessionId, request)
+        // TODO: userId — Spring Security Principal에서 추출 예정
+        Long userId = 1L;
+        gamePrepService.processMulligan(matchSessionId, userId, request);
     }
 
     /**
@@ -114,7 +124,9 @@ public class GameWebSocketController {
     public void pitcherSelectCard(
             @DestinationVariable String matchSessionId,
             @Payload PitcherCardSelectRequest request) {
-        // TODO: GameService.pitcherSelectCard(matchSessionId, request)
+        // TODO: userId — Spring Security Principal에서 추출 예정
+        Long userId = 1L;
+        gameTurnService.pitcherSelectCard(matchSessionId, userId, request);
     }
 
     /**
@@ -142,6 +154,8 @@ public class GameWebSocketController {
     public void batterSelectCard(
             @DestinationVariable String matchSessionId,
             @Payload BatterCardSelectRequest request) {
-        // TODO: GameService.batterSelectCard(matchSessionId, request)
+        // TODO: userId — Spring Security Principal에서 추출 예정
+        Long userId = 1L;
+        gameTurnService.batterSelectCard(matchSessionId, userId, request);
     }
 }
