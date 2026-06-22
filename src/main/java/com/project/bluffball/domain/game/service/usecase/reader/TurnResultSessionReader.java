@@ -30,6 +30,11 @@ public class TurnResultSessionReader {
         return getById(matchSessionId + ":" + turnNumber);
     }
 
+    /** 특정 턴 번호의 TurnResultSession (Service ✅ — TurnResultEvent 조립용) */
+    public TurnResultSession getSession(String matchSessionId, int turnNumber) {
+        return getById(matchSessionId + ":" + turnNumber);
+    }
+
     /** 현재 턴에 투수 카드 선택이 완료되었는지 (Service ✅) */
     public boolean isPitcherSelectionComplete(String matchSessionId) {
         return findCurrentSession(matchSessionId)

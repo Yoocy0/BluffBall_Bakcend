@@ -32,6 +32,8 @@ public class GameProgressExecutor {
 
     /**
      * 한 턴의 {@link com.project.bluffball.domain.game.enums.TurnResult}를 야구 룰에 따라 반영한다.
+     *
+     * <p>결과별 분기는 {@link GameProgressCalculator#apply}에서 처리한다.</p>
      */
     public void applyTurnResult(String matchSessionId, GameTurnOutcome outcome) {
         gameProgressValidator.validateTurnOutcome(outcome);
@@ -40,10 +42,12 @@ public class GameProgressExecutor {
                 gameProgressReader.isInitialized(matchSessionId),
                 gameProgressReader.isGameOver(matchSessionId));
 
+        // 현재 스코어보드 + TurnResult → 다음 상태 (GameProgressCalculator.switch 분기)
         GameProgressCalculator.Transition transition = gameProgressCalculator.apply(
                 gameProgressReader.getSituation(matchSessionId),
                 outcome.turnResult());
 
+        // 계산 결과를 Redis GameState에 저장
         GameState gameState = gameProgressReader.getById(matchSessionId);
         gameState.applyProgressSituation(transition.after(), transition.gameOver());
         gameStateRepository.save(gameState);

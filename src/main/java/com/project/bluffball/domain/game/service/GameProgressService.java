@@ -5,9 +5,13 @@ import com.project.bluffball.domain.game.dto.progress.GameProgressApplyResult;
 import com.project.bluffball.domain.game.dto.progress.GameTurnOutcome;
 import com.project.bluffball.domain.game.dto.response.GameEndEvent;
 import com.project.bluffball.domain.game.dto.response.GameStateSnapshot;
+import com.project.bluffball.domain.game.dto.response.TurnResultEvent;
+import com.project.bluffball.domain.game.enums.TurnResult;
+import com.project.bluffball.domain.game.redis.TurnResultSession;
 import com.project.bluffball.domain.game.service.usecase.executor.GameProgressExecutor;
 import com.project.bluffball.domain.game.service.usecase.reader.GameProgressReader;
 import com.project.bluffball.domain.game.service.usecase.reader.GameStateReader;
+import com.project.bluffball.domain.game.service.usecase.reader.TurnResultSessionReader;
 import com.project.bluffball.domain.user.record.enums.GameMode;
 import lombok.RequiredArgsConstructor;
 import org.springframework.messaging.simp.SimpMessagingTemplate;
@@ -16,8 +20,8 @@ import org.springframework.stereotype.Service;
 /**
  * 야구 경기 진행 서비스 — 턴 판정 결과를 받아 경기 상태를 구성한다.
  *
- * <p>{@link GamePrepService}와 {@link GameTurnService} 사이의 경기 엔진 레이어이다.
- * 판정(좌표·타이밍·주사위)은 GameTurnService, 야구 룰(카운트·주자·점수·이닝·종료)은 이 Service가 담당한다.</p>
+ * <p>판정 Executor는 {@link com.project.bluffball.domain.game.enums.TurnResult}만 반환하고,
+ * 카운트·주자·점수 갱신 및 {@link TurnResultEvent} 클라이언트 전송은 이 Service가 담당한다.</p>
  *
  * <h3>연동</h3>
  * <ul>
@@ -37,10 +41,12 @@ public class GameProgressService {
     private final GameProgressExecutor gameProgressExecutor;
     private final GameProgressReader gameProgressReader;
     private final GameStateReader gameStateReader;
+    private final TurnResultSessionReader turnResultSessionReader;
     private final GameModeRule gameModeRule;
     private final SimpMessagingTemplate messagingTemplate;
 
     private static final String GAME_TOPIC = "/topic/game/";
+    private static final String RESULT_TOPIC_SUFFIX = "/result";
     private static final String END_TOPIC_SUFFIX = "/end";
 
     /**
@@ -82,26 +88,50 @@ public class GameProgressService {
     }
 
     /**
-     * 한 턴의 판정 결과를 반영한다.
-     *
-     * <p>{@link GameTurnService}가 타격 판정을 마친 뒤
-     * {@link GameTurnOutcome}만 넘기면 야구 룰에 따라 GameState가 갱신된다.</p>
+     * 한 턴의 판정 결과를 반영하고 클라이언트에 {@link TurnResultEvent}를 전송한다.
      *
      * @param matchSessionId 매치 세션 ID
-     * @param outcome        해당 턴의 최종 판정
-     * @return 갱신된 스코어보드 및 경기 종료 여부
+     * @param outcome        해당 턴의 최종 {@link com.project.bluffball.domain.game.enums.TurnResult} 및 턴 번호
      */
     public GameProgressApplyResult applyTurnResult(String matchSessionId, GameTurnOutcome outcome) {
+        // TurnResult별 분기(strike++/ball++/진루/out++ 등) → GameState 갱신
         gameProgressExecutor.applyTurnResult(matchSessionId, outcome);
 
         var snapshot = gameStateReader.getSnapshot(matchSessionId);
         boolean gameOver = gameProgressReader.isGameOver(matchSessionId);
+
+        // 판정 부가 정보(좌표·타이밍·주사위)는 Redis TurnResultSession에서 조회
+        var turnSession = turnResultSessionReader.getSession(matchSessionId, outcome.turnNumber());
+        publishTurnResultEvent(matchSessionId, outcome.turnResult(), turnSession, snapshot);
 
         if (gameOver) {
             publishGameEndEvent(matchSessionId, snapshot);
         }
 
         return new GameProgressApplyResult(snapshot, gameOver);
+    }
+
+    private void publishTurnResultEvent(String matchSessionId,
+                                        TurnResult turnResult,
+                                        TurnResultSession turnSession,
+                                        GameStateSnapshot snapshot) {
+        // turnResult = 판정 enum, snapshot = Calculator 반영 후 스코어보드, turnSession = 좌표·주사위 등
+        TurnResultEvent event = new TurnResultEvent(
+                turnResult,
+                turnSession.getFinalCoordinateNumber(),
+                turnSession.getPitchTiming(),
+                turnSession.getDiceResults(),
+                snapshot.inning(),
+                snapshot.isTop(),
+                snapshot.homeScore(),
+                snapshot.awayScore(),
+                snapshot.balls(),
+                snapshot.strikes(),
+                snapshot.outs(),
+                snapshot.firstBase(),
+                snapshot.secondBase(),
+                snapshot.thirdBase());
+        messagingTemplate.convertAndSend(GAME_TOPIC + matchSessionId + RESULT_TOPIC_SUFFIX, event);
     }
 
     /**

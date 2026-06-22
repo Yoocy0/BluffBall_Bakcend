@@ -34,6 +34,12 @@ public class GameStateReader {
         return getById(matchSessionId).isTop();
     }
 
+    /** 병살 판정용 — 판정 시점 루상 주자 존재 여부 (Executor·Calculator 입력용) */
+    public boolean hasRunnersOnBase(String matchSessionId) {
+        GameState state = getById(matchSessionId);
+        return state.isFirstBase() || state.isSecondBase() || state.isThirdBase();
+    }
+
     /** Service 이벤트 조립용 스코어보드 스냅샷 (Service ✅) */
     public GameStateSnapshot getSnapshot(String matchSessionId) {
         GameState state = getById(matchSessionId);

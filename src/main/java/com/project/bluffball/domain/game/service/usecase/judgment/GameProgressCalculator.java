@@ -5,19 +5,14 @@ import com.project.bluffball.domain.game.enums.TurnResult;
 import org.springframework.stereotype.Component;
 
 /**
- * {@link TurnResult}를 현재 경기 상황에 반영하는 순수 계산 컴포넌트 (DB·Redis 접근 없음).
- *
- * <ul>
- *   <li>볼 4개 → 볼넷, 카운트 리셋, 주자 1루 진출(포스)</li>
- *   <li>스트라이크 3개 → 아웃 +1, 카운트 리셋</li>
- *   <li>아웃 3개 → 이닝 종료(초/말 전환 또는 경기 종료)</li>
- *   <li>안타/2·3루타/홈런 → 주자·타자 진루(타격 결과만큼), 홈 도달 시 득점</li>
- *   <li>폭투 + 주자 있음 → 볼 +1, 주자 1베이스 진루</li>
- * </ul>
+ * {@link TurnResult} → 경기 상태(카운트·주자·점수·이닝) 순수 계산.
+ * DB·Redis 접근 없음. {@link com.project.bluffball.domain.game.service.GameProgressService#applyTurnResult}에서 호출.
  */
 @Component
 public class GameProgressCalculator {
 
+    /** 홈 = 4번째 베이스. fromBase + bases >= 4 이면 득점 */
+    private static final int BASES_TO_HOME = 4;
     private static final int MAX_BALLS_BEFORE_WALK = 4;
     private static final int MAX_STRIKES_BEFORE_OUT = 3;
     private static final int OUTS_PER_INNING = 3;
@@ -29,72 +24,44 @@ public class GameProgressCalculator {
         MutableState state = MutableState.from(before);
 
         switch (turnResult) {
-            case BALL -> addBall(state);
-            case STRIKE -> addStrike(state);
-            case WALK -> applyWalk(state);
-            case STRIKE_OUT, OUT -> recordOut(state, 1);
-            case DOUBLE_PLAY -> {
-                if (state.firstBase) {
-                    state.firstBase = false;
-                }
-                recordOut(state, 2);
-            }
-            case SINGLE -> advanceHit(state, 1);
-            case DOUBLE -> advanceHit(state, 2);
-            case TRIPLE -> advanceHit(state, 3);
-            case HOMERUN -> advanceHit(state, 4);
-            case WILD_PITCH -> applyWildPitch(state);
+            case STRIKE -> applyStrike(state);           // strike++, 3이면 삼진
+            case BALL -> applyBall(state);               // ball++, 4이면 볼넷
+            case WALK -> applyWalk(state);               // 타자·주자 1베이스 진루
+            case STRIKE_OUT -> recordOut(state, 1);      // 삼진 아웃
+            case OUT -> recordOut(state, 1);             // 일반 아웃
+            case DOUBLE_PLAY -> applyDoublePlay(state);  // out 2 + 선행 주자(3→2→1) 아웃
+            case SINGLE -> advanceBases(state, 1);         // 1베이스 진루
+            case DOUBLE -> advanceBases(state, 2);         // 2베이스 진루
+            case TRIPLE -> advanceBases(state, 3);         // 3베이스 진루
+            case HOMERUN -> advanceBases(state, 4);        // 전원 홈 → 득점
+            case WILD_PITCH -> applyWildPitch(state);    // ball++ + 주자 1베이스
         }
 
         return new Transition(state.toSituation(), state.gameOver);
     }
 
-    private void addBall(MutableState state) {
-        state.balls++;
-        if (state.balls >= MAX_BALLS_BEFORE_WALK) {
-            applyWalk(state);
-        }
-    }
-
-    private void addStrike(MutableState state) {
+    /** strike++ — 3스트라이크면 삼진(out++, 카운트 리셋) */
+    private void applyStrike(MutableState state) {
         state.strikes++;
         if (state.strikes >= MAX_STRIKES_BEFORE_OUT) {
             recordOut(state, 1);
         }
     }
 
-    private void applyWalk(MutableState state) {
-        resetCount(state);
-        if (!state.firstBase) {
-            state.firstBase = true;
-            return;
-        }
-        if (!state.secondBase) {
-            state.secondBase = true;
-            return;
-        }
-        if (!state.thirdBase) {
-            state.thirdBase = true;
-            state.secondBase = true;
-            state.firstBase = true;
-            return;
-        }
-        addRun(state, 1);
-        state.firstBase = true;
-        state.secondBase = true;
-        state.thirdBase = true;
-    }
-
-    private void applyWildPitch(MutableState state) {
+    /** ball++ — 4볼이면 볼넷(타자·주자 1베이스 진루) */
+    private void applyBall(MutableState state) {
         state.balls++;
-        if (state.hasRunnersOnBase()) {
-            advanceRunnersOnly(state, 1);
-        }
         if (state.balls >= MAX_BALLS_BEFORE_WALK) {
             applyWalk(state);
         }
     }
 
+    /** 볼넷 — single과 동일: 타자·주자 모두 1베이스 진루 */
+    private void applyWalk(MutableState state) {
+        advanceBases(state, 1);
+    }
+
+    /** out++ — 3아웃이면 이닝 종료(초/말 전환 또는 경기 종료) */
     private void recordOut(MutableState state, int outCount) {
         resetCount(state);
         state.outs += outCount;
@@ -103,17 +70,36 @@ public class GameProgressCalculator {
         }
     }
 
-    private void advanceHit(MutableState state, int bases) {
+    /**
+     * 병살 — out 2개.
+     * 주자가 있으면 선행 주자(3→2→1루 순, 가장 앞선 주자) 제거 + 타자 아웃.
+     */
+    private void applyDoublePlay(MutableState state) {
+        if (state.hasRunnersOnBase()) {
+            removeLeadRunner(state);
+        }
+        recordOut(state, 2);
+    }
+
+    /**
+     * 타격·볼넷 진루 — 타자·주자 모두 {@code bases}만큼 이동.
+     * 홈(4) 도달 시 주자 1명당 1점. 홈런(bases=4)은 타자 포함 전원 득점.
+     */
+    private void advanceBases(MutableState state, int bases) {
         resetCount(state);
-        if (bases >= 4) {
+
+        // 홈런: 루상 주자 + 타자 전원 홈
+        if (bases >= BASES_TO_HOME) {
             addRun(state, countRunners(state) + 1);
             clearBases(state);
             return;
         }
 
-        boolean[] next = new boolean[4];
+        // next[1~3] = 진루 후 1·2·3루 점유 여부 (계산용 임시 배열)
+        boolean[] next = emptyBases();
         int runs = 0;
 
+        // 기존 주자 각각 bases만큼 이동 (홈 도달 시 runs++)
         if (state.firstBase) {
             runs += moveRunner(1, bases, next);
         }
@@ -123,66 +109,94 @@ public class GameProgressCalculator {
         if (state.thirdBase) {
             runs += moveRunner(3, bases, next);
         }
+        // 타자 진루 — bases가 1~3이면 해당 베이스에 배치
         placeBatter(bases, next);
 
-        state.firstBase = next[1];
-        state.secondBase = next[2];
-        state.thirdBase = next[3];
+        applyBases(state, next);
         addRun(state, runs);
     }
 
-    private void advanceRunnersOnly(MutableState state, int bases) {
-        boolean[] next = new boolean[4];
-        int runs = 0;
+    /**
+     * 폭투 — ball++.
+     * 4볼이면 볼넷만 적용(주자 이중 진루 방지).
+     * 그 외 주자 있으면 모든 주자 1베이스 진루(타자 제외).
+     */
+    private void applyWildPitch(MutableState state) {
+        state.balls++;
+        // 4볼 → 볼넷 진루로 일괄 처리 (WP 주자 진루 + walk 중복 방지)
+        if (state.balls >= MAX_BALLS_BEFORE_WALK) {
+            applyWalk(state);
+            return;
+        }
+        if (state.hasRunnersOnBase()) {
+            boolean[] next = emptyBases();
+            int runs = 0;
 
-        if (state.firstBase) {
-            runs += moveRunner(1, bases, next);
+            if (state.firstBase) {
+                runs += moveRunner(1, 1, next);
+            }
+            if (state.secondBase) {
+                runs += moveRunner(2, 1, next);
+            }
+            if (state.thirdBase) {
+                runs += moveRunner(3, 1, next);
+            }
+
+            applyBases(state, next);
+            addRun(state, runs);
+        }
+    }
+
+    /** 병살 시 선행 주자(가장 앞선 주자) 제거 — 3루 → 2루 → 1루 순 */
+    private void removeLeadRunner(MutableState state) {
+        if (state.thirdBase) {
+            state.thirdBase = false;
+            return;
         }
         if (state.secondBase) {
-            runs += moveRunner(2, bases, next);
+            state.secondBase = false;
+            return;
         }
-        if (state.thirdBase) {
-            runs += moveRunner(3, bases, next);
-        }
-
-        state.firstBase = next[1];
-        state.secondBase = next[2];
-        state.thirdBase = next[3];
-        addRun(state, runs);
+        state.firstBase = false;
     }
 
-    /** 주자를 {@code bases}만큼 진루시키고, 도착 베이스 배열({@code next})에 반영한다. */
+    /**
+     * 주자 1명을 {@code bases}만큼 진루.
+     * @return 홈 도달 시 1(득점), 아니면 0
+     */
     private int moveRunner(int fromBase, int bases, boolean[] next) {
         int destination = fromBase + bases;
-        if (destination >= 4) {
+        if (destination >= BASES_TO_HOME) {
             return 1;
         }
         next[destination] = true;
         return 0;
     }
 
+    /** 타자를 {@code bases}만큼 진루한 뒤 도착 베이스(1~3)에 배치 */
     private void placeBatter(int bases, boolean[] next) {
         if (bases >= 1 && bases <= 3) {
             next[bases] = true;
         }
     }
 
+    /** 3아웃 — 카운트·주자 리셋 후 초→말, 말→다음 이닝 또는 경기 종료 */
     private void endHalfInning(MutableState state) {
         resetCount(state);
         clearBases(state);
         state.outs = 0;
 
         if (state.isTop) {
-            state.isTop = false;
+            state.isTop = false; // 초 종료 → 말
             return;
         }
 
         if (state.currentInning >= state.totalInnings) {
-            state.gameOver = true;
+            state.gameOver = true; // 말 종료 + 마지막 이닝 → 경기 종료
             return;
         }
 
-        state.isTop = true;
+        state.isTop = true; // 말 종료 → 다음 이닝 초
         state.currentInning++;
     }
 
@@ -197,6 +211,17 @@ public class GameProgressCalculator {
         state.thirdBase = false;
     }
 
+    /** next[0] 미사용, next[1~3] = 1·2·3루 */
+    private boolean[] emptyBases() {
+        return new boolean[4];
+    }
+
+    private void applyBases(MutableState state, boolean[] next) {
+        state.firstBase = next[1];
+        state.secondBase = next[2];
+        state.thirdBase = next[3];
+    }
+
     private int countRunners(MutableState state) {
         int count = 0;
         if (state.firstBase) count++;
@@ -205,6 +230,7 @@ public class GameProgressCalculator {
         return count;
     }
 
+    /** 초(isTop)=어웨이 득점, 말=홈 득점 */
     private void addRun(MutableState state, int runs) {
         if (runs <= 0) {
             return;
@@ -216,6 +242,7 @@ public class GameProgressCalculator {
         }
     }
 
+    /** 계산 중 가변 상태 — apply() 종료 시 GameProgressSituation으로 변환 */
     private static final class MutableState {
         int totalInnings;
         int currentInning;
