@@ -43,18 +43,23 @@ public class BluffingJudgmentCalculator {
                             List<Integer> tripleNumbers,
                             List<Integer> hrNumbers,
                             boolean hasRunnersOnBase) {
+        // 타이밍 완벽=주사위2개(합2~12), 1칸 어긋=주사위1개(합1~6)
         int sum = diceResults.stream().mapToInt(Integer::intValue).sum();
 
+        // setup-numbers로 등록한 각 블러핑 숫자와 주사위 합 대조
         boolean matchOut = contains(outNumbers, sum);
         boolean rawMatchDp = contains(dpNumbers, sum);
-        boolean matchDp = hasRunnersOnBase && rawMatchDp;
+        boolean matchDp = hasRunnersOnBase && rawMatchDp;   // 병살: 루상 주자 없으면 무효
         boolean matchTriple = contains(tripleNumbers, sum);
         boolean matchHr = contains(hrNumbers, sum);
 
+        // --- 겹침(동일 합) 소멸 규칙 ---
+        // HR + OUT/DP → HR 승 (OUT·DP 소멸)
         if (matchHr && (matchOut || matchDp)) {
             matchOut = false;
             matchDp = false;
         }
+        // 3B + DP → OUT (DP·3B 소멸) | 3B + OUT → OUT (3B 소멸)
         if (matchTriple && rawMatchDp) {
             matchDp = false;
             matchOut = true;
@@ -63,6 +68,7 @@ public class BluffingJudgmentCalculator {
             matchTriple = false;
         }
 
+        // --- 소멸 후 우선순위: DP → OUT → HR → 3B → (미매칭) DOUBLE → SINGLE ---
         if (matchDp) {
             return TurnResult.DOUBLE_PLAY;
         }
@@ -75,6 +81,7 @@ public class BluffingJudgmentCalculator {
         if (matchTriple) {
             return TurnResult.TRIPLE;
         }
+        // 특수 번호 미매칭: 주사위 2개 동일 눈금 → 2루타, 그 외 → 1루타
         if (isDoubleDice(diceResults)) {
             return TurnResult.DOUBLE;
         }

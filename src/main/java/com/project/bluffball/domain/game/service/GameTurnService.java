@@ -3,12 +3,10 @@ package com.project.bluffball.domain.game.service;
 import com.project.bluffball.domain.game.dto.progress.GameTurnOutcome;
 import com.project.bluffball.domain.game.dto.request.BatterCardSelectRequest;
 import com.project.bluffball.domain.game.dto.request.PitcherCardSelectRequest;
-import com.project.bluffball.domain.game.dto.response.GameStateSnapshot;
 import com.project.bluffball.domain.game.dto.response.PitcherReadyEvent;
-import com.project.bluffball.domain.game.dto.response.TurnResultEvent;
+import com.project.bluffball.domain.game.enums.TurnResult;
 import com.project.bluffball.domain.game.service.usecase.executor.BatterCardSelectExecutor;
 import com.project.bluffball.domain.game.service.usecase.executor.PitcherCardSelectExecutor;
-import com.project.bluffball.domain.game.service.usecase.judgment.TurnJudgmentResult;
 import com.project.bluffball.domain.game.service.usecase.reader.GameProgressReader;
 import com.project.bluffball.domain.game.service.usecase.reader.GameStateReader;
 import com.project.bluffball.domain.game.service.usecase.reader.MatchInfoReader;
@@ -32,7 +30,7 @@ import java.util.List;
  * 모든 검증은 Validator, 상태 변경은 Executor, 조회는 Reader에 위임한다.</p>
  *
  * @see GamePrepService 준비 단계(숫자 셋업, 카드 드로우·멀리건)
- * @see GameProgressService 경기 진행(턴 결과 → 야구 룰 반영)
+ * @see GameProgressService 경기 진행(턴 결과 → 야구 룰 반영 · TurnResultEvent 전송)
  */
 @Service
 @RequiredArgsConstructor
@@ -51,7 +49,6 @@ public class GameTurnService {
     private final SimpMessagingTemplate messagingTemplate;
 
     private static final String GAME_TOPIC = "/topic/game/";
-    private static final String RESULT_TOPIC_SUFFIX = "/result";
 
     /**
      * 투수 구종 카드 및 시작 좌표 카드 선택을 처리한다.
@@ -97,16 +94,20 @@ public class GameTurnService {
     /**
      * 타자 예측 좌표 및 타이밍 선택을 처리하고 타격 이벤트를 판정한다.
      *
-     * <p>판정 완료 후 투수와 타자 양측에 {@code TurnResultEvent}를 브로드캐스트한다.
+     * <p>판정 완료 후 {@link GameProgressService}가 {@code TurnResultEvent}를 브로드캐스트한다.
      * {@code responseTimeSec}이 5초를 초과하면 스윙 미발동(스트라이크)으로 처리한다.</p>
      */
     public void batterSelectCard(String matchSessionId, Long userId, BatterCardSelectRequest request) {
+        // 해당 게임의 유효성 검증
         gameProgressValidator.validateGameActive(
                 gameProgressReader.isInitialized(matchSessionId),
                 gameProgressReader.isGameOver(matchSessionId));
 
+        /*  타자의 선택 유효성 검증
+        *   응답 시간 초과 여부, 유효 좌표/타이밍 선택 여부 검증
+        *   투수/타자의 선택 완료 여부 검증
+        * */
         Long batterUserId = matchInfoReader.getCurrentBatterUserId(matchSessionId);
-
         batterCardSelectValidator.validate(
                 batterUserId,
                 userId,
@@ -116,36 +117,19 @@ public class GameTurnService {
                 turnResultSessionReader.isPitcherSelectionComplete(matchSessionId),
                 turnResultSessionReader.isBatterSelectionComplete(matchSessionId));
 
+        // advanceTurn() 전 턴 번호 — GameProgressService가 해당 턴 세션·결과와 매핑
         int completedTurnNumber = gameStateReader.getTurnNumber(matchSessionId);
 
-        TurnJudgmentResult result = batterCardSelectExecutor.execute(
+        // [판정] 1차(좌표·타이밍) + 2차(주사위·블러핑) → TurnResult만 반환
+        TurnResult turnResult = batterCardSelectExecutor.execute(
                 matchSessionId,
                 request.batterCoordinateNumber(),
                 request.timing(),
                 request.responseTimeSec());
 
-        var progress = gameProgressService.applyTurnResult(
+        // [경기 반영 + 클라이언트 전송] TurnResult → GameState 갱신 · TurnResultEvent 브로드캐스트
+        gameProgressService.applyTurnResult(
                 matchSessionId,
-                new GameTurnOutcome(result.turnResult(), completedTurnNumber));
-
-        GameStateSnapshot snapshot = progress.snapshot();
-
-        TurnResultEvent event = new TurnResultEvent(
-                result.turnResult(),
-                result.finalCoordinateNumber(),
-                result.pitchTiming(),
-                result.diceResults(),
-                snapshot.inning(),
-                snapshot.isTop(),
-                snapshot.homeScore(),
-                snapshot.awayScore(),
-                snapshot.balls(),
-                snapshot.strikes(),
-                snapshot.outs(),
-                snapshot.firstBase(),
-                snapshot.secondBase(),
-                snapshot.thirdBase());
-
-        messagingTemplate.convertAndSend(GAME_TOPIC + matchSessionId + RESULT_TOPIC_SUFFIX, event);
+                new GameTurnOutcome(turnResult, completedTurnNumber));
     }
 }
