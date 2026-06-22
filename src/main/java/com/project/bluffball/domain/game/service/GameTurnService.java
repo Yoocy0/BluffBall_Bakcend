@@ -71,19 +71,17 @@ public class GameTurnService {
                 hand,
                 pitcherUserId,
                 userId,
-                request.getPitchCardId(),
-                request.getCoordinateCardId(),
+                request.pitchCardId(),
+                request.coordinateCardId(),
                 matchInfoReader.isMulliganDone(matchSessionId),
                 turnResultSessionReader.isPitcherSelectionComplete(matchSessionId));
 
         int startCoordinateNumber = pitcherCardSelectExecutor.execute(
                 matchSessionId,
-                request.getPitchCardId(),
-                request.getCoordinateCardId());
+                request.pitchCardId(),
+                request.coordinateCardId());
 
-        PitcherReadyEvent event = PitcherReadyEvent.builder()
-                .startCoordinateNumber(startCoordinateNumber)
-                .build();
+        PitcherReadyEvent event = new PitcherReadyEvent(startCoordinateNumber);
         messagingTemplate.convertAndSend(GAME_TOPIC + matchSessionId, event);
     }
 
@@ -103,9 +101,9 @@ public class GameTurnService {
         batterCardSelectValidator.validate(
                 batterUserId,
                 userId,
-                request.getResponseTimeSec(),
-                request.getBatterCoordinateNumber(),
-                request.getTiming(),
+                request.responseTimeSec(),
+                request.batterCoordinateNumber(),
+                request.timing(),
                 turnResultSessionReader.isPitcherSelectionComplete(matchSessionId),
                 turnResultSessionReader.isBatterSelectionComplete(matchSessionId));
 
@@ -113,9 +111,9 @@ public class GameTurnService {
 
         TurnJudgmentResult result = batterCardSelectExecutor.execute(
                 matchSessionId,
-                request.getBatterCoordinateNumber(),
-                request.getTiming(),
-                request.getResponseTimeSec());
+                request.batterCoordinateNumber(),
+                request.timing(),
+                request.responseTimeSec());
 
         var progress = gameProgressService.applyTurnResult(
                 matchSessionId,
@@ -123,22 +121,21 @@ public class GameTurnService {
 
         GameStateSnapshot snapshot = progress.snapshot();
 
-        TurnResultEvent event = TurnResultEvent.builder()
-                .turnResult(result.turnResult())
-                .finalCoordinateNumber(result.finalCoordinateNumber())
-                .pitchTiming(result.pitchTiming())
-                .diceResults(result.diceResults())
-                .inning(snapshot.getInning())
-                .isTop(snapshot.isTop())
-                .homeScore(snapshot.getHomeScore())
-                .awayScore(snapshot.getAwayScore())
-                .balls(snapshot.getBalls())
-                .strikes(snapshot.getStrikes())
-                .outs(snapshot.getOuts())
-                .firstBase(snapshot.isFirstBase())
-                .secondBase(snapshot.isSecondBase())
-                .thirdBase(snapshot.isThirdBase())
-                .build();
+        TurnResultEvent event = new TurnResultEvent(
+                result.turnResult(),
+                result.finalCoordinateNumber(),
+                result.pitchTiming(),
+                result.diceResults(),
+                snapshot.inning(),
+                snapshot.isTop(),
+                snapshot.homeScore(),
+                snapshot.awayScore(),
+                snapshot.balls(),
+                snapshot.strikes(),
+                snapshot.outs(),
+                snapshot.firstBase(),
+                snapshot.secondBase(),
+                snapshot.thirdBase());
 
         messagingTemplate.convertAndSend(GAME_TOPIC + matchSessionId + RESULT_TOPIC_SUFFIX, event);
     }

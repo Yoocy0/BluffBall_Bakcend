@@ -40,13 +40,12 @@ public class PitchCardReader {
      */
     public List<CardInfo> getPitchCardDetails(List<Long> ids) {
         return pitchCardRepository.findAllByIds(ids).stream()
-                .map(c -> CardInfo.builder()
-                        .cardId(c.getId())
-                        .name(c.getName())
-                        .changeAmount(c.getChangeAmount())
-                        .direction(c.getDirection())
-                        .timing(c.getTiming())
-                        .build())
+                .map(c -> new CardInfo(
+                        c.getId(),
+                        c.getName(),
+                        c.getChangeAmount(),
+                        c.getDirection(),
+                        c.getTiming()))
                 .collect(Collectors.toList());
     }
 

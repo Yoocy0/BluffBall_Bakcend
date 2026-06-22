@@ -37,17 +37,16 @@ public class GameStateReader {
     /** Service 이벤트 조립용 스코어보드 스냅샷 (Service ✅) */
     public GameStateSnapshot getSnapshot(String matchSessionId) {
         GameState state = getById(matchSessionId);
-        return GameStateSnapshot.builder()
-                .inning(state.getCurrentInning())
-                .isTop(state.isTop())
-                .homeScore(state.getHomeScore())
-                .awayScore(state.getAwayScore())
-                .balls(state.getBalls())
-                .strikes(state.getStrikes())
-                .outs(state.getOuts())
-                .firstBase(state.isFirstBase())
-                .secondBase(state.isSecondBase())
-                .thirdBase(state.isThirdBase())
-                .build();
+        return new GameStateSnapshot(
+                state.getCurrentInning(),
+                state.isTop(),
+                state.getHomeScore(),
+                state.getAwayScore(),
+                state.getBalls(),
+                state.getStrikes(),
+                state.getOuts(),
+                state.isFirstBase(),
+                state.isSecondBase(),
+                state.isThirdBase());
     }
 }

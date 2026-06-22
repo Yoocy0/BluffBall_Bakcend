@@ -10,6 +10,7 @@ import java.util.List;
  *
  * <h3>검증 규칙</h3>
  * <ul>
+ *   <li>멀리건이 아직 완료되지 않았을 것 (등판 당 1회)</li>
  *   <li>교체 목록(cardIdsToSwap)에 중복된 카드 ID가 없을 것</li>
  *   <li>교체 목록의 모든 카드 ID가 현재 패(currentHand)에 포함될 것</li>
  *   <li>교체 목록의 크기가 현재 패 크기를 초과하지 않을 것 (전체 교체는 허용)</li>
@@ -17,6 +18,13 @@ import java.util.List;
  */
 @Component
 public class MulliganValidator {
+
+    /** 멀리건 요청 가능 여부 — {@code mulliganDone == true}이면 거부 */
+    public void validateMulliganAllowed(boolean mulliganDone) {
+        if (mulliganDone) {
+            throw new IllegalStateException("멀리건은 투수 등판 당 1회만 가능합니다.");
+        }
+    }
 
     public void validate(List<Long> currentHand, List<Long> cardIdsToSwap) {
         if (cardIdsToSwap == null || cardIdsToSwap.isEmpty()) {

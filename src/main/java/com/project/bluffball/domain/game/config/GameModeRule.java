@@ -24,6 +24,7 @@ import org.springframework.stereotype.Component;
 @Component
 public class GameModeRule {
 
+    // 게임 모드에 따른 초기 드로우 장수 반환 메서드
     public int getHandSize(GameMode gameMode) {
         return switch (gameMode) {
             case GENERAL, CUSTOM -> 3;
