@@ -60,13 +60,20 @@ public class GameTurnService {
      * 최종 좌표와 구종 타이밍은 타자 선택 후 {@code TurnResultEvent}에서 공개한다.</p>
      */
     public void pitcherSelectCard(String matchSessionId, Long userId, PitcherCardSelectRequest request) {
+        // 현재 게임의 상태가 유효한지 검증
         gameProgressValidator.validateGameActive(
+                // 게임이 시작되었는지
                 gameProgressReader.isInitialized(matchSessionId),
+                // 게임이 이미 종료되었는지
                 gameProgressReader.isGameOver(matchSessionId));
 
+        /*
+            3. 투수의 카드 선택 행위 유효성 검증
+            - 요청한 유저가 실제 투수가 맞는지, 해당 카드를 실제로 소유하고 있는지
+            - 멀리건 단계가 정상적으로 종료되었는지, 이미 선택을 완료한 턴은 아닌지 검증
+        */
         List<Long> hand = matchInfoReader.getPitcherCardHand(matchSessionId);
         Long pitcherUserId = matchInfoReader.getPitcherUserId(matchSessionId);
-
         pitcherCardSelectValidator.validate(
                 hand,
                 pitcherUserId,
@@ -76,11 +83,13 @@ public class GameTurnService {
                 matchInfoReader.isMulliganDone(matchSessionId),
                 turnResultSessionReader.isPitcherSelectionComplete(matchSessionId));
 
+        // 투수가 선택한 시작 좌표
         int startCoordinateNumber = pitcherCardSelectExecutor.execute(
                 matchSessionId,
                 request.pitchCardId(),
                 request.coordinateCardId());
 
+        // 5. 타자에게 투수의 투구 준비 완료를 알리는 이벤트 발행 (심리전을 위해 '시작 좌표'만 선공개)
         PitcherReadyEvent event = new PitcherReadyEvent(startCoordinateNumber);
         messagingTemplate.convertAndSend(GAME_TOPIC + matchSessionId, event);
     }
