@@ -1,0 +1,109 @@
+(() => {
+    const els = {
+        inningSummary: document.getElementById('inningSummary'),
+        homeScore: document.getElementById('homeScore'),
+        awayScore: document.getElementById('awayScore'),
+        winnerMsg: document.getElementById('winnerMsg'),
+        lastTurnSummary: document.getElementById('lastTurnSummary'),
+        matchIdLine: document.getElementById('matchIdLine'),
+        linkLastTurn: document.getElementById('linkLastTurn'),
+    };
+
+    function readData() {
+        const params = new URLSearchParams(window.location.search);
+        const matchSessionId = params.get('matchSessionId') || '';
+
+        try {
+            const stored = JSON.parse(sessionStorage.getItem('bluffball.gameEnd') || 'null');
+            if (stored) {
+                return { ...stored, matchSessionId: matchSessionId || stored.matchSessionId };
+            }
+        } catch (_) {
+            /* ignore */
+        }
+
+        try {
+            const batter = JSON.parse(sessionStorage.getItem('bluffball.batterResult') || 'null');
+            if (batter?.gameOver) {
+                return {
+                    matchSessionId: matchSessionId || batter.matchSessionId,
+                    homeScore: batter.homeScore,
+                    awayScore: batter.awayScore,
+                    totalInnings: batter.totalInnings,
+                    turnResult: batter.turnResult,
+                    turnNumber: batter.turnNumber,
+                    inning: batter.inning,
+                    isTop: batter.isTop,
+                };
+            }
+        } catch (_) {
+            /* ignore */
+        }
+
+        return null;
+    }
+
+    function addRow(label, value) {
+        const div = document.createElement('div');
+        div.innerHTML = `<dt>${label}:</dt><dd>${value}</dd>`;
+        els.lastTurnSummary.appendChild(div);
+    }
+
+    function winnerText(homeScore, awayScore) {
+        if (homeScore > awayScore) {
+            return 'Home 팀 승리';
+        }
+        if (awayScore > homeScore) {
+            return 'Away 팀 승리';
+        }
+        return '무승부';
+    }
+
+    const data = readData();
+
+    if (!data || data.homeScore == null || data.awayScore == null) {
+        if (els.inningSummary) {
+            els.inningSummary.textContent = '경기 결과가 없습니다. 타자 선택부터 경기를 진행해 주세요.';
+        }
+        if (els.winnerMsg) {
+            els.winnerMsg.textContent = '';
+        }
+        return;
+    }
+
+    const totalInnings = data.totalInnings ?? 1;
+    if (els.inningSummary) {
+        els.inningSummary.textContent = `${totalInnings}이닝 경기 종료`;
+    }
+    if (els.homeScore) {
+        els.homeScore.textContent = String(data.homeScore);
+    }
+    if (els.awayScore) {
+        els.awayScore.textContent = String(data.awayScore);
+    }
+    if (els.winnerMsg) {
+        els.winnerMsg.textContent = winnerText(data.homeScore, data.awayScore);
+    }
+
+    if (data.turnResult) {
+        addRow('판정', data.turnResult);
+    }
+    if (data.turnNumber != null) {
+        addRow('턴', String(data.turnNumber));
+    }
+    if (data.inning != null) {
+        addRow('이닝', `${data.inning}회 ${data.isTop ? '초' : '말'}`);
+    }
+
+    if (data.matchSessionId) {
+        if (els.matchIdLine) {
+            els.matchIdLine.textContent = `matchSessionId: ${data.matchSessionId}`;
+        }
+        if (els.linkLastTurn) {
+            els.linkLastTurn.href =
+                `/game-test/BatterResult.html?matchSessionId=${encodeURIComponent(data.matchSessionId)}`;
+        }
+    } else if (els.linkLastTurn) {
+        els.linkLastTurn.hidden = true;
+    }
+})();

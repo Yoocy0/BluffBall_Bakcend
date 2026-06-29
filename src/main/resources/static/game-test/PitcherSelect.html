@@ -9,7 +9,7 @@
 <body>
 <div class="page">
     <h1>투수 — 구종 &amp; 시작 좌표</h1>
-    <p class="subtitle">구종 카드 1장 + 시작 좌표(1~25) 선택 · 타자에게 공개되는 시작 좌표만 결과 화면에 표시</p>
+    <p class="subtitle">구종 + 시작 좌표 · 이닝 진행 시 타자 선택으로 바로 이동 (loop=1)</p>
     <p class="nav-row"><a class="nav-link" href="/game-test/Mulligan.html" id="linkMulligan">← 멀리건으로</a></p>
 
     <section class="panel">
@@ -18,7 +18,8 @@
             <input type="text" id="matchSessionId" placeholder="matchSessionId (UUID)">
             <button type="button" id="btnPrepare" class="secondary">게임 준비</button>
         </div>
-        <p id="prepareStatus" class="phase-desc">게임 준비 시 카드 드로우·멀리건 확정까지 진행됩니다.</p>
+        <p id="gameStatus" class="phase-desc">-</p>
+        <p id="prepareStatus" class="phase-desc">게임 준비 시 패·좌표 로드</p>
     </section>
 
     <section class="panel">
@@ -44,6 +45,6 @@
     </section>
 </div>
 
-<script src="/game-test/js/pitcher-select.js?v=1"></script>
+<script src="/game-test/js/pitcher-select.js?v=2"></script>
 </body>
 </html>

@@ -11,12 +11,17 @@
         matchSessionId: document.getElementById('matchSessionId'),
         btnPrepare: document.getElementById('btnPrepare'),
         prepareStatus: document.getElementById('prepareStatus'),
+        gameStatus: document.getElementById('gameStatus'),
         linkMulligan: document.getElementById('linkMulligan'),
         pitchHand: document.getElementById('pitchHand'),
         coordGrid: document.getElementById('coordGrid'),
         btnSubmit: document.getElementById('btnSubmit'),
         log: document.getElementById('log'),
     };
+
+    function isLoopMode() {
+        return new URLSearchParams(window.location.search).get('loop') === '1';
+    }
 
     function log(message, type = '') {
         const line = document.createElement('div');
@@ -40,10 +45,27 @@
             || !state.selectedCoordinateCardId;
     }
 
+    async function loadGameStatus() {
+        const matchSessionId = getMatchSessionId();
+        if (!matchSessionId || !els.gameStatus) return;
+
+        try {
+            const res = await fetch(`/game-test/api/match/${matchSessionId}/game-status`);
+            if (!res.ok) return;
+            const s = await res.json();
+            els.gameStatus.textContent =
+                `턴 ${s.turnNumber} · ${s.inning}회 ${s.isTop ? '초' : '말'} / ${s.totalInnings}이닝 · `
+                + `B${s.balls} S${s.strikes} O${s.outs} · ${s.awayScore}:${s.homeScore}`
+                + (s.gameOver ? ' · 경기 종료' : '');
+        } catch (_) {
+            /* ignore */
+        }
+    }
+
     function renderPitchHand() {
         els.pitchHand.innerHTML = '';
         if (state.pitchHand.length === 0) {
-            els.pitchHand.innerHTML = '<p class="phase-desc">구종 카드 없음 — 「게임 준비」를 먼저 실행하세요.</p>';
+            els.pitchHand.innerHTML = '<p class="phase-desc">구종 카드 없음 — 「게임 준비」를 실행하세요.</p>';
             return;
         }
 
@@ -62,7 +84,7 @@
                 state.selectedPitchCardId = card.cardId;
                 renderPitchHand();
                 updateSubmitButton();
-                log(`구종 선택: ${card.name} (id=${card.cardId})`);
+                log(`구종 선택: ${card.name}`);
             });
             els.pitchHand.appendChild(btn);
         });
@@ -79,13 +101,12 @@
                 btn.classList.add('selected');
             }
             btn.textContent = coord.coordinateNumber;
-            btn.title = coord.name;
             btn.addEventListener('click', () => {
                 state.selectedCoordinateCardId = coord.cardId;
                 state.selectedCoordinateNumber = coord.coordinateNumber;
                 renderCoordGrid();
                 updateSubmitButton();
-                log(`좌표 선택: ${coord.coordinateNumber} (id=${coord.cardId})`);
+                log(`좌표 선택: ${coord.coordinateNumber}`);
             });
             els.coordGrid.appendChild(btn);
         });
@@ -95,8 +116,7 @@
         state.pitchHand = data.pitchHand || [];
         state.coordinates = data.coordinateOptions || [];
         els.prepareStatus.textContent =
-            `준비 완료 — mulligan=${data.mulliganDone}, `
-            + `구종 ${state.pitchHand.length}장, 좌표 ${state.coordinates.length}칸`;
+            `패 ${state.pitchHand.length}장 · 좌표 ${state.coordinates.length}칸`;
         renderPitchHand();
         renderCoordGrid();
         updateSubmitButton();
@@ -109,6 +129,8 @@
             return;
         }
 
+        await loadGameStatus();
+
         try {
             const res = await fetch(`/game-test/api/match/${matchSessionId}/prepare-pitch`, {
                 method: 'POST',
@@ -119,9 +141,9 @@
             }
             const data = await res.json();
             applyPrepareResponse(data);
-            log('게임 준비 완료 (카드 드로우 + 멀리건 확정)', 'ok');
+            log('투수 선택 준비 완료', 'ok');
         } catch (e) {
-            log(`게임 준비 실패: ${e.message}`, 'err');
+            log(`준비 실패: ${e.message}`, 'err');
         }
     }
 
@@ -143,9 +165,15 @@
                 throw new Error(`HTTP ${res.status} — ${text}`);
             }
             const data = await res.json();
-            log(`투구 제출 완료 — 시작 ${data.startCoordinateNumber} → 최종 ${data.finalCoordinateNumber}`, 'ok');
+            log(`투구 제출 — 시작 좌표 ${data.startCoordinateNumber}`, 'ok');
 
             sessionStorage.setItem('bluffball.pitcherResult', JSON.stringify(data));
+
+            if (isLoopMode()) {
+                window.location.href =
+                    `/game-test/BatterSelect.html?matchSessionId=${encodeURIComponent(matchSessionId)}`;
+                return;
+            }
 
             const qs = new URLSearchParams({
                 matchSessionId,
@@ -168,9 +196,9 @@
         if (els.linkMulligan) {
             els.linkMulligan.href = `/game-test/Mulligan.html?matchSessionId=${encodeURIComponent(initialMatchId)}`;
         }
-        log(`matchSessionId=${initialMatchId}`, 'ok');
+        log(`matchSessionId=${initialMatchId}${isLoopMode() ? ' (이닝 진행)' : ''}`, 'ok');
         prepareGame();
     } else {
-        log('URL에 matchSessionId가 없습니다. 직접 입력 후 「게임 준비」를 누르세요.');
+        log('URL에 matchSessionId가 없습니다.');
     }
 })();

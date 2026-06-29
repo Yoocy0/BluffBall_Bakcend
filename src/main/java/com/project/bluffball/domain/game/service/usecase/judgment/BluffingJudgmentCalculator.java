@@ -18,6 +18,9 @@ import java.util.List;
  * <h3>소멸 적용 후 우선순위</h3>
  * 병살(주자 있을 때) → 아웃 → 홈런 → 3루타
  *
+ * <h3>병살 번호</h3>
+ * 루상 주자가 있으면 병살, 없으면 일반 아웃으로 처리한다.
+ *
  * <h3>특수 번호 미매칭 시</h3>
  * <ul>
  *   <li>주사위 2개 + 두 눈금 동일 (더블) → 2루타</li>
@@ -49,9 +52,14 @@ public class BluffingJudgmentCalculator {
         // setup-numbers로 등록한 각 블러핑 숫자와 주사위 합 대조
         boolean matchOut = contains(outNumbers, sum);
         boolean rawMatchDp = contains(dpNumbers, sum);
-        boolean matchDp = hasRunnersOnBase && rawMatchDp;   // 병살: 루상 주자 없으면 무효
+        boolean matchDp = hasRunnersOnBase && rawMatchDp;   // 병살: 루상 주자 있을 때만 유효
         boolean matchTriple = contains(tripleNumbers, sum);
         boolean matchHr = contains(hrNumbers, sum);
+
+        // 병살 번호 매칭 + 루상 주자 없음 → 병살 불가, 일반 아웃
+        if (rawMatchDp && !hasRunnersOnBase) {
+            matchOut = true;
+        }
 
         // --- 겹침(동일 합) 소멸 규칙 ---
         // HR + OUT/DP → HR 승 (OUT·DP 소멸)

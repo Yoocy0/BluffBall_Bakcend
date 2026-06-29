@@ -6,6 +6,7 @@
         coordGrid: document.getElementById('coordGrid'),
         finalOutside: document.getElementById('finalOutside'),
         linkBack: document.getElementById('linkBack'),
+        btnNext: document.getElementById('btnNext'),
     };
 
     function readParams() {
@@ -94,4 +95,12 @@
         : `${pitchLabel}시작 좌표 = ${start}`;
 
     renderGrid(start, finalCoord);
+
+    if (matchSessionId && els.btnNext) {
+        els.btnNext.addEventListener('click', () => {
+            sessionStorage.setItem('bluffball.matchSessionId', matchSessionId);
+            window.location.href =
+                `/game-test/BatterSelect.html?matchSessionId=${encodeURIComponent(matchSessionId)}`;
+        });
+    }
 })();

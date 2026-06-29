@@ -2,6 +2,7 @@ package com.project.bluffball.gametest.service;
 
 import com.project.bluffball.domain.card.entity.CoordinateCard;
 import com.project.bluffball.domain.card.repository.CoordinateCardRepository;
+import com.project.bluffball.domain.game.dto.request.BatterCardSelectRequest;
 import com.project.bluffball.domain.game.dto.request.MulliganRequest;
 import com.project.bluffball.domain.game.dto.request.PitcherCardSelectRequest;
 import com.project.bluffball.domain.game.dto.request.SetupNumberRequest;
@@ -12,11 +13,16 @@ import com.project.bluffball.domain.game.repository.GameStateRepository;
 import com.project.bluffball.domain.game.repository.MatchInfoRepository;
 import com.project.bluffball.domain.game.service.GamePrepService;
 import com.project.bluffball.domain.game.service.GameTurnService;
+import com.project.bluffball.domain.game.service.usecase.reader.GameProgressReader;
+import com.project.bluffball.domain.game.service.usecase.reader.GameStateReader;
 import com.project.bluffball.domain.game.service.usecase.reader.MatchInfoReader;
 import com.project.bluffball.domain.game.service.usecase.reader.PitchCardReader;
 import com.project.bluffball.domain.game.service.usecase.reader.TurnResultSessionReader;
 import com.project.bluffball.domain.user.record.enums.GameMode;
+import com.project.bluffball.gametest.dto.TestBatterPrepareResponse;
+import com.project.bluffball.gametest.dto.TestBatterSelectResponse;
 import com.project.bluffball.gametest.dto.TestCoordinateOption;
+import com.project.bluffball.gametest.dto.TestGameStatusResponse;
 import com.project.bluffball.gametest.dto.TestMatchCreateResponse;
 import com.project.bluffball.gametest.dto.TestMatchSetupNumbersResponse;
 import com.project.bluffball.gametest.dto.TestPitchHandResponse;
@@ -51,6 +57,8 @@ public class GameTestMatchService {
     private final GamePrepService gamePrepService;
     private final GameTurnService gameTurnService;
     private final TurnResultSessionReader turnResultSessionReader;
+    private final GameStateReader gameStateReader;
+    private final GameProgressReader gameProgressReader;
 
     @Transactional
     public TestMatchCreateResponse createSingleTestMatch() {
@@ -130,6 +138,9 @@ public class GameTestMatchService {
         if (!matchInfoReader.isMulliganDone(matchSessionId)) {
             throw new IllegalStateException("멀리건(카드 교체/확정)을 먼저 완료하세요.");
         }
+        if (gameProgressReader.isGameOver(matchSessionId)) {
+            throw new IllegalStateException("경기가 이미 종료되었습니다.");
+        }
 
         TestPitchHandResponse hand = getPitchHand(matchSessionId);
 
@@ -158,6 +169,68 @@ public class GameTestMatchService {
                 request.pitchCardId(),
                 request.coordinateCardId(),
                 pitchName);
+    }
+
+    /** 타자 선택 화면 — 투수가 공개한 시작 좌표 */
+    public TestBatterPrepareResponse prepareForBatter(String matchSessionId) {
+        if (gameProgressReader.isGameOver(matchSessionId)) {
+            throw new IllegalStateException("경기가 이미 종료되었습니다.");
+        }
+        if (!turnResultSessionReader.isPitcherSelectionComplete(matchSessionId)) {
+            throw new IllegalStateException("투수 구종·좌표 선택을 먼저 완료하세요.");
+        }
+        var session = turnResultSessionReader.getCurrentSession(matchSessionId);
+        return new TestBatterPrepareResponse(
+                matchSessionId,
+                session.getStartCoordinateNumber(),
+                true,
+                turnResultSessionReader.isBatterSelectionComplete(matchSessionId));
+    }
+
+    public TestGameStatusResponse getGameStatus(String matchSessionId) {
+        var snapshot = gameStateReader.getSnapshot(matchSessionId);
+        return new TestGameStatusResponse(
+                matchSessionId,
+                gameStateReader.getTurnNumber(matchSessionId),
+                gameProgressReader.getTotalInnings(matchSessionId),
+                snapshot.inning(),
+                snapshot.isTop(),
+                snapshot.homeScore(),
+                snapshot.awayScore(),
+                snapshot.balls(),
+                snapshot.strikes(),
+                snapshot.outs(),
+                snapshot.firstBase(),
+                snapshot.secondBase(),
+                snapshot.thirdBase(),
+                gameProgressReader.isGameOver(matchSessionId),
+                gameProgressReader.isInitialized(matchSessionId));
+    }
+
+    public TestBatterSelectResponse selectBatterCard(String matchSessionId, BatterCardSelectRequest request) {
+        var applyResult = gameTurnService.batterSelectCard(matchSessionId, TEST_USER_ID, request);
+        var snapshot = applyResult.snapshot();
+
+        return new TestBatterSelectResponse(
+                matchSessionId,
+                request.responseTimeSec(),
+                applyResult.turnResult(),
+                applyResult.finalCoordinateNumber(),
+                applyResult.pitchTiming(),
+                applyResult.diceResults(),
+                snapshot.inning(),
+                snapshot.isTop(),
+                snapshot.homeScore(),
+                snapshot.awayScore(),
+                snapshot.balls(),
+                snapshot.strikes(),
+                snapshot.outs(),
+                snapshot.firstBase(),
+                snapshot.secondBase(),
+                snapshot.thirdBase(),
+                applyResult.gameOver(),
+                applyResult.completedTurnNumber() + 1,
+                gameProgressReader.getTotalInnings(matchSessionId));
     }
 
     private void ensureSecondPlayerSetup(String matchSessionId) {

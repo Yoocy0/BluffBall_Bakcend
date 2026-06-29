@@ -1,0 +1,46 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>BluffBall — 경기 종료</title>
+    <link rel="stylesheet" href="/game-test/css/game-test.css">
+</head>
+<body>
+<div class="page game-end-page">
+    <p class="game-end-badge">FINAL</p>
+    <h1 class="game-end-title">경기 종료</h1>
+    <p class="subtitle" id="inningSummary">-</p>
+
+    <section class="panel game-end-score-panel">
+        <div class="game-end-scoreboard">
+            <div class="game-end-team">
+                <p class="game-end-team-label">Home</p>
+                <p id="homeScore" class="game-end-team-score">-</p>
+            </div>
+            <p class="game-end-colon">:</p>
+            <div class="game-end-team">
+                <p class="game-end-team-label">Away</p>
+                <p id="awayScore" class="game-end-team-score">-</p>
+            </div>
+        </div>
+        <p id="winnerMsg" class="game-end-winner"></p>
+    </section>
+
+    <section class="panel">
+        <h2>마지막 턴</h2>
+        <dl class="selection-summary" id="lastTurnSummary"></dl>
+    </section>
+
+    <section class="panel">
+        <p class="phase-desc" id="matchIdLine"></p>
+        <div class="actions">
+            <a class="nav-link" href="/game-test/SetupNumber.html">새 경기 시작</a>
+            <a class="nav-link" href="/game-test/BatterResult.html" id="linkLastTurn">마지막 타격 결과</a>
+        </div>
+    </section>
+</div>
+
+<script src="/game-test/js/game-end.js?v=1"></script>
+</body>
+</html>

@@ -32,6 +32,17 @@ public class CoordinateCardReader {
     }
 
     /**
+     * 좌표 번호(0~25)에 대응하는 좌표 카드 ID.
+     * 경기 종료 시 InningLog 변환에 사용한다.
+     */
+    public Long getCoordinateCardId(int coordinateNumber) {
+        return coordinateCardRepository.findByCoordinateNumber(coordinateNumber)
+                .map(CoordinateCard::getId)
+                .orElseThrow(() -> new IllegalStateException(
+                        "좌표 카드 마스터가 없습니다. coordinateNumber=" + coordinateNumber));
+    }
+
+    /**
      * 좌표 번호의 스트라이크 존 여부 (Executor·Calculator 입력용).
      * 좌표 0(폭투 존)은 볼 존으로 본다.
      */

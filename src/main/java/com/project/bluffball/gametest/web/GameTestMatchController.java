@@ -1,8 +1,12 @@
 package com.project.bluffball.gametest.web;
 
+import com.project.bluffball.domain.game.dto.request.BatterCardSelectRequest;
 import com.project.bluffball.domain.game.dto.request.MulliganRequest;
 import com.project.bluffball.domain.game.dto.request.PitcherCardSelectRequest;
 import com.project.bluffball.domain.game.dto.request.SetupNumberRequest;
+import com.project.bluffball.gametest.dto.TestBatterPrepareResponse;
+import com.project.bluffball.gametest.dto.TestBatterSelectResponse;
+import com.project.bluffball.gametest.dto.TestGameStatusResponse;
 import com.project.bluffball.gametest.dto.TestMatchCreateResponse;
 import com.project.bluffball.gametest.dto.TestMatchSetupNumbersResponse;
 import com.project.bluffball.gametest.dto.TestPitchHandResponse;
@@ -91,5 +95,26 @@ public class GameTestMatchController {
         log.info("[game-test] pitcher/select-card matchSessionId={} pitch={} coord={}",
                 matchSessionId, request.pitchCardId(), request.coordinateCardId());
         return gameTestMatchService.selectPitcherCard(matchSessionId, request);
+    }
+
+    /** 타자 선택 화면 — 시작 좌표 로드 */
+    @GetMapping("/match/{matchSessionId}/prepare-batter")
+    public TestBatterPrepareResponse prepareForBatter(@PathVariable String matchSessionId) {
+        return gameTestMatchService.prepareForBatter(matchSessionId);
+    }
+
+    @GetMapping("/match/{matchSessionId}/game-status")
+    public TestGameStatusResponse getGameStatus(@PathVariable String matchSessionId) {
+        return gameTestMatchService.getGameStatus(matchSessionId);
+    }
+
+    /** 타자 좌표·타이밍 선택 */
+    @PostMapping("/match/{matchSessionId}/batter/select-card")
+    public TestBatterSelectResponse selectBatterCard(
+            @PathVariable String matchSessionId,
+            @RequestBody BatterCardSelectRequest request) {
+        log.info("[game-test] batter/select-card matchSessionId={} coord={} timing={} sec={}",
+                matchSessionId, request.batterCoordinateNumber(), request.timing(), request.responseTimeSec());
+        return gameTestMatchService.selectBatterCard(matchSessionId, request);
     }
 }

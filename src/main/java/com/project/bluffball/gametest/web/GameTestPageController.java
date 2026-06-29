@@ -37,4 +37,19 @@ public class GameTestPageController {
     public String pitcherResult() {
         return "redirect:/game-test/PitcherResult.html";
     }
+
+    @GetMapping("/batter-select")
+    public String batterSelect() {
+        return "redirect:/game-test/BatterSelect.html";
+    }
+
+    @GetMapping("/batter-result")
+    public String batterResult() {
+        return "redirect:/game-test/BatterResult.html";
+    }
+
+    @GetMapping("/game-end")
+    public String gameEnd() {
+        return "redirect:/game-test/GameEnd.html";
+    }
 }
