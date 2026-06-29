@@ -1,0 +1,43 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>BluffBall — 멀리건 (카드 교체)</title>
+    <link rel="stylesheet" href="/game-test/css/game-test.css">
+</head>
+<body>
+<div class="page">
+    <h1>멀리건 — 구종 카드</h1>
+    <p class="subtitle">초기 드로우 3장 · 교체 후 「확정」 또는 그대로 「확정」 · 완료 후에도 「교체」는 백엔드 검증용으로 유지</p>
+    <p class="nav-row"><a class="nav-link" href="/game-test/SetupNumber.html">← 숫자 선택으로</a></p>
+
+    <section class="panel">
+        <h2>매치</h2>
+        <div class="row">
+            <input type="text" id="matchSessionId" placeholder="matchSessionId (UUID)">
+            <span id="mulliganStatus" class="status disconnected">대기</span>
+        </div>
+        <p id="handStatus" class="phase-desc">카드 드로우 후 멀리건을 진행하세요.</p>
+    </section>
+
+    <section class="panel">
+        <h2>구종 카드 (3장)</h2>
+        <p class="phase-desc">교체할 카드를 클릭해 선택하세요. (복수 선택 가능)</p>
+        <div id="pitchHand" class="card-grid"></div>
+        <div class="actions">
+            <button type="button" id="btnSwap" class="secondary" disabled>교체</button>
+            <button type="button" id="btnConfirm" class="primary" disabled>확정</button>
+            <button type="button" id="btnNext" class="primary" disabled>다음 → 투수 선택</button>
+        </div>
+    </section>
+
+    <section class="panel">
+        <h2>로그</h2>
+        <div id="log" class="log"></div>
+    </section>
+</div>
+
+<script src="/game-test/js/mulligan.js?v=2"></script>
+</body>
+</html>

@@ -1,0 +1,46 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>BluffBall — 투구 좌표 결과</title>
+    <link rel="stylesheet" href="/game-test/css/game-test.css">
+</head>
+<body>
+<div class="page">
+    <h1>투구 결과 — 좌표</h1>
+    <p class="subtitle">테스트 전용 · 시작 좌표(타자 공개) + 최종 좌표(구종 변화 적용)</p>
+    <p class="nav-row"><a class="nav-link" href="/game-test/PitcherSelect.html" id="linkBack">← 투수 선택으로</a></p>
+
+    <section class="panel result-hero">
+        <div class="result-numbers">
+            <div>
+                <p class="result-label">시작 좌표 (공개)</p>
+                <p id="startCoordinate" class="big-number">-</p>
+            </div>
+            <div class="result-arrow">→</div>
+            <div>
+                <p class="result-label">최종 좌표 (비공개)</p>
+                <p id="finalCoordinate" class="big-number final">-</p>
+            </div>
+        </div>
+        <p id="resultDetail" class="result-detail"></p>
+    </section>
+
+    <section class="panel">
+        <h2>5×5 격자</h2>
+        <p class="coord-legend">파란 테두리 = 시작 · 주황 테두리 = 최종 · 0은 격자 밖(폭투 존)</p>
+        <div id="coordGrid" class="coord-grid"></div>
+        <p id="finalOutside" class="phase-desc" hidden>최종 좌표 0 — 5×5 격자 밖 (폭투 존)</p>
+    </section>
+
+    <section class="panel">
+        <div class="actions">
+            <a class="nav-link" href="/game-test/SetupNumber.html">처음부터 (숫자 선택)</a>
+        </div>
+    </section>
+</div>
+
+<script src="/game-test/js/pitcher-result.js?v=2"></script>
+</body>
+</html>

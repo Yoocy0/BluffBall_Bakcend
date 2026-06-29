@@ -36,8 +36,11 @@
         btnSubmit: document.getElementById('btnSubmit'),
         btnSubmitWs: document.getElementById('btnSubmitWs'),
         btnVerify: document.getElementById('btnVerify'),
+        btnNext: document.getElementById('btnNext'),
         log: document.getElementById('log'),
     };
+
+    let submitSucceeded = false;
 
     function log(message, type = '') {
         const line = document.createElement('div');
@@ -182,6 +185,26 @@
         els.btnSubmit.disabled = !allDone || !hasMatchId;
         els.btnVerify.disabled = !hasMatchId;
         els.btnSubmitWs.disabled = !allDone || !hasMatchId || !state.connected;
+        els.btnNext.disabled = !submitSucceeded || !hasMatchId;
+    }
+
+    function goToMulligan() {
+        const matchSessionId = getMatchSessionId();
+        if (!matchSessionId) {
+            log('matchSessionId가 없습니다.', 'err');
+            return;
+        }
+        sessionStorage.setItem('bluffball.matchSessionId', matchSessionId);
+        window.location.href = `/game-test/Mulligan.html?matchSessionId=${encodeURIComponent(matchSessionId)}`;
+    }
+
+    function markSubmitSucceeded(data) {
+        const hasSaved = data && Object.keys(data.outNumbers || {}).length > 0;
+        submitSucceeded = hasSaved;
+        if (hasSaved) {
+            sessionStorage.setItem('bluffball.matchSessionId', getMatchSessionId());
+        }
+        updateActions();
     }
 
     function resetSelection() {
@@ -282,6 +305,7 @@
             }
             const data = await res.json();
             log(formatRedisResponse(data), 'ok');
+            markSubmitSucceeded(data);
             return data;
         } catch (e) {
             log(`Redis 확인 실패: ${e.message}`, 'err');
@@ -312,6 +336,7 @@
             log(`[REST 제출] POST /game-test/api/match/${matchSessionId}/setup-numbers`, 'ok');
             log(`payload → ${JSON.stringify(payload)}`, 'ok');
             log(formatRedisResponse(data), 'ok');
+            markSubmitSucceeded(data);
             return data;
         } catch (e) {
             log(`REST 제출 실패: ${e.message}`, 'err');
@@ -375,6 +400,7 @@
     els.btnSubmit.addEventListener('click', submitSetupNumbers);
     els.btnSubmitWs.addEventListener('click', submitViaWebSocket);
     els.btnVerify.addEventListener('click', verifySetupNumbers);
+    els.btnNext.addEventListener('click', goToMulligan);
     els.matchSessionId.addEventListener('input', updateActions);
     els.matchSessionId.addEventListener('change', updateActions);
 

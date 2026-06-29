@@ -22,4 +22,19 @@ public class GameTestPageController {
     public String setupNumber() {
         return "redirect:/game-test/SetupNumber.html";
     }
+
+    @GetMapping("/mulligan")
+    public String mulligan() {
+        return "redirect:/game-test/Mulligan.html";
+    }
+
+    @GetMapping("/pitcher-select")
+    public String pitcherSelect() {
+        return "redirect:/game-test/PitcherSelect.html";
+    }
+
+    @GetMapping("/pitcher-result")
+    public String pitcherResult() {
+        return "redirect:/game-test/PitcherResult.html";
+    }
 }
