@@ -18,7 +18,7 @@ import java.util.List;
  * 카드 데이터는 정적 데이터에 가까우므로 게임 진입 시 클라이언트가 한 번 prefetch하여
  * 캐싱한 뒤, 이후 WebSocket 통신에서는 카드 ID만을 주고받는 구조로 설계되었다.</p>
  *
- * <p>카드 타입 구분 (SINGLE_TABLE 전략, {@code card_type_code} 컬럼 기준):</p>
+ * <p>카드 타입 구분 (JOINED 전략, {@code card} + 자식 테이블, {@code card_type_code} 기준):</p>
  * <ul>
  *   <li>{@code 0} — 기본 Card: 타이밍 카드({@code userType=BATTER}),
  *       구종 강화 카드({@code userType=PITCHER})</li>

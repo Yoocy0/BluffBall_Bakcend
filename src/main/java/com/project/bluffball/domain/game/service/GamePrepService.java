@@ -13,6 +13,7 @@ import com.project.bluffball.domain.game.service.usecase.reader.PitchCardReader;
 import com.project.bluffball.domain.game.service.usecase.validator.MulliganValidator;
 import com.project.bluffball.domain.game.service.usecase.validator.SetupNumberValidator;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.messaging.simp.SimpMessagingTemplate;
 import org.springframework.stereotype.Service;
@@ -35,6 +36,7 @@ import java.util.List;
  */
 @Service
 @RequiredArgsConstructor
+@Slf4j
 public class GamePrepService {
 
     private final SetupNumberValidator setupNumberValidator;
@@ -58,6 +60,7 @@ public class GamePrepService {
      * {@link com.project.bluffball.domain.game.service.listener.GamePhaseListener}가 처리한다.</p>
      */
     public void setupNumbers(String matchSessionId, Long userId, SetupNumberRequest request) {
+        log.info("setup-numbers 저장 matchSessionId={} userId={}", matchSessionId, userId);
 
         // 주사위 눈금의 합 예측 값 유효성 검증
         setupNumberValidator.validate(request);

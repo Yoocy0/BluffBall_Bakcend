@@ -9,15 +9,23 @@ import lombok.NoArgsConstructor;
 /**
  * 카드 도메인의 루트 엔터티.
  *
- * SINGLE_TABLE 전략 사용 — 모든 카드 타입이 단일 'card' 테이블에 저장된다.
- * card_type_code 컬럼 값:
- *   0 = 기본 Card (타이밍 카드, 구종 강화 카드)
- *   1 = PitchCard (구종 카드)
- *   2 = CoordinateCard (좌표 카드)
+ * <p>JOINED 전략 — 공통 필드는 {@code card} 테이블, 타입별 필드는 자식 테이블에 저장한다.</p>
+ * <ul>
+ *   <li>{@code card} — 공통 (name, user_type, card_type_code)</li>
+ *   <li>{@code pitch_card} — 구종 전용 (change_amount, direction, timing)</li>
+ *   <li>{@code coordinate_card} — 좌표 전용 (coordinate_number, is_strike)</li>
+ * </ul>
+ *
+ * <p>{@code card_type_code} discriminator:</p>
+ * <ul>
+ *   <li>0 = 기본 Card (타이밍 카드, 구종 강화 카드)</li>
+ *   <li>1 = PitchCard</li>
+ *   <li>2 = CoordinateCard</li>
+ * </ul>
  */
 @Entity
 @Table(name = "card")
-@Inheritance(strategy = InheritanceType.SINGLE_TABLE)
+@Inheritance(strategy = InheritanceType.JOINED)
 @DiscriminatorColumn(name = "card_type_code", discriminatorType = DiscriminatorType.INTEGER)
 @DiscriminatorValue("0")
 @Getter

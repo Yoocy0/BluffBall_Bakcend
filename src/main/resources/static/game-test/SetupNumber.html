@@ -1,0 +1,57 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>BluffBall — 숫자 선택 (SetupNumber)</title>
+    <link rel="stylesheet" href="/game-test/css/game-test.css">
+</head>
+<body>
+<div class="page">
+    <h1>블러핑 숫자 선택</h1>
+    <p class="subtitle">게임 시작 직후 setup-numbers API 테스트 · 아웃 5 → 병살 1 → 3루타 1 → 홈런 1</p>
+    <p id="pageVersion" class="subtitle version-tag"></p>
+
+    <section class="panel">
+        <h2>연결</h2>
+        <div class="row">
+            <input type="text" id="matchSessionId" placeholder="matchSessionId (UUID)">
+            <span id="wsStatus" class="status disconnected">미연결</span>
+        </div>
+        <div class="actions">
+            <button type="button" id="btnCreateMatch" class="secondary">테스트 매치 생성</button>
+            <button type="button" id="btnConnect" class="primary">WebSocket 연결</button>
+            <button type="button" id="btnDisconnect" class="secondary" disabled>연결 해제</button>
+        </div>
+    </section>
+
+    <section class="panel">
+        <h2>숫자 선택</h2>
+        <p id="phaseTitle" class="phase-title">아웃 번호 (0/5)</p>
+        <p id="phaseDesc" class="phase-desc">5개 선택 (1~12)</p>
+        <div id="numberGrid" class="number-grid"></div>
+        <dl class="selection-summary">
+            <div><dt>아웃:</dt><dd id="summaryOut">-</dd></div>
+            <div><dt>병살:</dt><dd id="summaryDp">-</dd></div>
+            <div><dt>3루타:</dt><dd id="summaryTriple">-</dd></div>
+            <div><dt>홈런:</dt><dd id="summaryHr">-</dd></div>
+        </dl>
+        <div class="actions">
+            <button type="button" id="btnReset" class="secondary">선택 초기화</button>
+            <button type="button" id="btnSubmit" class="primary" disabled>제출 (REST → Redis)</button>
+            <button type="button" id="btnSubmitWs" class="secondary" disabled>WS로 전송 (선택)</button>
+            <button type="button" id="btnVerify" class="secondary" disabled>Redis 확인</button>
+        </div>
+    </section>
+
+    <section class="panel">
+        <h2>로그</h2>
+        <div id="log" class="log"></div>
+    </section>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/sockjs-client@1/dist/sockjs.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/@stomp/stompjs@7/bundles/stomp.umd.min.js"></script>
+<script src="/game-test/js/setup-number.js?v=4"></script>
+</body>
+</html>

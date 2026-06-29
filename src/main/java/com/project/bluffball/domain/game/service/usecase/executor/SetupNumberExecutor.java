@@ -26,11 +26,7 @@ public class SetupNumberExecutor {
      * @param request   블러핑 숫자 요청 DTO
      */
     public void save(MatchInfo matchInfo, Long userId, SetupNumberRequest request) {
-        matchInfo.getOutNumbers().put(userId, request.outNumList());
-        matchInfo.getDpNumbers().put(userId, request.dpNumList());
-        matchInfo.getTripleNumbers().put(userId, request.tripleNumList());
-        matchInfo.getHrNumbers().put(userId, request.hrNumList());
-
+        matchInfo.upsertPlayerSetupNumbers(userId, request);
         matchInfoRepository.save(matchInfo);
     }
 }
