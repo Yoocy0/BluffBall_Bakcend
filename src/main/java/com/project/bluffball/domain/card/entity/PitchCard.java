@@ -11,6 +11,8 @@ import lombok.NoArgsConstructor;
 /**
  * 구종 카드 엔터티 (card_type_code = 1).
  *
+ * <p>{@code pitch_card} 테이블 — {@link Card}와 {@code card_id}로 JOIN.</p>
+ *
  * <p>변화구 연산은 유저 좌표(1~25)를 내부 2D 인덱스(0~4, 0~4)로 변환 후 처리한다.
  * 격자 경계(인덱스 > 4)를 벗어나면 규격 외(폭투 등)로 판단하여 0을 반환한다.</p>
  *
@@ -22,7 +24,9 @@ import lombok.NoArgsConstructor;
  * </pre>
  */
 @Entity
+@Table(name = "pitch_card")
 @DiscriminatorValue("1")
+@PrimaryKeyJoinColumn(name = "card_id")
 @Getter
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
 public class PitchCard extends Card {

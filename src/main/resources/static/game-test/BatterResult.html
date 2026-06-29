@@ -1,0 +1,37 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>BluffBall — 타격 결과</title>
+    <link rel="stylesheet" href="/game-test/css/game-test.css">
+</head>
+<body>
+<div class="page">
+    <h1>타격 결과</h1>
+    <p class="subtitle">TurnResultEvent — 판정·주사위 · 1이닝 진행 (투수→타자 반복)</p>
+    <p class="nav-row"><a class="nav-link" href="/game-test/BatterSelect.html" id="linkBack">← 타자 선택으로</a></p>
+
+    <section class="panel result-hero">
+        <p class="result-label">턴 판정</p>
+        <p id="turnResult" class="big-number">-</p>
+        <p id="resultDetail" class="result-detail"></p>
+    </section>
+
+    <section class="panel">
+        <h2>스코어보드</h2>
+        <dl class="selection-summary" id="scoreboard"></dl>
+    </section>
+
+    <section class="panel">
+        <div class="actions">
+            <button type="button" id="btnNextPitch" class="primary">다음 투구 → 투수 선택</button>
+            <p id="gameOverMsg" class="phase-desc" hidden>1이닝 종료 — 경기가 끝났습니다.</p>
+            <a class="nav-link" href="/game-test/SetupNumber.html">처음부터</a>
+        </div>
+    </section>
+</div>
+
+<script src="/game-test/js/batter-result.js?v=2"></script>
+</body>
+</html>

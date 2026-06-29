@@ -1,0 +1,523 @@
+* {
+    box-sizing: border-box;
+}
+
+body {
+    margin: 0;
+    font-family: system-ui, -apple-system, sans-serif;
+    background: #1a1d23;
+    color: #e8eaed;
+    min-height: 100vh;
+}
+
+.page {
+    max-width: 720px;
+    margin: 0 auto;
+    padding: 24px 16px 48px;
+}
+
+h1 {
+    margin: 0 0 8px;
+    font-size: 1.5rem;
+}
+
+.subtitle {
+    color: #9aa0a6;
+    font-size: 0.9rem;
+    margin-bottom: 24px;
+}
+
+.version-tag {
+    margin-top: -16px;
+    margin-bottom: 24px;
+    color: #81c995;
+    font-size: 0.85rem;
+}
+
+.nav-row {
+    margin: -12px 0 20px;
+}
+
+.panel {
+    background: #252830;
+    border: 1px solid #3c4043;
+    border-radius: 12px;
+    padding: 16px;
+    margin-bottom: 16px;
+}
+
+.panel h2 {
+    margin: 0 0 12px;
+    font-size: 1rem;
+    color: #8ab4f8;
+}
+
+.row {
+    display: flex;
+    gap: 8px;
+    flex-wrap: wrap;
+    align-items: center;
+}
+
+input[type="text"] {
+    flex: 1;
+    min-width: 200px;
+    padding: 10px 12px;
+    border-radius: 8px;
+    border: 1px solid #5f6368;
+    background: #1a1d23;
+    color: #e8eaed;
+    font-size: 0.95rem;
+}
+
+button {
+    padding: 10px 16px;
+    border-radius: 8px;
+    border: none;
+    font-size: 0.9rem;
+    cursor: pointer;
+    font-weight: 600;
+}
+
+button.primary {
+    background: #8ab4f8;
+    color: #1a1d23;
+}
+
+button.primary:disabled {
+    opacity: 0.4;
+    cursor: not-allowed;
+}
+
+button.secondary {
+    background: #3c4043;
+    color: #e8eaed;
+}
+
+button.danger {
+    background: #5c2b2b;
+    color: #f8d7da;
+}
+
+.status {
+    display: inline-block;
+    padding: 4px 10px;
+    border-radius: 999px;
+    font-size: 0.8rem;
+    font-weight: 600;
+}
+
+.status.disconnected {
+    background: #5c2b2b;
+    color: #f8d7da;
+}
+
+.status.connected {
+    background: #1e4620;
+    color: #81c995;
+}
+
+.phase-title {
+    font-size: 1.1rem;
+    font-weight: 700;
+    margin-bottom: 4px;
+}
+
+.phase-desc {
+    color: #9aa0a6;
+    font-size: 0.85rem;
+    margin-bottom: 16px;
+}
+
+.number-grid {
+    display: grid;
+    grid-template-columns: repeat(6, 1fr);
+    gap: 8px;
+    margin-bottom: 16px;
+}
+
+.num-btn {
+    aspect-ratio: 1;
+    font-size: 1.1rem;
+    font-weight: 700;
+    background: #3c4043;
+    color: #e8eaed;
+    border: 2px solid transparent;
+    border-radius: 10px;
+    transition: background 0.15s, border-color 0.15s;
+}
+
+.num-btn:hover:not(:disabled) {
+    background: #5f6368;
+}
+
+.num-btn:disabled {
+    opacity: 0.35;
+    cursor: not-allowed;
+}
+
+.num-btn.selected {
+    background: #1a3a5c;
+    border-color: #8ab4f8;
+    color: #8ab4f8;
+}
+
+.selection-summary {
+    display: grid;
+    gap: 8px;
+    font-size: 0.85rem;
+}
+
+.selection-summary dt {
+    color: #9aa0a6;
+    display: inline;
+}
+
+.selection-summary dd {
+    display: inline;
+    margin: 0 0 0 4px;
+    font-weight: 600;
+}
+
+.selection-summary div {
+    padding: 6px 0;
+    border-bottom: 1px solid #3c4043;
+}
+
+.selection-summary div:last-child {
+    border-bottom: none;
+}
+
+.log {
+    max-height: 160px;
+    overflow-y: auto;
+    font-family: ui-monospace, monospace;
+    font-size: 0.78rem;
+    color: #bdc1c6;
+    line-height: 1.5;
+}
+
+.log .ok {
+    color: #81c995;
+}
+
+.log .err {
+    color: #f28b82;
+}
+
+.actions {
+    margin-top: 16px;
+    display: flex;
+    gap: 8px;
+    flex-wrap: wrap;
+}
+
+.card-grid {
+    display: grid;
+    gap: 10px;
+    margin-bottom: 16px;
+}
+
+.card-btn {
+    text-align: left;
+    padding: 12px 14px;
+    background: #3c4043;
+    color: #e8eaed;
+    border: 2px solid transparent;
+    border-radius: 10px;
+    line-height: 1.4;
+}
+
+.card-btn:hover:not(:disabled) {
+    background: #5f6368;
+}
+
+.card-btn.selected {
+    background: #1a3a5c;
+    border-color: #8ab4f8;
+}
+
+.card-btn.swap-selected {
+    background: #4a3728;
+    border-color: #fdd663;
+    color: #fdd663;
+}
+
+.card-btn:disabled {
+    opacity: 0.55;
+    cursor: not-allowed;
+}
+
+.card-btn .card-name {
+    display: block;
+    font-weight: 700;
+    font-size: 1rem;
+    margin-bottom: 4px;
+}
+
+.card-btn .card-meta {
+    display: block;
+    font-size: 0.8rem;
+    color: #9aa0a6;
+}
+
+.coord-grid {
+    display: grid;
+    grid-template-columns: repeat(5, 1fr);
+    gap: 6px;
+    max-width: 320px;
+    margin-bottom: 8px;
+}
+
+.coord-btn {
+    aspect-ratio: 1;
+    font-size: 0.95rem;
+    font-weight: 700;
+    background: #2d3140;
+    color: #bdc1c6;
+    border: 2px solid #3c4043;
+    border-radius: 8px;
+}
+
+.coord-btn.strike-zone {
+    background: #1e3328;
+    border-color: #3d5c45;
+}
+
+.result-numbers {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 20px;
+    flex-wrap: wrap;
+}
+
+.result-numbers .big-number.final {
+    color: #fdd663;
+}
+
+.result-arrow {
+    font-size: 2rem;
+    color: #9aa0a6;
+    font-weight: 300;
+}
+
+.coord-btn.selected {
+    background: #1a3a5c;
+    border-color: #8ab4f8;
+    color: #8ab4f8;
+}
+
+.coord-btn.start-selected {
+    border-color: #8ab4f8;
+    box-shadow: 0 0 0 2px #8ab4f8;
+}
+
+.coord-btn.final-selected {
+    border-color: #fdd663;
+    box-shadow: 0 0 0 2px #fdd663;
+}
+
+.coord-btn.start-selected.final-selected {
+    box-shadow: 0 0 0 2px #8ab4f8, inset 0 0 0 2px #fdd663;
+}
+
+.coord-legend {
+    font-size: 0.8rem;
+    color: #9aa0a6;
+    margin-bottom: 12px;
+}
+
+.result-hero {
+    text-align: center;
+    padding: 24px 16px;
+}
+
+.result-hero .big-number {
+    font-size: 4rem;
+    font-weight: 800;
+    color: #8ab4f8;
+    line-height: 1;
+    margin: 8px 0 16px;
+}
+
+.result-hero .result-label {
+    color: #9aa0a6;
+    font-size: 0.95rem;
+}
+
+.result-detail {
+    font-size: 0.9rem;
+    color: #bdc1c6;
+    text-align: center;
+    margin-top: 8px;
+}
+
+.nav-link {
+    color: #8ab4f8;
+    text-decoration: none;
+    font-size: 0.9rem;
+}
+
+.nav-link:hover {
+    text-decoration: underline;
+}
+
+.match-input {
+    width: 100%;
+    padding: 10px 12px;
+    border-radius: 8px;
+    border: 1px solid #5f6368;
+    background: #1a1d23;
+    color: #e8eaed;
+    font-size: 0.95rem;
+    margin-bottom: 12px;
+}
+
+.timer-row {
+    display: flex;
+    gap: 24px;
+    flex-wrap: wrap;
+    align-items: flex-start;
+    justify-content: space-between;
+}
+
+.timer-start {
+    font-size: 2.5rem;
+    margin: 0;
+}
+
+.timer-box {
+    text-align: right;
+}
+
+.timer-value {
+    font-size: 2rem;
+    font-weight: 800;
+    color: #81c995;
+    margin: 4px 0;
+}
+
+.timer-value.overtime {
+    color: #f28b82;
+}
+
+.timing-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(100px, 1fr));
+    gap: 8px;
+}
+
+.timing-btn {
+    padding: 12px 8px;
+    background: #3c4043;
+    color: #e8eaed;
+    border: 2px solid transparent;
+    border-radius: 10px;
+    font-weight: 600;
+    font-size: 0.85rem;
+}
+
+.timing-btn.selected {
+    background: #1a3a5c;
+    border-color: #8ab4f8;
+    color: #8ab4f8;
+}
+
+.coord-btn.pitcher-start {
+    box-shadow: inset 0 0 0 2px #81c995;
+}
+
+.coord-zero-btn {
+    margin-top: 8px;
+    width: 100%;
+    max-width: 320px;
+}
+
+.coord-zero-btn.selected {
+    border: 2px solid #8ab4f8;
+    background: #1a3a5c;
+    color: #8ab4f8;
+}
+
+/* —— 경기 종료 —— */
+.game-end-page {
+    text-align: center;
+}
+
+.game-end-badge {
+    display: inline-block;
+    margin: 0 0 8px;
+    padding: 4px 12px;
+    border-radius: 999px;
+    background: #3c4043;
+    color: #fdd663;
+    font-size: 0.75rem;
+    font-weight: 800;
+    letter-spacing: 0.12em;
+}
+
+.game-end-title {
+    font-size: 2rem;
+    margin-bottom: 4px;
+}
+
+.game-end-score-panel {
+    padding: 32px 20px;
+}
+
+.game-end-scoreboard {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 16px;
+    flex-wrap: wrap;
+}
+
+.game-end-team {
+    min-width: 100px;
+}
+
+.game-end-team-label {
+    margin: 0 0 8px;
+    font-size: 0.95rem;
+    color: #9aa0a6;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+}
+
+.game-end-team-score {
+    margin: 0;
+    font-size: 4rem;
+    font-weight: 800;
+    line-height: 1;
+    color: #e8eaed;
+}
+
+.game-end-colon {
+    margin: 0;
+    padding-top: 24px;
+    font-size: 3rem;
+    font-weight: 300;
+    color: #5f6368;
+}
+
+.game-end-winner {
+    margin: 20px 0 0;
+    font-size: 1.1rem;
+    font-weight: 700;
+    color: #81c995;
+}
+
+.game-end-page .panel h2 {
+    text-align: left;
+}
+
+.game-end-page .selection-summary {
+    text-align: left;
+}
+
+.game-end-page .actions {
+    justify-content: center;
+}

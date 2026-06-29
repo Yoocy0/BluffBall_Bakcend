@@ -20,10 +20,22 @@ public class GameProgressCalculator {
     public record Transition(GameProgressSituation after, boolean gameOver) {
     }
 
+    /**
+     * 현재 아웃 수에 따라 적용할 판정을 보정한다.
+     * 2아웃 상태에서는 병살(아웃 2)이 불가하므로 일반 아웃 1개로 처리한다.
+     */
+    public TurnResult resolveEffectiveTurnResult(TurnResult turnResult, GameProgressSituation before) {
+        if (turnResult == TurnResult.DOUBLE_PLAY && before.outs() >= OUTS_PER_INNING - 1) {
+            return TurnResult.OUT;
+        }
+        return turnResult;
+    }
+
     public Transition apply(GameProgressSituation before, TurnResult turnResult) {
+        TurnResult effective = resolveEffectiveTurnResult(turnResult, before);
         MutableState state = MutableState.from(before);
 
-        switch (turnResult) {
+        switch (effective) {
             case STRIKE -> applyStrike(state);           // strike++, 3이면 삼진
             case BALL -> applyBall(state);               // ball++, 4이면 볼넷
             case WALK -> applyWalk(state);               // 타자·주자 1베이스 진루

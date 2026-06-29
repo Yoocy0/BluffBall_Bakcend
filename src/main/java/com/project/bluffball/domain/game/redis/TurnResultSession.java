@@ -142,4 +142,9 @@ public class TurnResultSession {
         this.diceResults = diceResults;
         this.turnResult = turnResult;
     }
+
+    /** 경기 진행 반영 시 판정 보정(예: 2아웃 병살 → 아웃). */
+    public void correctTurnResult(TurnResult turnResult) {
+        this.turnResult = turnResult;
+    }
 }

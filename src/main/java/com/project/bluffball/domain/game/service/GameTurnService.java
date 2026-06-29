@@ -1,5 +1,6 @@
 package com.project.bluffball.domain.game.service;
 
+import com.project.bluffball.domain.game.dto.progress.GameProgressApplyResult;
 import com.project.bluffball.domain.game.dto.progress.GameTurnOutcome;
 import com.project.bluffball.domain.game.dto.request.BatterCardSelectRequest;
 import com.project.bluffball.domain.game.dto.request.PitcherCardSelectRequest;
@@ -97,7 +98,7 @@ public class GameTurnService {
      * <p>판정 완료 후 {@link GameProgressService}가 {@code TurnResultEvent}를 브로드캐스트한다.
      * {@code responseTimeSec}이 5초를 초과하면 스윙 미발동(스트라이크)으로 처리한다.</p>
      */
-    public void batterSelectCard(String matchSessionId, Long userId, BatterCardSelectRequest request) {
+    public GameProgressApplyResult batterSelectCard(String matchSessionId, Long userId, BatterCardSelectRequest request) {
         // 해당 게임의 유효성 검증
         gameProgressValidator.validateGameActive(
                 gameProgressReader.isInitialized(matchSessionId),
@@ -128,7 +129,7 @@ public class GameTurnService {
                 request.responseTimeSec());
 
         // [경기 반영 + 클라이언트 전송] TurnResult → GameState 갱신 · TurnResultEvent 브로드캐스트
-        gameProgressService.applyTurnResult(
+        return gameProgressService.applyTurnResult(
                 matchSessionId,
                 new GameTurnOutcome(turnResult, completedTurnNumber));
     }

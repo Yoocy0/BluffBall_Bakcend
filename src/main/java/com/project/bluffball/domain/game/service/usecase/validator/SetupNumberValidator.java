@@ -30,6 +30,14 @@ public class SetupNumberValidator {
      * @throws IllegalArgumentException 규칙 위반 시
      */
     public void validate(SetupNumberRequest request) {
+        if (request == null) {
+            throw new IllegalArgumentException("요청 본문이 비어 있습니다.");
+        }
+        validateRequired(request.outNumList(), "아웃 번호", 5);
+        validateRequired(request.dpNumList(), "병살 번호", 1);
+        validateRequired(request.tripleNumList(), "3루타 번호", 1);
+        validateRequired(request.hrNumList(), "홈런 번호", 1);
+
         // 값의 범위 유효성 검증(1~12)
         validateRange(request.outNumList(), "아웃 번호");
         validateRange(request.dpNumList(), "병살 번호");
@@ -51,6 +59,16 @@ public class SetupNumberValidator {
 
     private static final int MIN_NUM = 1;
     private static final int MAX_NUM = 12;
+
+    private void validateRequired(List<Integer> nums, String label, int expectedSize) {
+        if (nums == null || nums.isEmpty()) {
+            throw new IllegalArgumentException(label + " 목록이 비어 있습니다.");
+        }
+        if (nums.size() != expectedSize) {
+            throw new IllegalArgumentException(
+                    label + "는 " + expectedSize + "개여야 합니다. actual=" + nums.size());
+        }
+    }
 
     private void validateRange(List<Integer> nums, String label) {
         if (nums == null) return;

@@ -27,9 +27,11 @@ public class MatchInfoReader {
 
     /** Executor·Reader 내부 전용 — Service에서 호출 금지 */
     public MatchInfo getById(String matchSessionId) {
-        return matchInfoRepository.findById(matchSessionId)
+        MatchInfo matchInfo = matchInfoRepository.findById(matchSessionId)
                 .orElseThrow(() -> new IllegalArgumentException(
                         "매치를 찾을 수 없습니다. matchSessionId=" + matchSessionId));
+        matchInfo.ensureCollectionsInitialized();
+        return matchInfo;
     }
 
     /** 현재 투수 카드 패 ID 목록 반환 (Service ✅) */

@@ -8,10 +8,15 @@ import com.project.bluffball.domain.game.dto.response.GameStateSnapshot;
 import com.project.bluffball.domain.game.dto.response.TurnResultEvent;
 import com.project.bluffball.domain.game.enums.TurnResult;
 import com.project.bluffball.domain.game.redis.TurnResultSession;
+import com.project.bluffball.domain.game.repository.TurnResultSessionRepository;
+import com.project.bluffball.domain.game.service.usecase.executor.GameEndExecutor;
 import com.project.bluffball.domain.game.service.usecase.executor.GameProgressExecutor;
+import com.project.bluffball.domain.game.service.usecase.judgment.GameProgressCalculator;
+import com.project.bluffball.domain.game.service.usecase.reader.GameEndReader;
 import com.project.bluffball.domain.game.service.usecase.reader.GameProgressReader;
 import com.project.bluffball.domain.game.service.usecase.reader.GameStateReader;
 import com.project.bluffball.domain.game.service.usecase.reader.TurnResultSessionReader;
+import com.project.bluffball.domain.game.service.usecase.validator.GameEndValidator;
 import com.project.bluffball.domain.user.record.enums.GameMode;
 import lombok.RequiredArgsConstructor;
 import org.springframework.messaging.simp.SimpMessagingTemplate;
@@ -39,9 +44,14 @@ import org.springframework.stereotype.Service;
 public class GameProgressService {
 
     private final GameProgressExecutor gameProgressExecutor;
+    private final GameEndExecutor gameEndExecutor;
     private final GameProgressReader gameProgressReader;
+    private final GameEndReader gameEndReader;
     private final GameStateReader gameStateReader;
     private final TurnResultSessionReader turnResultSessionReader;
+    private final TurnResultSessionRepository turnResultSessionRepository;
+    private final GameProgressCalculator gameProgressCalculator;
+    private final GameEndValidator gameEndValidator;
     private final GameModeRule gameModeRule;
     private final SimpMessagingTemplate messagingTemplate;
 
@@ -94,21 +104,61 @@ public class GameProgressService {
      * @param outcome        해당 턴의 최종 {@link com.project.bluffball.domain.game.enums.TurnResult} 및 턴 번호
      */
     public GameProgressApplyResult applyTurnResult(String matchSessionId, GameTurnOutcome outcome) {
+        var situation = gameProgressReader.getSituation(matchSessionId);
+        TurnResult effectiveResult = gameProgressCalculator.resolveEffectiveTurnResult(
+                outcome.turnResult(), situation);
+
         // TurnResult별 분기(strike++/ball++/진루/out++ 등) → GameState 갱신
-        gameProgressExecutor.applyTurnResult(matchSessionId, outcome);
+        gameProgressExecutor.applyTurnResult(
+                matchSessionId,
+                new GameTurnOutcome(effectiveResult, outcome.turnNumber()));
 
         var snapshot = gameStateReader.getSnapshot(matchSessionId);
-        boolean gameOver = gameProgressReader.isGameOver(matchSessionId);
 
         // 판정 부가 정보(좌표·타이밍·주사위)는 Redis TurnResultSession에서 조회
         var turnSession = turnResultSessionReader.getSession(matchSessionId, outcome.turnNumber());
-        publishTurnResultEvent(matchSessionId, outcome.turnResult(), turnSession, snapshot);
+        if (effectiveResult != outcome.turnResult()) {
+            turnSession.correctTurnResult(effectiveResult);
+            turnResultSessionRepository.save(turnSession);
+        }
+        publishTurnResultEvent(matchSessionId, effectiveResult, turnSession, snapshot);
 
-        if (gameOver) {
-            publishGameEndEvent(matchSessionId, snapshot);
+        boolean gameOver = handleGameEndIfNeeded(matchSessionId, snapshot);
+
+        return new GameProgressApplyResult(
+                snapshot,
+                gameOver,
+                effectiveResult,
+                turnSession.getFinalCoordinateNumber(),
+                turnSession.getPitchTiming(),
+                turnSession.getDiceResults(),
+                outcome.turnNumber());
+    }
+
+    /**
+     * 경기 종료 시 Reader 조회 → Validator 검증 → Executor DB 저장 → 클라이언트 이벤트 발행.
+     */
+    private boolean handleGameEndIfNeeded(String matchSessionId, GameStateSnapshot snapshot) {
+        if (!gameEndReader.isGameEnded(matchSessionId)) {
+            return false;
         }
 
-        return new GameProgressApplyResult(snapshot, gameOver);
+        if (gameEndReader.isAlreadyArchived(matchSessionId)) {
+            publishGameEndEvent(matchSessionId, snapshot);
+            return true;
+        }
+
+        gameEndValidator.validateArchiveReady(
+                gameProgressReader.isInitialized(matchSessionId),
+                gameEndReader.isGameEnded(matchSessionId),
+                gameEndReader.isAlreadyArchived(matchSessionId));
+
+        var completedSessions = gameEndReader.getCompletedTurnSessions(matchSessionId);
+        gameEndValidator.validateCompletedTurnSessions(completedSessions);
+        gameEndExecutor.archive(completedSessions);
+
+        publishGameEndEvent(matchSessionId, snapshot);
+        return true;
     }
 
     private void publishTurnResultEvent(String matchSessionId,

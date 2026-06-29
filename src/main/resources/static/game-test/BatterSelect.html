@@ -1,0 +1,58 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>BluffBall — 타자 좌표·타이밍</title>
+    <link rel="stylesheet" href="/game-test/css/game-test.css">
+</head>
+<body>
+<div class="page">
+    <h1>타자 — 좌표 &amp; 타이밍</h1>
+    <p class="subtitle">5초 타이머 UI · 전송 responseTimeSec은 항상 &lt; 5 (4.9s cap)</p>
+    <p class="nav-row"><a class="nav-link" href="/game-test/PitcherResult.html" id="linkPitcherResult">← 투구 결과로</a></p>
+
+    <section class="panel">
+        <h2>매치 · 타이머</h2>
+        <input type="text" id="matchSessionId" placeholder="matchSessionId" class="match-input">
+        <p id="gameStatus" class="phase-desc">-</p>
+        <div class="timer-row">
+            <div>
+                <p class="result-label">투수 시작 좌표 (공개)</p>
+                <p id="startCoordinate" class="big-number timer-start">-</p>
+            </div>
+            <div class="timer-box">
+                <p class="result-label">경과 시간</p>
+                <p id="timerDisplay" class="timer-value">0.0s</p>
+                <p id="timerHint" class="phase-desc">5초 이내: 타이밍 필수 · 초과: 제출 가능</p>
+            </div>
+        </div>
+    </section>
+
+    <section class="panel">
+        <h2>1. 예측 좌표</h2>
+        <p class="coord-legend">1~25 격자 · 폭투 존(0) 별도</p>
+        <div id="coordGrid" class="coord-grid"></div>
+        <button type="button" id="btnCoordZero" class="secondary coord-zero-btn">폭투 존 (0)</button>
+    </section>
+
+    <section class="panel">
+        <h2>2. 타이밍</h2>
+        <div id="timingGrid" class="timing-grid"></div>
+    </section>
+
+    <section class="panel">
+        <div class="actions">
+            <button type="button" id="btnSubmit" class="primary" disabled>타격 제출</button>
+        </div>
+    </section>
+
+    <section class="panel">
+        <h2>로그</h2>
+        <div id="log" class="log"></div>
+    </section>
+</div>
+
+<script src="/game-test/js/batter-select.js?v=2"></script>
+</body>
+</html>

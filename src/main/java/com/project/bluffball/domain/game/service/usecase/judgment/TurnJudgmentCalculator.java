@@ -12,7 +12,7 @@ import java.util.concurrent.ThreadLocalRandom;
 /**
  * 타격 판정 순수 계산 컴포넌트 (DB·Redis 접근 없음).
  *
- * <p>판정 순서: 시간 초과(존 기준 S/B) → 폭투 → 좌표 일치 → 타이밍 → 주사위</p>
+ * <p>판정 순서: 시간 초과(존 기준 S/B) → 폭투 → 좌표 0(스윙 미발동 S/B) → 좌표 일치 → 타이밍 → 주사위</p>
  *
  * <p>주사위는 정육면체(1~6)만 사용한다. 타이밍 완벽 일치 시 2개를 굴려
  * 합산 범위는 2~12, 1칸 어긋남 시 1개(합 1~6)이다.</p>
@@ -44,6 +44,11 @@ public class TurnJudgmentCalculator {
                     finalCoordinateNumber,
                     pitchTiming,
                     false);
+        }
+
+        // 타자가 좌표 0을 선택한 경우 -> 스윙 미발동, 최종 좌표 존 기준 S/B
+        if (batterCoordinateNumber == 0) {
+            return countByStrikeZone(finalCoordinateIsStrike, finalCoordinateNumber, pitchTiming, batterTiming, false);
         }
 
         // 타자 선택 좌표와 최종 좌표가 다른 경우 -> 헛스윙으로 판정(스트라이크로 판정)

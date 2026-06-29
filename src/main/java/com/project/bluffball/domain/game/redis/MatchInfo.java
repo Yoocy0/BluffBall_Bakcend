@@ -1,5 +1,6 @@
 package com.project.bluffball.domain.game.redis;
 
+import com.project.bluffball.domain.game.dto.request.SetupNumberRequest;
 import com.project.bluffball.domain.game.enums.GameStatus;
 import com.project.bluffball.domain.user.record.enums.GameMode;
 import jakarta.persistence.EnumType;
@@ -25,11 +26,9 @@ import java.util.Map;
  * 경기 종료 시 수동으로 삭제한다.</p>
  *
  * <h3>블러핑 숫자 저장 구조</h3>
- * <p>모든 블러핑 숫자는 {@code Map<Long, List<Integer>>} (userId → 숫자 목록) 형태로 저장한다.</p>
- * <ul>
- *   <li>List 구조: 투수 교체·스킬 등으로 숫자 개수가 달라지는 경우를 수용한다.</li>
- *   <li>Map 구조: 싱글(1명) / 클랜전(다수 타자) 확장 시 수정 없이 동작한다.</li>
- * </ul>
+ * <p>플레이어별 제출은 {@link PlayerSetupNumbers} 리스트로 저장한다.
+ * Spring Data Redis는 {@code Map&lt;Long, List&lt;Integer&gt;&gt;} flatten 시
+ * 리스트 요소를 저장하지 못하므로 List 구조를 사용한다.</p>
  */
 @RedisHash(value = "MatchInfo", timeToLive = 7200)
 @Getter
@@ -72,35 +71,82 @@ public class MatchInfo {
      */
     private List<Long> usedAsPitcherIds;
 
-    // ── 블러핑 고유 숫자 (userId → 숫자 목록) ────────────────────────────────────
-
-    /**
-     * 투수별 아웃 유발 번호 목록 — userId → outNumList.
-     * 눈금 합이 목록 중 하나와 일치하면 '아웃' 판정.
-     */
-    private Map<Long, List<Integer>> outNumbers;
-
-    /**
-     * 투수별 병살 유발 번호 목록 — userId → dpNumList.
-     * 주자가 있을 때 눈금 합이 일치하면 '병살타' 판정.
-     */
-    private Map<Long, List<Integer>> dpNumbers;
-
-    /**
-     * 타자별 3루타 유발 번호 목록 — userId → tripleNumList.
-     * 눈금 합이 일치하면 '3루타' 판정.
-     */
-    private Map<Long, List<Integer>> tripleNumbers;
-
-    /**
-     * 타자별 홈런 유발 번호 목록 — userId → hrNumList.
-     * 눈금 합이 일치하면 '홈런' 판정.
-     */
-    private Map<Long, List<Integer>> hrNumbers;
+    /** 플레이어별 블러핑 숫자 — Redis에 List로 저장 */
+    private List<PlayerSetupNumbers> playerSetupNumbers;
 
     /** 멀리건 완료 처리 — MulliganExecutor에서만 호출한다. */
     public void completeMulligan() {
         this.mulliganDone = true;
+    }
+
+    /**
+     * Redis 역직렬화 후 null이 될 수 있는 컬렉션 필드를 초기화한다.
+     * Reader·Executor에서 조회 직후 호출한다.
+     */
+    public void ensureCollectionsInitialized() {
+        if (batterLineup == null) {
+            batterLineup = new ArrayList<>();
+        }
+        if (pitcherCardHand == null) {
+            pitcherCardHand = new ArrayList<>();
+        }
+        if (usedAsPitcherIds == null) {
+            usedAsPitcherIds = new ArrayList<>();
+        }
+        if (playerSetupNumbers == null) {
+            playerSetupNumbers = new ArrayList<>();
+        }
+        for (PlayerSetupNumbers entry : playerSetupNumbers) {
+            entry.ensureListsInitialized();
+        }
+    }
+
+    /** SetupNumberExecutor 전용 — 플레이어 제출 upsert */
+    public void upsertPlayerSetupNumbers(Long userId, SetupNumberRequest request) {
+        ensureCollectionsInitialized();
+        playerSetupNumbers.removeIf(entry -> userId.equals(entry.getUserId()));
+        playerSetupNumbers.add(new PlayerSetupNumbers(
+                userId,
+                request.outNumList(),
+                request.dpNumList(),
+                request.tripleNumList(),
+                request.hrNumList()));
+    }
+
+    /** 투수별 아웃 유발 번호 — userId → outNumList */
+    public Map<Long, List<Integer>> getOutNumbers() {
+        return toNumberMap(PlayerSetupNumbers::getOutNumList);
+    }
+
+    /** 투수별 병살 유발 번호 — userId → dpNumList */
+    public Map<Long, List<Integer>> getDpNumbers() {
+        return toNumberMap(PlayerSetupNumbers::getDpNumList);
+    }
+
+    /** 타자별 3루타 유발 번호 — userId → tripleNumList */
+    public Map<Long, List<Integer>> getTripleNumbers() {
+        return toNumberMap(PlayerSetupNumbers::getTripleNumList);
+    }
+
+    /** 타자별 홈런 유발 번호 — userId → hrNumList */
+    public Map<Long, List<Integer>> getHrNumbers() {
+        return toNumberMap(PlayerSetupNumbers::getHrNumList);
+    }
+
+    private Map<Long, List<Integer>> toNumberMap(
+            java.util.function.Function<PlayerSetupNumbers, List<Integer>> extractor) {
+        Map<Long, List<Integer>> map = new HashMap<>();
+        for (PlayerSetupNumbers entry : ensurePlayerSetupNumbers()) {
+            map.put(entry.getUserId(), new ArrayList<>(extractor.apply(entry)));
+        }
+        return map;
+    }
+
+    private List<PlayerSetupNumbers> ensurePlayerSetupNumbers() {
+        if (playerSetupNumbers == null) {
+            playerSetupNumbers = new ArrayList<>();
+        }
+        return playerSetupNumbers;
     }
 
     @Builder
@@ -114,9 +160,69 @@ public class MatchInfo {
         this.pitcherCardHand = new ArrayList<>();
         this.mulliganDone = false;
         this.usedAsPitcherIds = new ArrayList<>();
-        this.outNumbers = new HashMap<>();
-        this.dpNumbers = new HashMap<>();
-        this.tripleNumbers = new HashMap<>();
-        this.hrNumbers = new HashMap<>();
+        this.playerSetupNumbers = new ArrayList<>();
+    }
+
+    /**
+     * 플레이어 1명의 블러핑 숫자 묶음.
+     * Redis nested List 직렬화를 위해 Map 대신 사용한다.
+     */
+    @Getter
+    @NoArgsConstructor(access = AccessLevel.PROTECTED)
+    public static class PlayerSetupNumbers {
+
+        private Long userId;
+        private List<Integer> outNumList = new ArrayList<>();
+        private List<Integer> dpNumList = new ArrayList<>();
+        private List<Integer> tripleNumList = new ArrayList<>();
+        private List<Integer> hrNumList = new ArrayList<>();
+
+        PlayerSetupNumbers(Long userId,
+                           List<Integer> outNumList,
+                           List<Integer> dpNumList,
+                           List<Integer> tripleNumList,
+                           List<Integer> hrNumList) {
+            this.userId = userId;
+            this.outNumList = new ArrayList<>(outNumList);
+            this.dpNumList = new ArrayList<>(dpNumList);
+            this.tripleNumList = new ArrayList<>(tripleNumList);
+            this.hrNumList = new ArrayList<>(hrNumList);
+        }
+
+        void ensureListsInitialized() {
+            if (outNumList == null) {
+                outNumList = new ArrayList<>();
+            }
+            if (dpNumList == null) {
+                dpNumList = new ArrayList<>();
+            }
+            if (tripleNumList == null) {
+                tripleNumList = new ArrayList<>();
+            }
+            if (hrNumList == null) {
+                hrNumList = new ArrayList<>();
+            }
+        }
+
+        /** Redis 역직렬화용 */
+        void setUserId(Long userId) {
+            this.userId = userId;
+        }
+
+        void setOutNumList(List<Integer> outNumList) {
+            this.outNumList = outNumList != null ? new ArrayList<>(outNumList) : new ArrayList<>();
+        }
+
+        void setDpNumList(List<Integer> dpNumList) {
+            this.dpNumList = dpNumList != null ? new ArrayList<>(dpNumList) : new ArrayList<>();
+        }
+
+        void setTripleNumList(List<Integer> tripleNumList) {
+            this.tripleNumList = tripleNumList != null ? new ArrayList<>(tripleNumList) : new ArrayList<>();
+        }
+
+        void setHrNumList(List<Integer> hrNumList) {
+            this.hrNumList = hrNumList != null ? new ArrayList<>(hrNumList) : new ArrayList<>();
+        }
     }
 }
