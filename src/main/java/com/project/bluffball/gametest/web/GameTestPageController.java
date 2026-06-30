@@ -15,7 +15,12 @@ public class GameTestPageController {
 
     @GetMapping({"", "/"})
     public String index() {
-        return "redirect:/game-test/SetupNumber.html";
+        return "redirect:/game-test/Home.html";
+    }
+
+    @GetMapping("/home")
+    public String home() {
+        return "redirect:/game-test/Home.html";
     }
 
     @GetMapping("/setup-number")
@@ -33,14 +38,24 @@ public class GameTestPageController {
         return "redirect:/game-test/PitcherSelect.html";
     }
 
-    @GetMapping("/pitcher-result")
-    public String pitcherResult() {
-        return "redirect:/game-test/PitcherResult.html";
+    @GetMapping("/pitcher-coord-select")
+    public String pitcherCoordSelect() {
+        return "redirect:/game-test/PitcherCoordSelect.html";
     }
 
     @GetMapping("/batter-select")
     public String batterSelect() {
-        return "redirect:/game-test/BatterSelect.html";
+        return "redirect:/game-test/BatterCoordSelect.html";
+    }
+
+    @GetMapping("/batter-coord-select")
+    public String batterCoordSelect() {
+        return "redirect:/game-test/BatterCoordSelect.html";
+    }
+
+    @GetMapping("/batter-timing-select")
+    public String batterTimingSelect() {
+        return "redirect:/game-test/BatterTimingSelect.html";
     }
 
     @GetMapping("/batter-result")

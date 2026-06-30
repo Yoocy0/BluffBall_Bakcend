@@ -1,5 +1,5 @@
 (() => {
-    const PAGE_VERSION = 'v4';
+    const PAGE_VERSION = 'v5';
 
     const PHASES = [
         { key: 'out', label: '아웃 번호', desc: '5개 선택 (1~12)', max: 5 },
@@ -34,13 +34,8 @@
         summaryHr: document.getElementById('summaryHr'),
         btnReset: document.getElementById('btnReset'),
         btnSubmit: document.getElementById('btnSubmit'),
-        btnSubmitWs: document.getElementById('btnSubmitWs'),
-        btnVerify: document.getElementById('btnVerify'),
-        btnNext: document.getElementById('btnNext'),
         log: document.getElementById('log'),
     };
-
-    let submitSucceeded = false;
 
     function log(message, type = '') {
         const line = document.createElement('div');
@@ -183,9 +178,6 @@
         const allDone = isSelectionComplete();
 
         els.btnSubmit.disabled = !allDone || !hasMatchId;
-        els.btnVerify.disabled = !hasMatchId;
-        els.btnSubmitWs.disabled = !allDone || !hasMatchId || !state.connected;
-        els.btnNext.disabled = !submitSucceeded || !hasMatchId;
     }
 
     function goToMulligan() {
@@ -196,15 +188,6 @@
         }
         sessionStorage.setItem('bluffball.matchSessionId', matchSessionId);
         window.location.href = `/game-test/Mulligan.html?matchSessionId=${encodeURIComponent(matchSessionId)}`;
-    }
-
-    function markSubmitSucceeded(data) {
-        const hasSaved = data && Object.keys(data.outNumbers || {}).length > 0;
-        submitSucceeded = hasSaved;
-        if (hasSaved) {
-            sessionStorage.setItem('bluffball.matchSessionId', getMatchSessionId());
-        }
-        updateActions();
     }
 
     function resetSelection() {
@@ -223,7 +206,6 @@
         els.wsStatus.className = `status ${connected ? 'connected' : 'disconnected'}`;
         els.btnConnect.disabled = connected;
         els.btnDisconnect.disabled = !connected;
-        updateActions();
     }
 
     function connectWebSocket() {
@@ -288,29 +270,7 @@
             const hr = (data.hrNumbers[uid] || []).join(', ');
             return `userId=${uid} | out=[${out}] dp=[${dp}] triple=[${triple}] hr=[${hr}]`;
         });
-        return `Redis 확인 (setupComplete=${data.setupComplete})\n${lines.join('\n')}`;
-    }
-
-    async function verifySetupNumbers() {
-        const matchSessionId = getMatchSessionId();
-        if (!matchSessionId) {
-            log('matchSessionId를 입력하세요.', 'err');
-            return null;
-        }
-
-        try {
-            const res = await fetch(`/game-test/api/match/${matchSessionId}/setup-numbers`);
-            if (!res.ok) {
-                throw new Error(`HTTP ${res.status}`);
-            }
-            const data = await res.json();
-            log(formatRedisResponse(data), 'ok');
-            markSubmitSucceeded(data);
-            return data;
-        } catch (e) {
-            log(`Redis 확인 실패: ${e.message}`, 'err');
-            return null;
-        }
+        return `setupComplete=${data.setupComplete} · ${lines.join(' / ')}`;
     }
 
     async function submitViaRest() {
@@ -333,41 +293,13 @@
                 throw new Error(`HTTP ${res.status} — ${text}`);
             }
             const data = await res.json();
-            log(`[REST 제출] POST /game-test/api/match/${matchSessionId}/setup-numbers`, 'ok');
-            log(`payload → ${JSON.stringify(payload)}`, 'ok');
-            log(formatRedisResponse(data), 'ok');
-            markSubmitSucceeded(data);
+            log(`제출 완료 — ${formatRedisResponse(data)}`, 'ok');
+            sessionStorage.setItem('bluffball.matchSessionId', matchSessionId);
             return data;
         } catch (e) {
-            log(`REST 제출 실패: ${e.message}`, 'err');
+            log(`제출 실패: ${e.message}`, 'err');
             return null;
         }
-    }
-
-    async function submitViaWebSocket() {
-        const matchSessionId = getMatchSessionId();
-        if (!state.connected || !state.stompClient?.connected) {
-            log('WebSocket에 먼저 연결하세요.', 'err');
-            return;
-        }
-
-        const payload = buildPayload();
-        const destination = `/app/game/${matchSessionId}/setup-numbers`;
-
-        state.stompClient.publish({
-            destination,
-            body: JSON.stringify(payload),
-            headers: { 'content-type': 'application/json' },
-        });
-
-        log(`[WS 전송] ${destination} → ${JSON.stringify(payload)}`, 'ok');
-
-        setTimeout(async () => {
-            const data = await verifySetupNumbers();
-            if (data && Object.keys(data.outNumbers || {}).length === 0) {
-                log('WS 전송 후 Redis에 값이 없습니다. REST 제출을 사용하세요.', 'err');
-            }
-        }, 500);
     }
 
     async function submitSetupNumbers() {
@@ -375,7 +307,15 @@
             log('모든 숫자를 선택하세요.', 'err');
             return;
         }
-        await submitViaRest();
+
+        els.btnSubmit.disabled = true;
+        const data = await submitViaRest();
+        if (data) {
+            log('멀리건 화면으로 이동합니다.', 'ok');
+            goToMulligan();
+            return;
+        }
+        updateActions();
     }
 
     async function createTestMatch() {
@@ -398,18 +338,15 @@
     els.btnDisconnect.addEventListener('click', disconnectWebSocket);
     els.btnReset.addEventListener('click', resetSelection);
     els.btnSubmit.addEventListener('click', submitSetupNumbers);
-    els.btnSubmitWs.addEventListener('click', submitViaWebSocket);
-    els.btnVerify.addEventListener('click', verifySetupNumbers);
-    els.btnNext.addEventListener('click', goToMulligan);
     els.matchSessionId.addEventListener('input', updateActions);
     els.matchSessionId.addEventListener('change', updateActions);
 
     if (els.pageVersion) {
-        els.pageVersion.textContent = `테스트 화면 ${PAGE_VERSION} — 제출은 REST(백엔드 API), WS는 선택 사항`;
+        els.pageVersion.textContent = `테스트 화면 ${PAGE_VERSION} — 제출 시 멀리건으로 이동`;
     }
 
     renderPhase();
     setConnected(false);
     updateActions();
-    log(`SetupNumber 테스트 화면 ${PAGE_VERSION} 준비 — 구버전이면 Ctrl+Shift+R로 새로고침`);
+    log(`SetupNumber 테스트 화면 ${PAGE_VERSION} — 구버전이면 Ctrl+Shift+R로 새로고침`);
 })();
