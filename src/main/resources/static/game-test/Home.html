@@ -8,11 +8,36 @@
 </head>
 <body class="home-body">
 <div class="home-page">
-    <h1 class="home-title">BluffBall</h1>
-    <button type="button" id="btnStart" class="home-start-btn">게임 시작</button>
-    <p id="startError" class="home-error" hidden></p>
+
+    <!-- 로그인 전 화면 -->
+    <section id="loginScreen" class="home-screen">
+        <h1 class="home-title">BluffBall</h1>
+        <p class="home-subtitle">소셜 로그인 후 게임을 시작하세요</p>
+
+        <div class="home-login-actions">
+            <button type="button" id="btnKakaoLogin" class="home-login-btn home-login-kakao">
+                카카오로 로그인
+            </button>
+            <button type="button" id="btnGoogleLogin" class="home-login-btn home-login-google">
+                구글로 로그인
+            </button>
+        </div>
+
+        <p id="loginError" class="home-error" hidden></p>
+    </section>
+
+    <!-- 로그인 후 화면 (기존 홈) -->
+    <section id="homeScreen" class="home-screen" hidden>
+        <h1 class="home-title">BluffBall</h1>
+        <p id="userInfo" class="home-user-info"></p>
+        <button type="button" id="btnStart" class="home-start-btn">게임 시작</button>
+        <button type="button" id="btnLogout" class="home-logout-btn">로그아웃</button>
+        <p id="startError" class="home-error" hidden></p>
+    </section>
+
 </div>
+<script src="/game-test/js/auth.js?v=1"></script>
 <script src="/game-test/js/game-nav.js?v=1"></script>
-<script src="/game-test/js/home.js?v=1"></script>
+<script src="/game-test/js/home.js?v=2"></script>
 </body>
 </html>

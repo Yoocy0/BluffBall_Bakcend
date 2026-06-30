@@ -626,6 +626,77 @@ button.danger {
     font-size: 0.9rem;
 }
 
+.home-title-sm {
+    font-size: clamp(2rem, 8vw, 3.5rem);
+    margin-bottom: 24px;
+}
+
+.home-subtitle {
+    margin: -32px 0 40px;
+    color: #9aa0a6;
+    font-size: 0.95rem;
+}
+
+.home-screen[hidden] {
+    display: none !important;
+}
+
+/* —— 로그인 —— */
+.home-login-actions {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+    align-items: center;
+    width: min(320px, 100%);
+    margin: 0 auto;
+}
+
+.home-login-btn {
+    width: 100%;
+    min-height: 52px;
+    padding: 14px 20px;
+    border-radius: 12px;
+    font-size: 1rem;
+    font-weight: 700;
+    border: none;
+    cursor: pointer;
+}
+
+.home-login-kakao {
+    background: #fee500;
+    color: #191919;
+}
+
+.home-login-google {
+    background: #ffffff;
+    color: #1a1d23;
+    border: 1px solid #dadce0;
+}
+
+.home-user-info {
+    margin: -32px 0 32px;
+    color: #81c995;
+    font-size: 0.9rem;
+}
+
+.home-logout-btn {
+    display: block;
+    margin: 20px auto 0;
+    padding: 10px 20px;
+    border-radius: 999px;
+    background: transparent;
+    color: #9aa0a6;
+    border: 1px solid #5f6368;
+    font-size: 0.85rem;
+    font-weight: 600;
+    cursor: pointer;
+}
+
+.home-logout-btn:hover {
+    color: #e8eaed;
+    border-color: #9aa0a6;
+}
+
 /* —— 중계 HUD —— */
 .play-body {
     position: relative;
