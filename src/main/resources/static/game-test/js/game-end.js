@@ -6,7 +6,6 @@
         winnerMsg: document.getElementById('winnerMsg'),
         lastTurnSummary: document.getElementById('lastTurnSummary'),
         matchIdLine: document.getElementById('matchIdLine'),
-        linkLastTurn: document.getElementById('linkLastTurn'),
     };
 
     function readData() {
@@ -95,15 +94,7 @@
         addRow('이닝', `${data.inning}회 ${data.isTop ? '초' : '말'}`);
     }
 
-    if (data.matchSessionId) {
-        if (els.matchIdLine) {
-            els.matchIdLine.textContent = `matchSessionId: ${data.matchSessionId}`;
-        }
-        if (els.linkLastTurn) {
-            els.linkLastTurn.href =
-                `/game-test/BatterResult.html?matchSessionId=${encodeURIComponent(data.matchSessionId)}`;
-        }
-    } else if (els.linkLastTurn) {
-        els.linkLastTurn.hidden = true;
+    if (data.matchSessionId && els.matchIdLine) {
+        els.matchIdLine.textContent = `matchSessionId: ${data.matchSessionId}`;
     }
 })();
