@@ -1,0 +1,19 @@
+# ─────────────────────────────────────────────────────────────
+# OAuth 로컬 설정 템플릿
+#
+# 1. 이 파일을 같은 폴더에 oauth-local.yml 로 복사
+# 2. 아래 값을 카카오/구글 개발자 콘솔에서 발급받은 키로 교체
+# 3. 각 콘솔 Redirect URI 등록:
+#    http://localhost:8080/game-test/OAuthCallback.html
+# 4. 서버 재시작
+#
+# oauth-local.yml 은 git에 올리지 마세요.
+# ─────────────────────────────────────────────────────────────
+
+oauth:
+  kakao:
+    client-id: "여기에_카카오_REST_API_키"
+    client-secret: "여기에_카카오_Client_Secret"
+  google:
+    client-id: "여기에_구글_Client_ID.apps.googleusercontent.com"
+    client-secret: "여기에_구글_Client_Secret"
