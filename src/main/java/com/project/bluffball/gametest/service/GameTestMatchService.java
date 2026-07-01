@@ -45,7 +45,10 @@ import java.util.UUID;
 @RequiredArgsConstructor
 public class GameTestMatchService {
 
-    private static final Long TEST_USER_ID = 1L;
+    /** REST·WebSocket 테스트에 사용하는 투수(선매칭) 유저 ID */
+    public static final Long TEST_WS_USER_ID = 1L;
+
+    private static final Long TEST_USER_ID = TEST_WS_USER_ID;
     /** setup-numbers 완료 조건(2명) 충족용 상대 플레이어 */
     private static final Long TEST_OPPONENT_USER_ID = 2L;
 
@@ -68,7 +71,7 @@ public class GameTestMatchService {
                 .id(matchSessionId)
                 .gameMode(GameMode.GENERAL)
                 .pitcherUserId(TEST_USER_ID)
-                .batterLineup(List.of(TEST_USER_ID))
+                .batterLineup(List.of(TEST_OPPONENT_USER_ID))
                 .build();
         matchInfo.ensureCollectionsInitialized();
 
@@ -82,7 +85,7 @@ public class GameTestMatchService {
         return new TestMatchCreateResponse(
                 matchSessionId,
                 TEST_USER_ID,
-                TEST_USER_ID);
+                TEST_OPPONENT_USER_ID);
     }
 
     public TestMatchSetupNumbersResponse submitSetupNumbers(String matchSessionId, SetupNumberRequest request) {

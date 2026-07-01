@@ -1,5 +1,5 @@
 (() => {
-    const PAGE_VERSION = 'v5';
+    const PAGE_VERSION = 'v6';
 
     const PHASES = [
         { key: 'out', label: '아웃 번호', desc: '5개 선택 (1~12)', max: 5 },
@@ -209,6 +209,25 @@
     }
 
     function connectWebSocket() {
+        void connectWebSocketAsync();
+    }
+
+    /** STOMP CONNECT용 JWT — 로그인 토큰 우선, 없으면 game-test 전용 토큰 */
+    async function resolveWsAccessToken() {
+        const loggedInToken = window.BluffBallAuth?.getAccessToken?.();
+        if (loggedInToken) {
+            return loggedInToken;
+        }
+        const res = await fetch('/game-test/api/ws-token');
+        if (!res.ok) {
+            throw new Error(`테스트 WS 토큰 발급 실패 (HTTP ${res.status})`);
+        }
+        const data = await res.json();
+        log(`테스트 WS 토큰 발급 — userId=${data.userId}`, 'ok');
+        return data.accessToken;
+    }
+
+    async function connectWebSocketAsync() {
         const matchSessionId = getMatchSessionId();
         if (!matchSessionId) {
             log('matchSessionId를 입력하거나 「테스트 매치 생성」을 먼저 누르세요.', 'err');
@@ -224,9 +243,20 @@
             state.stompClient.deactivate();
         }
 
+        let accessToken;
+        try {
+            accessToken = await resolveWsAccessToken();
+        } catch (e) {
+            log(`${e.message} — 홈에서 OAuth 로그인 후 다시 시도하세요.`, 'err');
+            return;
+        }
+
         const client = new StompJs.Client({
             webSocketFactory: () => new SockJS('/ws'),
-            reconnectDelay: 3000,
+            connectHeaders: {
+                Authorization: `Bearer ${accessToken}`,
+            },
+            reconnectDelay: 5000,
             onConnect: () => {
                 setConnected(true);
                 log(`WebSocket 연결 — /topic/game/${matchSessionId} 구독`, 'ok');
@@ -237,6 +267,8 @@
             },
             onStompError: (frame) => {
                 log(`STOMP 오류: ${frame.headers['message'] || frame.body}`, 'err');
+                client.deactivate();
+                setConnected(false);
             },
             onWebSocketClose: () => {
                 setConnected(false);
