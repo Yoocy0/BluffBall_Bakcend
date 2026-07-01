@@ -8,13 +8,13 @@ import com.project.bluffball.domain.game.service.usecase.reader.PitchCardReader;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Component;
 
+import java.util.ArrayList;
 import java.util.List;
 
 /**
  * 초기 카드 패 뽑기 실행 및 Redis 저장 전담 컴포넌트.
  *
- * <p>매치 생성 직후 서버가 호출한다.
- * 모드별 핸드 장수를 내부에서 결정하여 뽑기 후 MatchInfo.pitcherCardHand를 갱신한다.</p>
+ * <p>매치 참가자 전원에게 모드별 핸드 장수만큼 카드를 지급한다.</p>
  */
 @Component
 @RequiredArgsConstructor
@@ -27,27 +27,27 @@ public class CardHandDrawExecutor {
     private final GameModeRule gameModeRule;
 
     /**
-     * @param matchSessionId 매치 세션 ID
-     * @return 뽑힌 카드 ID 목록
+     * 모든 참가자에게 카드 패를 뽑아 저장한다.
+     *
+     * @return 참가자별 뽑힌 카드 ID 목록 (순서 = participantUserIds)
      */
-    public List<Long> execute(String matchSessionId) {
-        // 매치 조회 및 확인
+    public List<List<Long>> executeForAllParticipants(String matchSessionId) {
         MatchInfo matchInfo = matchInfoReader.getById(matchSessionId);
 
-        // 모드에 따른 초기 드로우 장수
         int handSize = gameModeRule.getHandSize(matchInfo.getGameMode());
-        // 전체 투수 구종 카드 리스트
         List<Long> allIds = pitchCardReader.findAllIds();
-        // 투수가 뽑은 구종 카드 리스트
-        List<Long> drawnIds = cardHandDrawer.draw(allIds, handSize);
+        List<Long> participantIds = matchInfo.getParticipantUserIds();
 
-        // 투수가 뽑은 카드 초기화
-        matchInfo.getPitcherCardHand().clear();
-        // 투수가 뽑은 카드로 추가
-        matchInfo.getPitcherCardHand().addAll(drawnIds);
-        // 초기 드로우 카드 레포지토리에 저장
+        matchInfo.clearMulliganPhase();
+
+        List<List<Long>> allHands = new ArrayList<>();
+        for (Long userId : participantIds) {
+            List<Long> drawnIds = cardHandDrawer.draw(allIds, handSize);
+            matchInfo.setPlayerCardHand(userId, drawnIds);
+            allHands.add(drawnIds);
+        }
+
         matchInfoRepository.save(matchInfo);
-
-        return drawnIds;
+        return allHands;
     }
 }

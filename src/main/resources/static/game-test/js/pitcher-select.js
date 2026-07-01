@@ -1,35 +1,16 @@
 (() => {
     const { getMatchSessionId, goWithMatch, mountBroadcastHud } = window.BluffBallNav;
 
-    const state = { pitchHand: [] };
     const pitchHand = document.getElementById('pitchHand');
 
-    async function prepareGame() {
-        const matchSessionId = getMatchSessionId();
-        if (!matchSessionId) {
-            goWithMatch('/game-test/Home.html');
-            return;
-        }
-
-        const res = await fetch(`/game-test/api/match/${matchSessionId}/prepare-pitch`, {
-            method: 'POST',
-        });
-        if (!res.ok) {
-            throw new Error(`HTTP ${res.status}`);
-        }
-        const data = await res.json();
-        state.pitchHand = data.pitchHand || [];
-        renderPitchHand();
-    }
-
-    function renderPitchHand() {
+    function renderPitchHand(cards) {
         pitchHand.innerHTML = '';
-        if (state.pitchHand.length === 0) {
-            pitchHand.innerHTML = '<p class="phase-desc">구종 패 없음</p>';
+        if (!cards?.length) {
+            pitchHand.innerHTML = '<p class="phase-desc">구종 패 없음 — 멀리건을 먼저 완료하세요.</p>';
             return;
         }
 
-        state.pitchHand.forEach((card) => {
+        cards.forEach((card) => {
             const btn = document.createElement('button');
             btn.type = 'button';
             btn.className = 'card-btn';
@@ -45,6 +26,41 @@
         });
     }
 
-    mountBroadcastHud();
-    prepareGame().catch(() => goWithMatch('/game-test/Home.html'));
+    function handleTurnResult() {
+        goWithMatch('/game-test/BatterResult.html');
+    }
+
+    function init() {
+        if (!BluffBallRole.requireLoginOrRedirect()) {
+            return;
+        }
+
+        BluffBallRole.ensureRoleSyncedFromStorage();
+
+        if (!BluffBallRole.isPitcher()) {
+            goWithMatch('/game-test/BatterWait.html');
+            return;
+        }
+
+        const matchSessionId = getMatchSessionId();
+        if (!matchSessionId || !BluffBallGameWs.isAllMulliganReady()) {
+            goWithMatch('/game-test/Mulligan.html');
+            return;
+        }
+
+        const cards = BluffBallGameWs.getStoredPitchHand();
+        renderPitchHand(cards);
+
+        BluffBallGameWs.attachInGamePhaseGuard();
+        BluffBallGameWs.on(BluffBallGameWs.EVENT.TURN_RESULT, handleTurnResult);
+
+        BluffBallGameWs.connect({
+            matchSessionId,
+            reconnectDelay: 5000,
+        });
+
+        mountBroadcastHud();
+    }
+
+    init();
 })();

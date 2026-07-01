@@ -42,11 +42,22 @@
     }
 
     async function fetchGameStatus(matchSessionId) {
-        const res = await fetch(`/game-test/api/match/${matchSessionId}/game-status`);
-        if (!res.ok) {
-            throw new Error(`HTTP ${res.status}`);
+        const fromWs = BluffBallGameWs?.getStoredTurnResult?.();
+        if (fromWs?.inning != null) {
+            return {
+                inning: fromWs.inning,
+                isTop: fromWs.isTop,
+                homeScore: fromWs.homeScore,
+                awayScore: fromWs.awayScore,
+                balls: fromWs.balls,
+                strikes: fromWs.strikes,
+                outs: fromWs.outs,
+                firstBase: fromWs.firstBase,
+                secondBase: fromWs.secondBase,
+                thirdBase: fromWs.thirdBase,
+            };
         }
-        return res.json();
+        throw new Error('스코어 정보 없음');
     }
 
     function formatInning(s) {

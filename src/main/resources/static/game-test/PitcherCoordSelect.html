@@ -13,8 +13,18 @@
     <section class="pitch-selected-summary" id="selectedPitchSummary"></section>
     <p class="coord-legend">녹색 = 스트라이크 존 · 타자에게 공개되는 시작 위치</p>
     <div id="coordGrid" class="coord-grid"></div>
+    <section id="waitPanel" class="panel wait-panel" hidden>
+        <p class="phase-desc">타자 선택 대기 중… TurnResultEvent를 기다립니다.</p>
+    </section>
 </main>
-<script src="/game-test/js/game-nav.js?v=1"></script>
-<script src="/game-test/js/pitcher-coord-select.js?v=2"></script>
+<script src="https://cdn.jsdelivr.net/npm/sockjs-client@1/dist/sockjs.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/@stomp/stompjs@7/bundles/stomp.umd.min.js"></script>
+<script src="/game-test/js/auth.js?v=1"></script>
+<script src="/game-test/js/ws-client.js?v=1"></script>
+<script src="/game-test/js/game-role.js?v=3"></script>
+<script src="/game-test/js/game-ws.js?v=6"></script>
+<script src="/game-test/js/card-catalog.js?v=1"></script>
+<script src="/game-test/js/game-nav.js?v=2"></script>
+<script src="/game-test/js/pitcher-coord-select.js?v=4"></script>
 </body>
 </html>

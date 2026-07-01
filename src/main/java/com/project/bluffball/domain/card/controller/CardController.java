@@ -1,14 +1,19 @@
 package com.project.bluffball.domain.card.controller;
 
+import com.project.bluffball.domain.card.dto.response.CoordinateCardResponse;
+import com.project.bluffball.domain.card.entity.CoordinateCard;
+import com.project.bluffball.domain.card.repository.CoordinateCardRepository;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.responses.ApiResponses;
 import io.swagger.v3.oas.annotations.tags.Tag;
+import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
+import java.util.Comparator;
 import java.util.List;
 
 /**
@@ -29,7 +34,10 @@ import java.util.List;
 @Tag(name = "Card", description = "인게임 카드 데이터 조회 API")
 @RestController
 @RequestMapping("/api/v1/cards")
+@RequiredArgsConstructor
 public class CardController {
+
+    private final CoordinateCardRepository coordinateCardRepository;
 
     /**
      * 구종 카드 전체 목록 조회.
@@ -83,9 +91,16 @@ public class CardController {
             @ApiResponse(responseCode = "200", description = "좌표 카드 목록 반환 성공")
     })
     @GetMapping("/coordinate")
-    public ResponseEntity<List<?>> getCoordinateCards() {
-        // TODO: CardService.getCoordinateCards()
-        return ResponseEntity.ok().build();
+    public ResponseEntity<List<CoordinateCardResponse>> getCoordinateCards() {
+        List<CoordinateCardResponse> cards = coordinateCardRepository.findAll().stream()
+                .sorted(Comparator.comparingInt(CoordinateCard::getCoordinateNumber))
+                .map(card -> new CoordinateCardResponse(
+                        card.getId(),
+                        card.getCoordinateNumber(),
+                        card.getName(),
+                        card.isStrike()))
+                .toList();
+        return ResponseEntity.ok(cards);
     }
 
     /**

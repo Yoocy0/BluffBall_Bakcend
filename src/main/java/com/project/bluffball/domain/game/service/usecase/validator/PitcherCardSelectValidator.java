@@ -15,12 +15,12 @@ public class PitcherCardSelectValidator {
                          Long requestUserId,
                          Long pitchCardId,
                          Long coordinateCardId,
-                         boolean mulliganDone,
+                         boolean pitcherMulliganDone,
                          boolean pitcherAlreadySelected) {
         if (pitcherAlreadySelected) {
             throw new IllegalStateException("이미 투수 카드 선택이 완료된 턴입니다.");
         }
-        if (!mulliganDone) {
+        if (!pitcherMulliganDone) {
             throw new IllegalStateException("카드 교체(멀리건) 확정 후에 투구할 수 있습니다.");
         }
         if (pitcherUserId == null || !pitcherUserId.equals(requestUserId)) {

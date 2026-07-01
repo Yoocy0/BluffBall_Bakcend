@@ -13,11 +13,8 @@
     const countdownEl = document.getElementById('countdown');
 
     function readData() {
-        try {
-            return JSON.parse(sessionStorage.getItem('bluffball.batterResult') || 'null');
-        } catch (_) {
-            return null;
-        }
+        return BluffBallGameWs.getStoredTurnResult()
+            || BluffBallGameWs.getStoredGameEnd();
     }
 
     function formatTurnResult(name) {
@@ -69,12 +66,7 @@
     }
 
     function navigateNext(data) {
-        if (data.gameOver) {
-            sessionStorage.setItem('bluffball.gameEnd', JSON.stringify(data));
-            goWithMatch('/game-test/GameEnd.html');
-            return;
-        }
-        goWithMatch('/game-test/PitcherSelect.html');
+        BluffBallGameWs.navigateAfterTurnResult(data);
     }
 
     function showResultCard(data) {
@@ -130,10 +122,26 @@
     }
 
     async function run() {
+        BluffBallRole.ensureRoleSyncedFromStorage();
+
+        const matchSessionId = window.BluffBallNav?.getMatchSessionId?.();
+        if (matchSessionId && typeof StompJs !== 'undefined') {
+            BluffBallGameWs.attachInGamePhaseGuard();
+            try {
+                BluffBallGameWs.connect({ matchSessionId, reconnectDelay: 0 });
+            } catch (_) {
+                /* ignore */
+            }
+        }
+
         const data = readData();
         if (!data?.turnResult) {
             goWithMatch('/game-test/Home.html');
             return;
+        }
+
+        if (data.pitcherUserId != null) {
+            BluffBallRole.syncRoleFromPitcherUserId(data.pitcherUserId);
         }
 
         sessionStorage.removeItem('bluffball.batterCoordinate');
@@ -141,9 +149,10 @@
         sessionStorage.removeItem('bluffball.selectedPitchCard');
 
         mountBroadcastHud().then((status) => {
-            if (status) {
-                renderBroadcastHud(document.getElementById('broadcastHud'), {
-                    ...status,
+            const hud = document.getElementById('broadcastHud');
+            if (hud && data) {
+                renderBroadcastHud(hud, {
+                    ...(status || {}),
                     balls: data.balls,
                     strikes: data.strikes,
                     outs: data.outs,

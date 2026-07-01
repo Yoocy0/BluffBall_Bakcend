@@ -620,6 +620,118 @@ button.danger {
     font-weight: 800;
 }
 
+/* —— 홈 모드 선택 —— */
+.home-mode-list {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+    align-items: center;
+    width: min(320px, 100%);
+    margin: 0 auto;
+}
+
+.home-mode-btn {
+    width: 100%;
+    min-height: 52px;
+    padding: 14px 20px;
+    border-radius: 12px;
+    font-size: 1rem;
+    font-weight: 700;
+    border: none;
+    cursor: pointer;
+    background: linear-gradient(135deg, #8ab4f8, #6a9ae8);
+    color: #1a1d23;
+}
+
+.home-mode-btn:hover:not(:disabled) {
+    filter: brightness(1.06);
+}
+
+.home-mode-btn-disabled,
+.home-mode-btn:disabled {
+    background: #3c4043;
+    color: #9aa0a6;
+    cursor: not-allowed;
+    opacity: 0.85;
+}
+
+.home-mode-btn-cancel {
+    background: #3c4043;
+    color: #f8d7da;
+    border: 1px solid #5c2b2b;
+    margin-top: 24px;
+}
+
+/* —— 매칭 대기 —— */
+.matching-status-label {
+    margin: 0 0 8px;
+    font-size: 1.25rem;
+    font-weight: 700;
+    color: #8ab4f8;
+}
+
+.matching-timer {
+    margin: 0 0 12px;
+    font-size: clamp(2.5rem, 10vw, 4rem);
+    font-weight: 900;
+    font-variant-numeric: tabular-nums;
+    color: #fdd663;
+    letter-spacing: 0.06em;
+}
+
+.matching-hint {
+    margin: 0 0 8px;
+    color: #9aa0a6;
+    font-size: 0.95rem;
+}
+
+/* —— 매칭 완료 모달 —— */
+.match-modal {
+    position: fixed;
+    inset: 0;
+    z-index: 300;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: rgba(10, 12, 16, 0.75);
+    backdrop-filter: blur(4px);
+}
+
+.match-modal[hidden] {
+    display: none !important;
+}
+
+.match-modal-card {
+    text-align: center;
+    padding: 40px 32px;
+    border-radius: 16px;
+    background: #252830;
+    border: 1px solid #3c4043;
+    min-width: min(320px, 90vw);
+    box-shadow: 0 16px 48px rgba(0, 0, 0, 0.5);
+}
+
+.match-modal-title {
+    margin: 0 0 16px;
+    font-size: 1.35rem;
+    font-weight: 800;
+    color: #81c995;
+}
+
+.match-modal-countdown {
+    margin: 0 0 12px;
+    font-size: 4rem;
+    font-weight: 900;
+    color: #fdd663;
+    line-height: 1;
+}
+
+.match-modal-sub {
+    margin: 0;
+    color: #9aa0a6;
+    font-size: 0.9rem;
+}
+
 .home-error {
     margin-top: 16px;
     color: #f28b82;
@@ -902,6 +1014,137 @@ button.danger {
 .timing-panel.is-visible {
     opacity: 1;
     transform: translateY(0);
+}
+
+/* —— 타자 플레이: 좌표 + 우측 타이밍 —— */
+.batter-play-layout {
+    max-width: 560px;
+}
+
+.batter-play-main {
+    width: 100%;
+}
+
+.batter-coord-timing-row {
+    display: flex;
+    align-items: flex-start;
+    gap: 14px;
+    margin-top: 4px;
+}
+
+.batter-coord-column {
+    flex: 1;
+    min-width: 0;
+}
+
+.batter-timing-rail {
+    width: 108px;
+    flex-shrink: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    padding-top: 52px;
+    opacity: 0;
+    transform: translateX(8px);
+    transition: opacity 0.2s ease, transform 0.2s ease;
+}
+
+.batter-timing-rail.is-visible {
+    opacity: 1;
+    transform: translateX(0);
+}
+
+.timing-rail-title {
+    margin: 0 0 4px;
+    font-size: 0.85rem;
+    font-weight: 700;
+    color: #8ab4f8;
+    text-align: center;
+}
+
+.timing-rail-grid {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+}
+
+.timing-rail-grid .timing-btn {
+    width: 100%;
+    min-height: 44px;
+    padding: 10px 8px;
+    font-size: 0.82rem;
+    line-height: 1.2;
+}
+
+/* —— 타자 대기 —— */
+.batter-wait-page {
+    min-height: 100vh;
+}
+
+.batter-wait-main {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    min-height: 100vh;
+    padding: 72px 16px 32px;
+}
+
+.batter-wait-card {
+    text-align: center;
+    max-width: 420px;
+    width: 100%;
+    padding: 40px 28px;
+    border-radius: 16px;
+    background: #252830;
+    border: 1px solid #3c4043;
+}
+
+.batter-wait-label {
+    margin: 0 0 8px;
+    font-size: 0.9rem;
+    font-weight: 700;
+    color: #8ab4f8;
+    letter-spacing: 0.08em;
+}
+
+.batter-wait-title {
+    margin: 0 0 12px;
+    font-size: 1.35rem;
+    font-weight: 700;
+    color: #e8eaed;
+    line-height: 1.4;
+}
+
+.batter-wait-sub {
+    margin: 0 0 24px;
+    color: #9aa0a6;
+    font-size: 0.9rem;
+    line-height: 1.5;
+}
+
+.batter-wait-spinner {
+    width: 40px;
+    height: 40px;
+    margin: 0 auto 16px;
+    border: 3px solid #3c4043;
+    border-top-color: #8ab4f8;
+    border-radius: 50%;
+    animation: batter-wait-spin 0.9s linear infinite;
+}
+
+@keyframes batter-wait-spin {
+    to { transform: rotate(360deg); }
+}
+
+.batter-wait-status {
+    margin: 0;
+    color: #bdc1c6;
+    font-size: 0.85rem;
+}
+
+.wait-panel {
+    margin-top: 16px;
+    text-align: center;
 }
 
 .turn-result-countdown {

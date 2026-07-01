@@ -14,8 +14,10 @@ import org.springframework.data.redis.core.RedisHash;
 
 import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 
 /**
  * Redis 저장용 매치 설정 및 진행 정보 객체.
@@ -62,8 +64,14 @@ public class MatchInfo {
      */
     private List<Long> pitcherCardHand;
 
-    /** 멀리건(카드 교체) 완료 여부 — 경기 당 1회만 허용. */
+    /** 멀리건(카드 교체) 완료 여부 — 모든 참가자 완료 시 true (하위 호환). */
     private boolean mulliganDone;
+
+    /** 플레이어별 구종 카드 패 — Redis List 구조 */
+    private List<PlayerCardHand> playerCardHands;
+
+    /** 멀리건을 완료한 참가자 userId 목록 */
+    private List<Long> mulliganDoneUserIds;
 
     /**
      * 이 경기에서 투수로 등판했던 유저 ID 목록.
@@ -74,9 +82,109 @@ public class MatchInfo {
     /** 플레이어별 블러핑 숫자 — Redis에 List로 저장 */
     private List<PlayerSetupNumbers> playerSetupNumbers;
 
-    /** 멀리건 완료 처리 — MulliganExecutor에서만 호출한다. */
+    /** 멀리건 완료 처리 — 모든 참가자 완료 시 호출 (하위 호환). */
     public void completeMulligan() {
         this.mulliganDone = true;
+    }
+
+    /** 특정 플레이어의 멀리건 완료 처리 */
+    public void completeMulliganForUser(Long userId) {
+        ensureCollectionsInitialized();
+        if (!mulliganDoneUserIds.contains(userId)) {
+            mulliganDoneUserIds.add(userId);
+        }
+        if (isAllMulliganDone(getParticipantUserIds())) {
+            this.mulliganDone = true;
+        }
+    }
+
+    public boolean isMulliganDoneForUser(Long userId) {
+        ensureCollectionsInitialized();
+        return mulliganDoneUserIds.contains(userId);
+    }
+
+    public boolean isAllMulliganDone(List<Long> participantUserIds) {
+        ensureCollectionsInitialized();
+        return !participantUserIds.isEmpty()
+                && mulliganDoneUserIds.containsAll(participantUserIds);
+    }
+
+    /** 매치 참가자 userId (중복 제거, 순서 유지) */
+    public List<Long> getParticipantUserIds() {
+        ensureCollectionsInitialized();
+        Set<Long> ids = new LinkedHashSet<>();
+        if (pitcherUserId != null) {
+            ids.add(pitcherUserId);
+        }
+        ids.addAll(batterLineup);
+        return new ArrayList<>(ids);
+    }
+
+    public List<Long> getPlayerCardHand(Long userId) {
+        ensureCollectionsInitialized();
+        for (PlayerCardHand entry : playerCardHands) {
+            if (userId.equals(entry.getUserId())) {
+                return new ArrayList<>(entry.getCardIds());
+            }
+        }
+        return new ArrayList<>();
+    }
+
+    public void setPlayerCardHand(Long userId, List<Long> cardIds) {
+        ensureCollectionsInitialized();
+        playerCardHands.removeIf(entry -> userId.equals(entry.getUserId()));
+        playerCardHands.add(new PlayerCardHand(userId, cardIds));
+        syncPitcherCardHandFromPlayer();
+    }
+
+    /** 현재 등판 투수의 패를 pitcherCardHand에 동기화 */
+    public void syncPitcherCardHandFromPlayer() {
+        ensureCollectionsInitialized();
+        pitcherCardHand.clear();
+        if (pitcherUserId != null) {
+            pitcherCardHand.addAll(getPlayerCardHand(pitcherUserId));
+        }
+    }
+
+    public void clearMulliganPhase() {
+        ensureCollectionsInitialized();
+        this.mulliganDone = false;
+        mulliganDoneUserIds.clear();
+        playerCardHands.clear();
+        pitcherCardHand.clear();
+    }
+
+    /**
+     * 공수 교대 시 멀리건·패를 초기화한다.
+     * {@link com.project.bluffball.domain.game.service.usecase.executor.HalfInningRoleSwapExecutor} 전용.
+     */
+    public void resetForNewHalfInning() {
+        clearMulliganPhase();
+    }
+
+    /**
+     * 싱글 모드(1 vs 1) 공수 교대 — 투수·타자 userId를 교환한다.
+     *
+     * @return 새 등판 투수 userId
+     */
+    public Long swapRolesForSingleMode() {
+        ensureCollectionsInitialized();
+        if (batterLineup.isEmpty()) {
+            throw new IllegalStateException("타순이 비어 있어 역할 교환을 할 수 없습니다.");
+        }
+
+        Long previousPitcher = pitcherUserId;
+        Long newPitcher = batterLineup.get(0);
+
+        if (!usedAsPitcherIds.contains(previousPitcher)) {
+            usedAsPitcherIds.add(previousPitcher);
+        }
+
+        pitcherUserId = newPitcher;
+        batterLineup.set(0, previousPitcher);
+        syncPitcherCardHandFromPlayer();
+
+        return newPitcher;
     }
 
     /**
@@ -96,7 +204,16 @@ public class MatchInfo {
         if (playerSetupNumbers == null) {
             playerSetupNumbers = new ArrayList<>();
         }
+        if (playerCardHands == null) {
+            playerCardHands = new ArrayList<>();
+        }
+        if (mulliganDoneUserIds == null) {
+            mulliganDoneUserIds = new ArrayList<>();
+        }
         for (PlayerSetupNumbers entry : playerSetupNumbers) {
+            entry.ensureListsInitialized();
+        }
+        for (PlayerCardHand entry : playerCardHands) {
             entry.ensureListsInitialized();
         }
     }
@@ -159,6 +276,8 @@ public class MatchInfo {
         this.currentBatterIndex = 0;
         this.pitcherCardHand = new ArrayList<>();
         this.mulliganDone = false;
+        this.playerCardHands = new ArrayList<>();
+        this.mulliganDoneUserIds = new ArrayList<>();
         this.usedAsPitcherIds = new ArrayList<>();
         this.playerSetupNumbers = new ArrayList<>();
     }
@@ -223,6 +342,37 @@ public class MatchInfo {
 
         void setHrNumList(List<Integer> hrNumList) {
             this.hrNumList = hrNumList != null ? new ArrayList<>(hrNumList) : new ArrayList<>();
+        }
+    }
+
+    /**
+     * 플레이어 1명의 구종 카드 패.
+     * Redis nested List 직렬화를 위해 Map 대신 사용한다.
+     */
+    @Getter
+    @NoArgsConstructor(access = AccessLevel.PROTECTED)
+    public static class PlayerCardHand {
+
+        private Long userId;
+        private List<Long> cardIds = new ArrayList<>();
+
+        PlayerCardHand(Long userId, List<Long> cardIds) {
+            this.userId = userId;
+            this.cardIds = new ArrayList<>(cardIds);
+        }
+
+        void ensureListsInitialized() {
+            if (cardIds == null) {
+                cardIds = new ArrayList<>();
+            }
+        }
+
+        void setUserId(Long userId) {
+            this.userId = userId;
+        }
+
+        void setCardIds(List<Long> cardIds) {
+            this.cardIds = cardIds != null ? new ArrayList<>(cardIds) : new ArrayList<>();
         }
     }
 }

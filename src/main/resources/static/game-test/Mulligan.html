@@ -9,21 +9,23 @@
 <body>
 <div class="page">
     <h1>멀리건 — 구종 카드</h1>
-    <p class="subtitle">초기 드로우 3장 · 교체 시 교체 전→후 표시 · 교체 또는 확정 후 투수 선택으로 이동</p>
+    <p class="subtitle">초기 드로우 3장 · WebSocket cards/mulligan</p>
     <p class="nav-row"><a class="nav-link" href="/game-test/SetupNumber.html">← 숫자 선택으로</a></p>
 
     <section class="panel">
-        <h2>매치</h2>
         <div class="row">
-            <input type="text" id="matchSessionId" placeholder="matchSessionId (UUID)">
             <span id="mulliganStatus" class="status disconnected">대기</span>
         </div>
-        <p id="handStatus" class="phase-desc">카드 드로우 후 멀리건을 진행하세요.</p>
+        <p id="handStatus" class="phase-desc">CardHandEvent 패를 불러옵니다.</p>
     </section>
 
     <section class="panel" id="swapResultPanel" hidden>
         <h2>교체 결과</h2>
         <div id="swapResultList" class="swap-result-list"></div>
+    </section>
+
+    <section class="panel" id="mulliganWaitPanel" hidden>
+        <p class="phase-desc">내 멀리건 완료 — 상대방 멀리건을 기다리는 중…</p>
     </section>
 
     <section class="panel">
@@ -42,7 +44,13 @@
     </section>
 </div>
 
-<script src="/game-test/js/game-nav.js?v=1"></script>
-<script src="/game-test/js/mulligan.js?v=4"></script>
+<script src="https://cdn.jsdelivr.net/npm/sockjs-client@1/dist/sockjs.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/@stomp/stompjs@7/bundles/stomp.umd.min.js"></script>
+<script src="/game-test/js/auth.js?v=1"></script>
+<script src="/game-test/js/ws-client.js?v=1"></script>
+<script src="/game-test/js/game-role.js?v=3"></script>
+<script src="/game-test/js/game-ws.js?v=6"></script>
+<script src="/game-test/js/game-nav.js?v=2"></script>
+<script src="/game-test/js/mulligan.js?v=8"></script>
 </body>
 </html>

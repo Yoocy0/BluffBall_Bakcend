@@ -3,27 +3,15 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>BluffBall — 숫자 선택 (SetupNumber)</title>
+    <title>BluffBall — 숫자 선택</title>
     <link rel="stylesheet" href="/game-test/css/game-test.css">
 </head>
 <body>
 <div class="page">
     <h1>블러핑 숫자 선택</h1>
-    <p class="subtitle">게임 시작 직후 setup-numbers API 테스트 · 아웃 5 → 병살 1 → 3루타 1 → 홈런 1</p>
-    <p id="pageVersion" class="subtitle version-tag"></p>
-
-    <section class="panel">
-        <h2>연결</h2>
-        <div class="row">
-            <input type="text" id="matchSessionId" placeholder="matchSessionId (UUID)">
-            <span id="wsStatus" class="status disconnected">미연결</span>
-        </div>
-        <div class="actions">
-            <button type="button" id="btnCreateMatch" class="secondary">테스트 매치 생성</button>
-            <button type="button" id="btnConnect" class="primary">WebSocket 연결</button>
-            <button type="button" id="btnDisconnect" class="secondary" disabled>연결 해제</button>
-        </div>
-    </section>
+    <p class="subtitle">아웃 5 → 병살 1 → 3루타 1 → 홈런 1</p>
+    <p id="matchSessionLabel" class="subtitle version-tag"></p>
+    <p id="setupStatus" class="subtitle">WebSocket 연결 중...</p>
 
     <section class="panel">
         <h2>숫자 선택</h2>
@@ -51,7 +39,10 @@
 <script src="https://cdn.jsdelivr.net/npm/sockjs-client@1/dist/sockjs.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/@stomp/stompjs@7/bundles/stomp.umd.min.js"></script>
 <script src="/game-test/js/auth.js?v=1"></script>
-<script src="/game-test/js/game-nav.js?v=1"></script>
-<script src="/game-test/js/setup-number.js?v=6"></script>
+<script src="/game-test/js/ws-client.js?v=1"></script>
+<script src="/game-test/js/game-role.js?v=2"></script>
+<script src="/game-test/js/game-ws.js?v=6"></script>
+<script src="/game-test/js/game-nav.js?v=2"></script>
+<script src="/game-test/js/setup-number.js?v=11"></script>
 </body>
 </html>

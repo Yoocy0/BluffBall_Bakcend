@@ -43,6 +43,11 @@ public class GameTestPageController {
         return "redirect:/game-test/PitcherCoordSelect.html";
     }
 
+    @GetMapping("/batter-wait")
+    public String batterWait() {
+        return "redirect:/game-test/BatterWait.html";
+    }
+
     @GetMapping("/batter-select")
     public String batterSelect() {
         return "redirect:/game-test/BatterCoordSelect.html";

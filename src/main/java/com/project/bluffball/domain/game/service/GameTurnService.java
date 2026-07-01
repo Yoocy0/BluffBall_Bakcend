@@ -78,7 +78,7 @@ public class GameTurnService {
                 userId,
                 request.pitchCardId(),
                 request.coordinateCardId(),
-                matchInfoReader.isMulliganDone(matchSessionId),
+                matchInfoReader.isMulliganDoneForUser(matchSessionId, pitcherUserId),
                 turnResultSessionReader.isPitcherSelectionComplete(matchSessionId));
 
         // 투수가 선택한 시작 좌표
