@@ -65,6 +65,35 @@ public class MatchInfoReader {
     }
 
     /**
+     * 유저가 해당 매치의 참가자인지 반환한다. (Service·WebSocket Security ✅)
+     *
+     * <p>현재 투수, 타순 라인업, 과거 투수 등판 이력 중 하나에 포함되면 참가자로 본다.
+     * 매치가 없으면 {@code false}를 반환한다.</p>
+     *
+     * @param matchSessionId 매치 세션 ID
+     * @param userId         검증 대상 유저 ID
+     * @return 참가자이면 {@code true}
+     */
+    public boolean isParticipant(String matchSessionId, Long userId) {
+        return matchInfoRepository.findById(matchSessionId)
+                .map(matchInfo -> {
+                    matchInfo.ensureCollectionsInitialized();
+                    return containsParticipant(matchInfo, userId);
+                })
+                .orElse(false);
+    }
+
+    private boolean containsParticipant(MatchInfo matchInfo, Long userId) {
+        if (userId.equals(matchInfo.getPitcherUserId())) {
+            return true;
+        }
+        if (matchInfo.getBatterLineup().contains(userId)) {
+            return true;
+        }
+        return matchInfo.getUsedAsPitcherIds().contains(userId);
+    }
+
+    /**
      * 모든 플레이어의 블러핑 숫자 제출이 완료됐는지 확인한다. (Service ✅)
      *
      * <p>outNumbers Map의 size를 모드별 필요 인원 수와 비교한다.

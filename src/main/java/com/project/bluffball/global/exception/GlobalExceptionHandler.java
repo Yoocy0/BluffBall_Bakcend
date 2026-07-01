@@ -47,4 +47,16 @@ public class GlobalExceptionHandler {
     public ResponseEntity<Map<String, String>> handleOAuthApi(OAuthApiException ex) {
         return ResponseEntity.status(HttpStatus.SERVICE_UNAVAILABLE).body(Map.of("message", ex.getMessage()));
     }
+
+    /** 매칭 큐 상태 충돌 (409) */
+    @ExceptionHandler(MatchConflictException.class)
+    public ResponseEntity<Map<String, String>> handleMatchConflict(MatchConflictException ex) {
+        return ResponseEntity.status(HttpStatus.CONFLICT).body(Map.of("message", ex.getMessage()));
+    }
+
+    /** 매칭 큐 등록 없음 (404) */
+    @ExceptionHandler(MatchNotFoundException.class)
+    public ResponseEntity<Map<String, String>> handleMatchNotFound(MatchNotFoundException ex) {
+        return ResponseEntity.status(HttpStatus.NOT_FOUND).body(Map.of("message", ex.getMessage()));
+    }
 }

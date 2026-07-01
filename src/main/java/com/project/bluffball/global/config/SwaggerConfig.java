@@ -30,6 +30,8 @@ public class SwaggerConfig {
                                 ## 인증
                                 - REST API: `Authorization: Bearer {JWT Access Token}` 헤더 사용
                                 - WebSocket: STOMP CONNECT 프레임의 `Authorization` 헤더 사용
+                                - `/topic/user/{userId}/...` 구독 시 JWT userId와 경로 userId 일치 필수
+                                - `/topic/game/{matchSessionId}/...` 구독·`/app/game/...` 전송 시 해당 매치 참가자만 허용
                                 
                                 ## WebSocket 엔드포인트 (STOMP)
                                 OpenAPI 스펙에 포함되지 않는 WebSocket 엔드포인트는 아래와 같다.
@@ -43,6 +45,7 @@ public class SwaggerConfig {
                                 | 수신 | `/app/game/{matchSessionId}/batter/select-card` | 타자 좌표+타이밍 선택 |
                                 | 송신 | `/topic/game/{matchSessionId}` | 카드패·준비 이벤트 브로드캐스트 |
                                 | 송신 | `/topic/game/{matchSessionId}/result` | 턴 결과·경기 종료 브로드캐스트 |
+                                | 송신 | `/topic/user/{userId}/match` | 매칭 성사 알림 (개인 토픽, JWT userId 일치 필수) |
                                 """)
                         .version("v0.1.0 (MVP - Single Mode)"))
                 .components(new Components()

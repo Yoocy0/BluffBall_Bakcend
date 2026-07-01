@@ -59,3 +59,13 @@ public String createSingleMatch(...) {
 | `getPitchCardDetails(List<Long>)` | DTO(record) | Service ✅ |
 
 **규칙**: Service 코드에서 Entity 타입 변수가 존재하면 안 된다.
+
+---
+
+## 주석 작성 규칙
+
+- **모든 public·private 메서드**에 역할·파라미터·반환값·예외를 Javadoc으로 작성한다.
+- **클래스 필드·상수**에 용도를 한 줄 주석으로 작성한다.
+- **Service 내부 분기·핵심 로컬 변수**에는 왜 필요한지 한 줄 인라인 주석을 달 수 있다.
+- 자명한 getter/setter·Lombok 생성 코드에는 주석을 생략한다.
+- `DEV_NOTES.md`와 달리 API 문서(Swagger `@Operation`)와 Javadoc은 역할이 겹치더라도 **코드 독자를 위해 Javadoc을 우선** 작성한다.
