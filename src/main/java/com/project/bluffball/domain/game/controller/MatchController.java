@@ -76,18 +76,17 @@ public class MatchController {
      * 싱글 모드 매칭 큐 취소.
      *
      * <p>대기 중인 매칭 큐에서 요청 유저를 제거한다.
-     * 이미 매칭이 성사된 경우에는 취소가 불가하며 에러를 반환한다.</p>
+     * MATCHED 잔여 Entry(경기 종료 후 재매칭 등)도 정리할 수 있다.</p>
      */
     @Operation(
             summary = "싱글 모드 매칭 큐 취소",
-            description = "대기 중인 매칭 큐에서 이탈한다. 이미 매칭이 성사된 경우 취소 불가.",
+            description = "대기 중인 매칭 큐에서 이탈하거나, MATCHED 잔여 Entry를 정리한다.",
             security = @SecurityRequirement(name = "bearerAuth")
     )
     @ApiResponses({
             @ApiResponse(responseCode = "204", description = "큐 취소 성공"),
             @ApiResponse(responseCode = "401", description = "인증 토큰 없음 또는 만료"),
-            @ApiResponse(responseCode = "404", description = "큐에 등록된 유저 없음"),
-            @ApiResponse(responseCode = "409", description = "이미 매칭이 성사되어 취소 불가")
+            @ApiResponse(responseCode = "404", description = "큐에 등록된 유저 없음")
     })
     @DeleteMapping("/queue/cancel")
     public ResponseEntity<Void> cancelQueue() {

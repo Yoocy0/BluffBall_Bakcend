@@ -1,35 +1,102 @@
 <!DOCTYPE html>
+
 <html lang="ko">
+
 <head>
+
     <meta charset="UTF-8">
+
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
     <title>BluffBall — 타자 선택</title>
+
     <link rel="stylesheet" href="/game-test/css/game-test.css">
+
 </head>
+
 <body class="play-body">
+
 <div id="broadcastHud" class="broadcast-hud"></div>
-<main class="play-main">
-    <div class="start-coord-banner">
-        <p class="label">투수 시작 좌표</p>
-        <p id="startCoordinate" class="value">-</p>
+
+<main class="play-main batter-play-layout">
+
+    <div class="batter-play-main">
+
+        <div class="start-coord-banner">
+
+            <p class="label">투수 시작 좌표</p>
+
+            <p id="startCoordinate" class="value">-</p>
+
+        </div>
+
+
+
+        <div class="batter-timer-row">
+
+            <p class="result-label">남은 시간 (좌표+타이밍 합산 5초)</p>
+
+            <p id="timerDisplay" class="timer-value">5.0s</p>
+
+        </div>
+
+
+
+        <div class="batter-coord-timing-row">
+
+            <div class="batter-coord-column">
+
+                <p class="play-phase-title">HIT · 예측 좌표</p>
+
+                <p class="coord-legend">1~25 격자 · 폭투 존(0) 별도</p>
+
+                <div id="coordGrid" class="coord-grid"></div>
+
+                <button type="button" id="btnCoordZero" class="secondary coord-zero-btn">폭투 존 (0)</button>
+
+            </div>
+
+
+
+            <aside id="timingRail" class="batter-timing-rail" hidden aria-label="타이밍 선택">
+
+                <p class="timing-rail-title">타이밍</p>
+
+                <div id="timingGrid" class="timing-rail-grid"></div>
+
+            </aside>
+
+        </div>
+
+
+
+        <section id="resultWaitPanel" class="panel wait-panel" hidden>
+
+            <p class="phase-desc">판정 대기 중…</p>
+
+        </section>
+
     </div>
 
-    <div class="batter-timer-row">
-        <p class="result-label">남은 시간 (좌표+타이밍 합산 5초)</p>
-        <p id="timerDisplay" class="timer-value">5.0s</p>
-    </div>
-
-    <p class="play-phase-title">HIT · 예측 좌표</p>
-    <p class="coord-legend">1~25 격자 · 폭투 존(0) 별도</p>
-    <div id="coordGrid" class="coord-grid"></div>
-    <button type="button" id="btnCoordZero" class="secondary coord-zero-btn">폭투 존 (0)</button>
-
-    <section id="timingPanel" class="timing-panel" hidden>
-        <p class="play-phase-title">HIT · 타이밍</p>
-        <div id="timingGrid" class="timing-grid"></div>
-    </section>
 </main>
-<script src="/game-test/js/game-nav.js?v=1"></script>
-<script src="/game-test/js/batter-coord-select.js?v=2"></script>
+
+<script src="https://cdn.jsdelivr.net/npm/sockjs-client@1/dist/sockjs.min.js"></script>
+
+<script src="https://cdn.jsdelivr.net/npm/@stomp/stompjs@7/bundles/stomp.umd.min.js"></script>
+
+<script src="/game-test/js/auth.js?v=1"></script>
+
+<script src="/game-test/js/ws-client.js?v=1"></script>
+
+<script src="/game-test/js/game-role.js?v=2"></script>
+
+<script src="/game-test/js/game-ws.js?v=6"></script>
+
+<script src="/game-test/js/game-nav.js?v=2"></script>
+
+<script src="/game-test/js/batter-coord-select.js?v=5"></script>
+
 </body>
+
 </html>
+

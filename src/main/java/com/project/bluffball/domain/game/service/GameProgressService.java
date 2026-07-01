@@ -7,18 +7,23 @@ import com.project.bluffball.domain.game.dto.response.GameEndEvent;
 import com.project.bluffball.domain.game.dto.response.GameStateSnapshot;
 import com.project.bluffball.domain.game.dto.response.TurnResultEvent;
 import com.project.bluffball.domain.game.enums.TurnResult;
+import com.project.bluffball.domain.game.event.HalfInningChangedEvent;
 import com.project.bluffball.domain.game.redis.TurnResultSession;
 import com.project.bluffball.domain.game.repository.TurnResultSessionRepository;
+import com.project.bluffball.domain.game.service.MatchService;
 import com.project.bluffball.domain.game.service.usecase.executor.GameEndExecutor;
 import com.project.bluffball.domain.game.service.usecase.executor.GameProgressExecutor;
 import com.project.bluffball.domain.game.service.usecase.judgment.GameProgressCalculator;
 import com.project.bluffball.domain.game.service.usecase.reader.GameEndReader;
 import com.project.bluffball.domain.game.service.usecase.reader.GameProgressReader;
 import com.project.bluffball.domain.game.service.usecase.reader.GameStateReader;
+import com.project.bluffball.domain.game.service.usecase.reader.MatchInfoReader;
 import com.project.bluffball.domain.game.service.usecase.reader.TurnResultSessionReader;
 import com.project.bluffball.domain.game.service.usecase.validator.GameEndValidator;
 import com.project.bluffball.domain.user.record.enums.GameMode;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
+import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.messaging.simp.SimpMessagingTemplate;
 import org.springframework.stereotype.Service;
 
@@ -41,7 +46,10 @@ import org.springframework.stereotype.Service;
  */
 @Service
 @RequiredArgsConstructor
+@Slf4j
 public class GameProgressService {
+
+    private final ApplicationEventPublisher eventPublisher;
 
     private final GameProgressExecutor gameProgressExecutor;
     private final GameEndExecutor gameEndExecutor;
@@ -53,6 +61,8 @@ public class GameProgressService {
     private final GameProgressCalculator gameProgressCalculator;
     private final GameEndValidator gameEndValidator;
     private final GameModeRule gameModeRule;
+    private final MatchInfoReader matchInfoReader;
+    private final MatchService matchService;
     private final SimpMessagingTemplate messagingTemplate;
 
     private static final String GAME_TOPIC = "/topic/game/";
@@ -104,9 +114,9 @@ public class GameProgressService {
      * @param outcome        해당 턴의 최종 {@link com.project.bluffball.domain.game.enums.TurnResult} 및 턴 번호
      */
     public GameProgressApplyResult applyTurnResult(String matchSessionId, GameTurnOutcome outcome) {
-        var situation = gameProgressReader.getSituation(matchSessionId);
+        var situationBefore = gameProgressReader.getSituation(matchSessionId);
         TurnResult effectiveResult = gameProgressCalculator.resolveEffectiveTurnResult(
-                outcome.turnResult(), situation);
+                outcome.turnResult(), situationBefore);
 
         // TurnResult별 분기(strike++/ball++/진루/out++ 등) → GameState 갱신
         gameProgressExecutor.applyTurnResult(
@@ -121,13 +131,31 @@ public class GameProgressService {
             turnSession.correctTurnResult(effectiveResult);
             turnResultSessionRepository.save(turnSession);
         }
-        publishTurnResultEvent(matchSessionId, effectiveResult, turnSession, snapshot);
 
-        boolean gameOver = handleGameEndIfNeeded(matchSessionId, snapshot);
+        boolean halfInningChanged = situationBefore.currentInning() != snapshot.inning()
+                || situationBefore.isTop() != snapshot.isTop();
+        boolean gameOver = gameProgressReader.isGameOver(matchSessionId);
+
+        // CardHand(역할·멀리건)을 TurnResult보다 먼저 보내 클라이언트가 역할을 동기화할 수 있게 한다.
+        if (halfInningChanged && !gameOver) {
+            eventPublisher.publishEvent(new HalfInningChangedEvent(matchSessionId));
+        }
+
+        Long pitcherUserId = matchInfoReader.getPitcherUserId(matchSessionId);
+        publishTurnResultEvent(
+                matchSessionId,
+                effectiveResult,
+                turnSession,
+                snapshot,
+                pitcherUserId,
+                halfInningChanged,
+                gameOver);
+
+        boolean archivedGameOver = handleGameEndIfNeeded(matchSessionId, snapshot);
 
         return new GameProgressApplyResult(
                 snapshot,
-                gameOver,
+                archivedGameOver || gameOver,
                 effectiveResult,
                 turnSession.getFinalCoordinateNumber(),
                 turnSession.getPitchTiming(),
@@ -143,8 +171,9 @@ public class GameProgressService {
             return false;
         }
 
+        publishGameEndEvent(matchSessionId, snapshot);
+
         if (gameEndReader.isAlreadyArchived(matchSessionId)) {
-            publishGameEndEvent(matchSessionId, snapshot);
             return true;
         }
 
@@ -156,16 +185,18 @@ public class GameProgressService {
         var completedSessions = gameEndReader.getCompletedTurnSessions(matchSessionId);
         gameEndValidator.validateCompletedTurnSessions(completedSessions);
         gameEndExecutor.archive(completedSessions);
+        matchService.clearQueueEntriesForMatch(matchSessionId);
 
-        publishGameEndEvent(matchSessionId, snapshot);
         return true;
     }
 
     private void publishTurnResultEvent(String matchSessionId,
                                         TurnResult turnResult,
                                         TurnResultSession turnSession,
-                                        GameStateSnapshot snapshot) {
-        // turnResult = 판정 enum, snapshot = Calculator 반영 후 스코어보드, turnSession = 좌표·주사위 등
+                                        GameStateSnapshot snapshot,
+                                        Long pitcherUserId,
+                                        boolean halfInningChanged,
+                                        boolean gameOver) {
         TurnResultEvent event = new TurnResultEvent(
                 turnResult,
                 turnSession.getFinalCoordinateNumber(),
@@ -180,7 +211,10 @@ public class GameProgressService {
                 snapshot.outs(),
                 snapshot.firstBase(),
                 snapshot.secondBase(),
-                snapshot.thirdBase());
+                snapshot.thirdBase(),
+                pitcherUserId,
+                halfInningChanged,
+                gameOver);
         messagingTemplate.convertAndSend(GAME_TOPIC + matchSessionId + RESULT_TOPIC_SUFFIX, event);
     }
 

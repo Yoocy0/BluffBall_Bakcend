@@ -3,6 +3,7 @@
 
     const selectedPitchSummary = document.getElementById('selectedPitchSummary');
     const coordGrid = document.getElementById('coordGrid');
+    const waitPanel = document.getElementById('waitPanel');
 
     function readSelectedPitchCard() {
         try {
@@ -23,42 +24,32 @@
         `;
     }
 
-    async function submitPitch(coordinateCardId) {
-        const matchSessionId = getMatchSessionId();
+    function showWaitingForBatter() {
+        if (waitPanel) {
+            waitPanel.hidden = false;
+        }
+        coordGrid.querySelectorAll('button').forEach((btn) => { btn.disabled = true; });
+    }
+
+    function submitPitch(coordinateCardId) {
         const pitchCard = readSelectedPitchCard();
         if (!pitchCard?.cardId) {
             goWithMatch('/game-test/PitcherSelect.html');
             return;
         }
 
-        const res = await fetch(`/game-test/api/match/${matchSessionId}/pitcher/select-card`, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({
-                pitchCardId: pitchCard.cardId,
-                coordinateCardId,
-            }),
-        });
-        if (!res.ok) {
-            throw new Error(`HTTP ${res.status}`);
+        if (!BluffBallGameWs.isConnected()) {
+            return;
         }
-        const data = await res.json();
-        sessionStorage.setItem('bluffball.startCoordinate', String(data.startCoordinateNumber));
+
+        BluffBallGameWs.publish('pitcher/select-card', {
+            pitchCardId: pitchCard.cardId,
+            coordinateCardId,
+        });
+
         sessionStorage.removeItem('bluffball.batterCoordinate');
         sessionStorage.removeItem('bluffball.batterTimerStartedAt');
-        goWithMatch('/game-test/BatterCoordSelect.html');
-    }
-
-    async function loadCoordinates() {
-        const matchSessionId = getMatchSessionId();
-        const res = await fetch(`/game-test/api/match/${matchSessionId}/prepare-pitch`, {
-            method: 'POST',
-        });
-        if (!res.ok) {
-            throw new Error(`HTTP ${res.status}`);
-        }
-        const data = await res.json();
-        renderCoordGrid(data.coordinateOptions || []);
+        showWaitingForBatter();
     }
 
     function renderCoordGrid(coordinates) {
@@ -69,20 +60,59 @@
             btn.className = 'coord-btn';
             if (coord.strike) btn.classList.add('strike-zone');
             btn.textContent = coord.coordinateNumber;
-            btn.addEventListener('click', () => {
-                submitPitch(coord.cardId).catch(() => goWithMatch('/game-test/PitcherSelect.html'));
-            });
+            btn.addEventListener('click', () => submitPitch(coord.cardId));
             coordGrid.appendChild(btn);
         });
     }
 
-    const pitchCard = readSelectedPitchCard();
-    renderSelectedPitch(pitchCard);
-    mountBroadcastHud();
-
-    if (!pitchCard || !getMatchSessionId()) {
-        goWithMatch('/game-test/PitcherSelect.html');
-    } else {
-        loadCoordinates().catch(() => goWithMatch('/game-test/PitcherSelect.html'));
+    function handleTurnResult() {
+        goWithMatch('/game-test/BatterResult.html');
     }
+
+    async function init() {
+        if (!BluffBallRole.requireLoginOrRedirect()) {
+            return;
+        }
+
+        BluffBallRole.ensureRoleSyncedFromStorage();
+
+        if (!BluffBallRole.isPitcher()) {
+            goWithMatch('/game-test/BatterWait.html');
+            return;
+        }
+
+        const matchSessionId = getMatchSessionId();
+        if (!matchSessionId || !BluffBallGameWs.isAllMulliganReady()) {
+            goWithMatch('/game-test/Mulligan.html');
+            return;
+        }
+
+        const pitchCard = readSelectedPitchCard();
+        if (!pitchCard) {
+            goWithMatch('/game-test/PitcherSelect.html');
+            return;
+        }
+
+        renderSelectedPitch(pitchCard);
+
+        BluffBallGameWs.attachInGamePhaseGuard();
+        BluffBallGameWs.on(BluffBallGameWs.EVENT.TURN_RESULT, handleTurnResult);
+
+        BluffBallGameWs.connect({
+            matchSessionId,
+            reconnectDelay: 5000,
+        });
+
+        try {
+            const coordinates = await BluffBallCards.fetchPitcherCoordinateOptions();
+            renderCoordGrid(coordinates);
+        } catch (_) {
+            goWithMatch('/game-test/PitcherSelect.html');
+            return;
+        }
+
+        mountBroadcastHud();
+    }
+
+    init();
 })();

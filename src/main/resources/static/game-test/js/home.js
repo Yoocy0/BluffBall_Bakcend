@@ -24,9 +24,10 @@
         timerInterval: null,
         matchingStartedAt: null,
         matchHandled: false,
+        /** 큐 WAITING 상태 — 매칭 성사 전에만 true */
+        waitingInQueue: false,
     };
 
-    /** 로그인 / 홈 / 매칭 화면 전환 */
     function showScreen(screen) {
         loginScreen.hidden = screen !== 'login';
         homeScreen.hidden = screen !== 'home';
@@ -51,7 +52,6 @@
         el.hidden = !message;
     }
 
-    /** 경과 시간 MM:SS 포맷 */
     function formatElapsed(ms) {
         const totalSec = Math.floor(ms / 1000);
         const min = String(Math.floor(totalSec / 60)).padStart(2, '0');
@@ -82,19 +82,85 @@
         state.stompClient = null;
     }
 
-    /** 매칭 완료 후 SetupNumber 화면으로 이동 */
+    /** REST — 매칭 큐 취소 요청 */
+    async function cancelMatchQueueRequest(keepalive = false) {
+        const token = BluffBallWs.requireLoginToken();
+        const res = await fetch('/api/v1/match/queue/cancel', {
+            method: 'DELETE',
+            headers: {
+                Authorization: `Bearer ${token}`,
+            },
+            keepalive,
+        });
+        if (!res.ok && res.status !== 204 && res.status !== 404) {
+            const body = await res.json().catch(() => ({}));
+            throw new Error(body.message || `취소 실패 (HTTP ${res.status})`);
+        }
+    }
+
+    /**
+     * WAITING 큐 등록 해제.
+     * @param {{ silent?: boolean, keepalive?: boolean }} options
+     */
+    async function releaseQueueIfWaiting(options = {}) {
+        if (!state.waitingInQueue) {
+            return;
+        }
+        state.waitingInQueue = false;
+        try {
+            await cancelMatchQueueRequest(options.keepalive === true);
+        } catch (e) {
+            if (!options.silent) {
+                throw e;
+            }
+        }
+    }
+
+    /** 페이지 이탈 시 keepalive로 큐 취소 (비동기 완료 대기 불가) */
+    function releaseQueueOnPageHide() {
+        if (!state.waitingInQueue) {
+            return;
+        }
+        const token = window.BluffBallAuth?.getAccessToken?.();
+        if (!token) {
+            return;
+        }
+        state.waitingInQueue = false;
+        fetch('/api/v1/match/queue/cancel', {
+            method: 'DELETE',
+            headers: {
+                Authorization: `Bearer ${token}`,
+            },
+            keepalive: true,
+        }).catch(() => {
+            /* ignore */
+        });
+    }
+
     function navigateToSetup(matchSessionId) {
+        state.waitingInQueue = false;
         sessionStorage.setItem('bluffball.matchSessionId', matchSessionId);
+        sessionStorage.removeItem('bluffball.mulliganDone');
+        sessionStorage.removeItem('bluffball.myMulliganDone');
+        sessionStorage.removeItem('bluffball.allMulliganReady');
+        sessionStorage.removeItem('bluffball.pitcherUserId');
+        sessionStorage.removeItem('bluffball.pitchHand');
+        sessionStorage.removeItem('bluffball.batterResult');
+        sessionStorage.removeItem('bluffball.gameEnd');
         window.location.href =
             `/game-test/SetupNumber.html?matchSessionId=${encodeURIComponent(matchSessionId)}`;
     }
 
-    /** 매칭 완료 팝업 + 3초 카운트다운 후 이동 */
-    function handleMatchComplete(matchSessionId) {
+    function handleMatchComplete(matchSessionId, role) {
         if (state.matchHandled) {
             return;
         }
         state.matchHandled = true;
+        state.waitingInQueue = false;
+
+        if (role) {
+            BluffBallRole.setRole(role);
+        }
 
         stopMatchingTimer();
         disconnectMatchWs();
@@ -114,8 +180,7 @@
         }, 1000);
     }
 
-    /** REST — 매칭 큐 진입 */
-    async function joinMatchQueue() {
+    async function requestJoinMatchQueue() {
         const token = BluffBallWs.requireLoginToken();
         const res = await fetch('/api/v1/match/queue/join', {
             method: 'POST',
@@ -123,8 +188,17 @@
                 Authorization: `Bearer ${token}`,
             },
         });
-
         const body = await res.json().catch(() => ({}));
+        return { res, body };
+    }
+
+    async function joinMatchQueue() {
+        let { res, body } = await requestJoinMatchQueue();
+
+        if (res.status === 409) {
+            await cancelMatchQueueRequest();
+            ({ res, body } = await requestJoinMatchQueue());
+        }
 
         if (res.status === 409) {
             throw new Error(body.message || '이미 매칭 큐에 등록되어 있습니다.');
@@ -134,14 +208,30 @@
         }
 
         if (body.status === 'MATCHED' && body.matchSessionId) {
-            handleMatchComplete(body.matchSessionId);
+            handleMatchComplete(body.matchSessionId, 'batter');
             return 'matched';
         }
 
         return 'waiting';
     }
 
-    /** 대기 유저 — 개인 매칭 알림 토픽 구독 */
+    function abortMatchingDueToDisconnect(message) {
+        if (state.matchHandled || !state.waitingInQueue) {
+            disconnectMatchWs();
+            return;
+        }
+
+        stopMatchingTimer();
+        disconnectMatchWs();
+
+        releaseQueueIfWaiting({ silent: true }).finally(() => {
+            state.matchHandled = false;
+            showScreen('home');
+            showError(matchingError, '');
+            showError(homeError, message);
+        });
+    }
+
     function connectMatchNotificationWs() {
         const userId = BluffBallAuth.getUserIdFromToken();
         if (!userId) {
@@ -157,7 +247,7 @@
                     try {
                         const event = JSON.parse(message.body);
                         if (event.matchSessionId) {
-                            handleMatchComplete(event.matchSessionId);
+                            handleMatchComplete(event.matchSessionId, 'pitcher');
                         }
                     } catch (_) {
                         showError(matchingError, '매칭 알림 파싱 실패');
@@ -165,8 +255,12 @@
                 });
             },
             onStompError: (frame) => {
-                showError(matchingError, frame.headers['message'] || 'WebSocket 오류');
-                client.deactivate();
+                abortMatchingDueToDisconnect(
+                    frame.headers['message'] || 'WebSocket 오류로 매칭 대기를 취소했습니다.',
+                );
+            },
+            onWebSocketClose: () => {
+                abortMatchingDueToDisconnect('매칭 연결이 끊어져 대기를 취소했습니다.');
             },
         });
 
@@ -174,11 +268,11 @@
         state.stompClient = client;
     }
 
-    /** 싱글 모드 매칭 시작 */
     async function startSingleModeMatching() {
         showError(homeError, '');
         showError(matchingError, '');
         state.matchHandled = false;
+        state.waitingInQueue = false;
 
         showScreen('matching');
         startMatchingTimer();
@@ -186,31 +280,22 @@
         try {
             const result = await joinMatchQueue();
             if (result === 'waiting') {
+                state.waitingInQueue = true;
                 connectMatchNotificationWs();
             }
         } catch (e) {
             stopMatchingTimer();
             disconnectMatchWs();
+            state.waitingInQueue = false;
             showScreen('home');
             showError(homeError, e.message || String(e));
         }
     }
 
-    /** 매칭 큐 취소 */
     async function cancelMatching() {
         showError(matchingError, '');
         try {
-            const token = BluffBallWs.requireLoginToken();
-            const res = await fetch('/api/v1/match/queue/cancel', {
-                method: 'DELETE',
-                headers: {
-                    Authorization: `Bearer ${token}`,
-                },
-            });
-            if (!res.ok && res.status !== 204) {
-                const body = await res.json().catch(() => ({}));
-                throw new Error(body.message || `취소 실패 (HTTP ${res.status})`);
-            }
+            await releaseQueueIfWaiting();
         } catch (e) {
             showError(matchingError, e.message || String(e));
             return;
@@ -253,12 +338,16 @@
     btnKakaoLogin?.addEventListener('click', () => handleOAuthLogin('kakao'));
     btnGoogleLogin?.addEventListener('click', () => handleOAuthLogin('google'));
     btnLogout?.addEventListener('click', () => {
-        disconnectMatchWs();
-        BluffBallAuth.logout();
-        renderLoginState();
+        releaseQueueIfWaiting({ silent: true }).finally(() => {
+            disconnectMatchWs();
+            BluffBallAuth.logout();
+            renderLoginState();
+        });
     });
     btnModeSingle?.addEventListener('click', () => startSingleModeMatching());
     btnCancelMatch?.addEventListener('click', () => cancelMatching());
+
+    window.addEventListener('pagehide', releaseQueueOnPageHide);
 
     renderLoginState();
     if (!BluffBallAuth.isLoggedIn()) {

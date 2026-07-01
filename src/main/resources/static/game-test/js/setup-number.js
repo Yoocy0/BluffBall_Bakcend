@@ -197,6 +197,38 @@
             `/game-test/Mulligan.html?matchSessionId=${encodeURIComponent(state.matchSessionId)}`;
     }
 
+    function goToBatterWait() {
+        sessionStorage.setItem('bluffball.matchSessionId', state.matchSessionId);
+        window.location.href =
+            `/game-test/BatterWait.html?matchSessionId=${encodeURIComponent(state.matchSessionId)}`;
+    }
+
+    function goToBatterPlay(startCoordinateNumber) {
+        sessionStorage.setItem('bluffball.matchSessionId', state.matchSessionId);
+        sessionStorage.setItem('bluffball.startCoordinate', String(startCoordinateNumber));
+        window.location.href =
+            `/game-test/BatterCoordSelect.html?matchSessionId=${encodeURIComponent(state.matchSessionId)}`;
+    }
+
+    function handleCardHandEvent({ event }) {
+        if (!BluffBallGameWs.isCardHandForMe?.(event)) {
+            return;
+        }
+        if (event?.pitcherUserId != null) {
+            BluffBallRole.syncRoleFromPitcherUserId(event.pitcherUserId);
+        }
+        log('카드 패 수신 — 멀리건 화면으로 이동합니다.', 'ok');
+        goToMulligan();
+    }
+
+    function handlePitcherReadyEvent({ event }) {
+        if (!BluffBallRole.isBatter()) {
+            return;
+        }
+        log(`PitcherReadyEvent — 시작 좌표 ${event.startCoordinateNumber}`, 'ok');
+        goToBatterPlay(event.startCoordinateNumber);
+    }
+
     function resetSelection() {
         if (state.submitted) {
             return;
@@ -231,10 +263,14 @@
                 },
             });
 
-            BluffBallGameWs.on(BluffBallGameWs.EVENT.CARD_HAND, ({ event, rawBody }) => {
-                log(`[WS CardHandEvent] ${rawBody}`, 'ok');
-                log('카드 패 수신 — 멀리건 화면으로 이동합니다.', 'ok');
-                goToMulligan();
+            BluffBallGameWs.on(BluffBallGameWs.EVENT.CARD_HAND, (payload) => {
+                log(`[WS CardHandEvent] ${payload.rawBody}`, 'ok');
+                handleCardHandEvent(payload);
+            });
+
+            BluffBallGameWs.on(BluffBallGameWs.EVENT.PITCHER_READY, (payload) => {
+                log(`[WS PitcherReadyEvent] ${payload.rawBody}`, 'ok');
+                handlePitcherReadyEvent(payload);
             });
 
             BluffBallGameWs.on('*', (type, { rawBody }) => {

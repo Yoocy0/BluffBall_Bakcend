@@ -22,6 +22,12 @@ public record TurnResultEvent(
         int outs,
         boolean firstBase,
         boolean secondBase,
-        boolean thirdBase
+        boolean thirdBase,
+        /** 현재 등판 투수 userId (공수 교대 반영 후) */
+        Long pitcherUserId,
+        /** 이번 턴으로 초·말 또는 이닝이 바뀌었는지 */
+        boolean halfInningChanged,
+        /** 경기 종료 여부 */
+        boolean gameOver
 ) {
 }

@@ -44,9 +44,25 @@ public class MatchInfoReader {
         return getById(matchSessionId).getGameMode();
     }
 
-    /** 멀리건 완료 여부 반환 (Service ✅) */
+    /** 멀리건 완료 여부 — 모든 참가자 완료 시 true (Service ✅) */
     public boolean isMulliganDone(String matchSessionId) {
-        return getById(matchSessionId).isMulliganDone();
+        MatchInfo matchInfo = getById(matchSessionId);
+        return matchInfo.isAllMulliganDone(matchInfo.getParticipantUserIds());
+    }
+
+    /** 특정 참가자의 멀리건 완료 여부 (Service ✅) */
+    public boolean isMulliganDoneForUser(String matchSessionId, Long userId) {
+        return getById(matchSessionId).isMulliganDoneForUser(userId);
+    }
+
+    /** 매치 참가자 userId 목록 (Service ✅) */
+    public List<Long> getParticipantUserIds(String matchSessionId) {
+        return getById(matchSessionId).getParticipantUserIds();
+    }
+
+    /** 플레이어 카드 패 ID 목록 (Service ✅) */
+    public List<Long> getPlayerCardHand(String matchSessionId, Long userId) {
+        return getById(matchSessionId).getPlayerCardHand(userId);
     }
 
     /** 현재 등판 투수 userId 반환 (Service ✅) */

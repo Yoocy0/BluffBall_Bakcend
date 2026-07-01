@@ -3,25 +3,20 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>BluffBall — 타격 결과</title>
+    <title>BluffBall — 타자 대기</title>
     <link rel="stylesheet" href="/game-test/css/game-test.css">
 </head>
-<body class="play-body turn-result-page">
+<body class="play-body batter-wait-page">
 <div id="broadcastHud" class="broadcast-hud"></div>
-
-<div id="diceRollOverlay" class="dice-roll-overlay" hidden>
-    <p class="dice-roll-label">타격!</p>
-    <div id="diceStage" class="dice-stage"></div>
-    <p class="dice-roll-hint">주사위 굴리는 중…</p>
-</div>
-
-<div id="resultCard" class="turn-result-card" hidden>
-    <p class="turn-result-label">PLAY RESULT</p>
-    <p id="turnResult" class="turn-result-value">-</p>
-    <p id="resultDetail" class="turn-result-detail"></p>
-    <p id="countdown" class="turn-result-countdown"></p>
-</div>
-
+<main class="batter-wait-main">
+    <div class="batter-wait-card">
+        <p class="batter-wait-label">HIT</p>
+        <h1 class="batter-wait-title">투수가 투구를 준비하고 있습니다</h1>
+        <p class="batter-wait-sub">투수의 구종·좌표 선택이 끝나면 타격 화면으로 이동합니다.</p>
+        <div class="batter-wait-spinner" aria-hidden="true"></div>
+        <p id="batterWaitStatus" class="batter-wait-status">WebSocket 연결 중…</p>
+    </div>
+</main>
 <script src="https://cdn.jsdelivr.net/npm/sockjs-client@1/dist/sockjs.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/@stomp/stompjs@7/bundles/stomp.umd.min.js"></script>
 <script src="/game-test/js/auth.js?v=1"></script>
@@ -29,6 +24,6 @@
 <script src="/game-test/js/game-role.js?v=3"></script>
 <script src="/game-test/js/game-ws.js?v=6"></script>
 <script src="/game-test/js/game-nav.js?v=2"></script>
-<script src="/game-test/js/batter-result.js?v=9"></script>
+<script src="/game-test/js/batter-wait.js?v=5"></script>
 </body>
 </html>

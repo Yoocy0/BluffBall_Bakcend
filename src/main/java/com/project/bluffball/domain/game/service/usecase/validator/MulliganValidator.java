@@ -1,5 +1,6 @@
 package com.project.bluffball.domain.game.service.usecase.validator;
 
+import com.project.bluffball.domain.game.service.usecase.reader.MatchInfoReader;
 import org.springframework.stereotype.Component;
 
 import java.util.HashSet;
@@ -7,22 +8,23 @@ import java.util.List;
 
 /**
  * 멀리건(카드 교체) 요청 검증 컴포넌트.
- *
- * <h3>검증 규칙</h3>
- * <ul>
- *   <li>멀리건이 아직 완료되지 않았을 것 (등판 당 1회)</li>
- *   <li>교체 목록(cardIdsToSwap)에 중복된 카드 ID가 없을 것</li>
- *   <li>교체 목록의 모든 카드 ID가 현재 패(currentHand)에 포함될 것</li>
- *   <li>교체 목록의 크기가 현재 패 크기를 초과하지 않을 것 (전체 교체는 허용)</li>
- * </ul>
  */
 @Component
 public class MulliganValidator {
 
-    /** 멀리건 요청 가능 여부 — {@code mulliganDone == true}이면 거부 */
-    public void validateMulliganAllowed(boolean mulliganDone) {
-        if (mulliganDone) {
-            throw new IllegalStateException("멀리건은 투수 등판 당 1회만 가능합니다.");
+    /** 멀리건 요청 가능 여부 — 해당 유저가 이미 완료했으면 거부 */
+    public void validateMulliganAllowedForUser(boolean mulliganDoneForUser) {
+        if (mulliganDoneForUser) {
+            throw new IllegalStateException("멀리건은 등판 당 1회만 가능합니다.");
+        }
+    }
+
+    /** 요청 유저가 매치 참가자인지 검증 */
+    public void validateParticipant(MatchInfoReader matchInfoReader,
+                                    String matchSessionId,
+                                    Long requestUserId) {
+        if (!matchInfoReader.isParticipant(matchSessionId, requestUserId)) {
+            throw new IllegalArgumentException("매치 참가자만 멀리건을 진행할 수 있습니다.");
         }
     }
 

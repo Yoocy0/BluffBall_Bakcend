@@ -1,5 +1,6 @@
 package com.project.bluffball.domain.game.service.listener;
 
+import com.project.bluffball.domain.game.event.HalfInningChangedEvent;
 import com.project.bluffball.domain.game.event.SetupNumbersSubmittedEvent;
 import com.project.bluffball.domain.game.service.GamePrepService;
 import com.project.bluffball.domain.game.service.usecase.reader.MatchInfoReader;
@@ -31,5 +32,13 @@ public class GamePhaseListener {
         if (matchInfoReader.isSetupNumbersComplete(event.matchSessionId())) {
             gamePrepService.drawCardHand(event.matchSessionId());
         }
+    }
+
+    /**
+     * 공수 교대 이벤트 수신 — 역할 교환만 수행(멀리건·드로우 없음).
+     */
+    @EventListener
+    public void onHalfInningChanged(HalfInningChangedEvent event) {
+        gamePrepService.beginHalfInningRoleSwap(event.matchSessionId());
     }
 }

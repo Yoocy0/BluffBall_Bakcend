@@ -12,31 +12,9 @@
         const params = new URLSearchParams(window.location.search);
         const matchSessionId = params.get('matchSessionId') || '';
 
-        try {
-            const stored = JSON.parse(sessionStorage.getItem('bluffball.gameEnd') || 'null');
-            if (stored) {
-                return { ...stored, matchSessionId: matchSessionId || stored.matchSessionId };
-            }
-        } catch (_) {
-            /* ignore */
-        }
-
-        try {
-            const batter = JSON.parse(sessionStorage.getItem('bluffball.batterResult') || 'null');
-            if (batter?.gameOver) {
-                return {
-                    matchSessionId: matchSessionId || batter.matchSessionId,
-                    homeScore: batter.homeScore,
-                    awayScore: batter.awayScore,
-                    totalInnings: batter.totalInnings,
-                    turnResult: batter.turnResult,
-                    turnNumber: batter.turnNumber,
-                    inning: batter.inning,
-                    isTop: batter.isTop,
-                };
-            }
-        } catch (_) {
-            /* ignore */
+        const stored = BluffBallGameWs.getStoredGameEnd() || BluffBallGameWs.getStoredTurnResult();
+        if (stored) {
+            return { ...stored, matchSessionId: matchSessionId || stored.matchSessionId };
         }
 
         return null;

@@ -4,8 +4,6 @@ package com.project.bluffball.domain.game.service.usecase.validator;
 
 import com.project.bluffball.domain.game.enums.MatchJoinDecision;
 
-import com.project.bluffball.domain.game.enums.MatchQueueState;
-
 import com.project.bluffball.global.exception.MatchConflictException;
 
 import com.project.bluffball.global.exception.MatchNotFoundException;
@@ -110,17 +108,11 @@ public class MatchQueueValidator {
 
      */
 
-    public void validateCancelRequest(boolean hasQueueEntry, MatchQueueState queueState) {
+    public void validateCancelRequest(boolean hasQueueEntry) {
 
         if (!hasQueueEntry) {
 
             throw new MatchNotFoundException("매칭 큐에 등록된 유저가 아닙니다.");
-
-        }
-
-        if (queueState == MatchQueueState.MATCHED) {
-
-            throw new MatchConflictException("이미 매칭이 성사되어 취소할 수 없습니다.");
 
         }
 
