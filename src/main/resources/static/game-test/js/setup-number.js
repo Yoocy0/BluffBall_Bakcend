@@ -13,8 +13,6 @@
         dpNumList: [],
         tripleNumList: [],
         hrNumList: [],
-        stompClient: null,
-        connected: false,
         submitted: false,
     };
 
@@ -190,7 +188,7 @@
 
     function updateActions() {
         const allDone = isSelectionComplete();
-        els.btnSubmit.disabled = !allDone || !state.connected || state.submitted;
+        els.btnSubmit.disabled = !allDone || !BluffBallGameWs.isConnected() || state.submitted;
     }
 
     function goToMulligan() {
@@ -212,89 +210,63 @@
         log('선택 초기화');
     }
 
-    /** CardHandEvent 수신 시 — 양측 setup 완료 + 카드 드로우 */
-    function handleGameTopicMessage(message) {
-        log(`[WS 수신] ${message.body}`, 'ok');
+    function connectGameWebSocket() {
         try {
-            const event = JSON.parse(message.body);
-            if (Array.isArray(event.cards)) {
+            BluffBallGameWs.connect({
+                matchSessionId: state.matchSessionId,
+                reconnectDelay: 5000,
+                onConnect: () => {
+                    setSetupStatus('연결됨 — 숫자를 선택하고 제출하세요', true);
+                    log(`WebSocket 연결 — ${BluffBallGameWs.topicGame(state.matchSessionId)}`, 'ok');
+                    updateActions();
+                },
+                onError: (frame) => {
+                    setSetupStatus('WebSocket 오류');
+                    log(`STOMP 오류: ${frame.headers['message'] || frame.body}`, 'err');
+                    updateActions();
+                },
+                onDisconnect: () => {
+                    setSetupStatus('연결 종료');
+                    updateActions();
+                },
+            });
+
+            BluffBallGameWs.on(BluffBallGameWs.EVENT.CARD_HAND, ({ event, rawBody }) => {
+                log(`[WS CardHandEvent] ${rawBody}`, 'ok');
                 log('카드 패 수신 — 멀리건 화면으로 이동합니다.', 'ok');
                 goToMulligan();
-            }
-        } catch (_) {
-            /* CardHandEvent 외 이벤트는 로그만 */
-        }
-    }
+            });
 
-    /** 페이지 진입 시 WebSocket 자동 연결 */
-    function connectGameWebSocket() {
-        if (typeof StompJs === 'undefined' || typeof SockJS === 'undefined') {
-            setSetupStatus('STOMP/SockJS 라이브러리 로드 실패');
-            return;
-        }
-
-        let accessToken;
-        try {
-            accessToken = BluffBallWs.requireLoginToken();
+            BluffBallGameWs.on('*', (type, { rawBody }) => {
+                if (type !== BluffBallGameWs.EVENT.CARD_HAND) {
+                    log(`[WS ${type}] ${rawBody}`, 'ok');
+                }
+            });
         } catch (e) {
             setSetupStatus(e.message);
-            return;
+            log(e.message, 'err');
         }
-
-        if (state.stompClient?.active) {
-            state.stompClient.deactivate();
-        }
-
-        const matchSessionId = state.matchSessionId;
-        const client = BluffBallWs.createStompClient(accessToken, {
-            reconnectDelay: 5000,
-            onConnect: () => {
-                state.connected = true;
-                setSetupStatus('연결됨 — 숫자를 선택하고 제출하세요', true);
-                log(`WebSocket 연결 — /topic/game/${matchSessionId}`, 'ok');
-
-                client.subscribe(`/topic/game/${matchSessionId}`, handleGameTopicMessage);
-                updateActions();
-            },
-            onStompError: (frame) => {
-                state.connected = false;
-                setSetupStatus('WebSocket 오류');
-                log(`STOMP 오류: ${frame.headers['message'] || frame.body}`, 'err');
-                client.deactivate();
-                updateActions();
-            },
-            onWebSocketClose: () => {
-                state.connected = false;
-                setSetupStatus('연결 종료');
-                updateActions();
-            },
-        });
-
-        client.activate();
-        state.stompClient = client;
     }
 
-    /** 본番 API — setup-numbers WebSocket 전송 */
     function submitSetupNumbers() {
         if (!isSelectionComplete()) {
             log('모든 숫자를 선택하세요.', 'err');
             return;
         }
-        if (!state.connected || !state.stompClient?.connected) {
+        if (!BluffBallGameWs.isConnected()) {
             log('WebSocket 연결 후 제출하세요.', 'err');
             return;
         }
 
-        const payload = buildPayload();
-        state.stompClient.publish({
-            destination: `/app/game/${state.matchSessionId}/setup-numbers`,
-            body: JSON.stringify(payload),
-        });
-
-        state.submitted = true;
-        setSetupStatus('제출 완료 — 상대방·카드 드로우 대기 중...', true);
-        log('setup-numbers 제출 완료', 'ok');
-        updateActions();
+        try {
+            BluffBallGameWs.publish('setup-numbers', buildPayload());
+            state.submitted = true;
+            setSetupStatus('제출 완료 — 상대방·카드 드로우 대기 중...', true);
+            log('setup-numbers 제출 완료', 'ok');
+            updateActions();
+        } catch (e) {
+            log(e.message, 'err');
+        }
     }
 
     function init() {
