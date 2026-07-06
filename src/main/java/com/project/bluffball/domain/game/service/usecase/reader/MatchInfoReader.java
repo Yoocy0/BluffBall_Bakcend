@@ -142,6 +142,26 @@ public class MatchInfoReader {
         return getBluffingNumbers(getById(matchSessionId).getHrNumbers(), batterUserId);
     }
 
+    /** 2루타 판정 목표 주사위 눈금 (1~6) */
+    public int getDoubleJudgmentTargetFace(String matchSessionId) {
+        MatchInfo matchInfo = getById(matchSessionId);
+        if (!matchInfo.isDoubleJudgmentConfigured()) {
+            throw new IllegalStateException(
+                    "2루타 판정 설정이 없습니다. matchSessionId=" + matchSessionId);
+        }
+        return matchInfo.getDoubleJudgmentTargetFace();
+    }
+
+    /** 2루타 판정 시 앞 주사위(true) / 뒷 주사위(false) 사용 여부 */
+    public boolean isDoubleJudgmentUseFrontDice(String matchSessionId) {
+        MatchInfo matchInfo = getById(matchSessionId);
+        if (!matchInfo.isDoubleJudgmentConfigured()) {
+            throw new IllegalStateException(
+                    "2루타 판정 설정이 없습니다. matchSessionId=" + matchSessionId);
+        }
+        return matchInfo.isDoubleJudgmentUseFrontDice();
+    }
+
     private List<Integer> getBluffingNumbers(Map<Long, List<Integer>> numbersByUserId, Long userId) {
         List<Integer> numbers = numbersByUserId.get(userId);
         return numbers != null ? numbers : Collections.emptyList();

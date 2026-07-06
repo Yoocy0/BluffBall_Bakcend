@@ -84,11 +84,13 @@ public class BatterCardSelectExecutor {
         // 주사위 눈금 합 ↔ setup-numbers로 등록한 블러핑 숫자 대조
         return bluffingJudgmentCalculator.judge(
                 preliminary.diceResults(),
-                matchInfoReader.getOutNumbers(matchSessionId, session.getCurrentPitcherUserId()),       // 투수 아웃 번호
-                matchInfoReader.getDpNumbers(matchSessionId, session.getCurrentPitcherUserId()),        // 투수 병살 번호
-                matchInfoReader.getTripleNumbers(matchSessionId, session.getCurrentBatterUserId()),       // 타자 3루타 번호
-                matchInfoReader.getHrNumbers(matchSessionId, session.getCurrentBatterUserId()),         // 타자 홈런 번호
-                gameStateReader.hasRunnersOnBase(matchSessionId));                                      // 병살: 주자 있을 때만 유효
+                matchInfoReader.getOutNumbers(matchSessionId, session.getCurrentPitcherUserId()),
+                matchInfoReader.getDpNumbers(matchSessionId, session.getCurrentPitcherUserId()),
+                matchInfoReader.getTripleNumbers(matchSessionId, session.getCurrentBatterUserId()),
+                matchInfoReader.getHrNumbers(matchSessionId, session.getCurrentBatterUserId()),
+                gameStateReader.hasRunnersOnBase(matchSessionId),
+                matchInfoReader.getDoubleJudgmentTargetFace(matchSessionId),
+                matchInfoReader.isDoubleJudgmentUseFrontDice(matchSessionId));
     }
 }
 

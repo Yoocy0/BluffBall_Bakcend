@@ -881,6 +881,27 @@ button.danger {
     word-break: break-word;
 }
 
+.setup-numbers-double {
+    margin-top: 14px;
+    padding-top: 12px;
+    border-top: 1px solid #3c4043;
+}
+
+.setup-numbers-subtitle {
+    margin: 0 0 4px;
+    font-size: 0.68rem;
+    font-weight: 700;
+    color: #9aa0a6;
+    letter-spacing: 0.04em;
+}
+
+.setup-numbers-double-value {
+    margin: 0;
+    font-size: 0.82rem;
+    font-weight: 700;
+    color: #fdd663;
+}
+
 @media (max-width: 640px) {
     .setup-numbers-hud {
         max-width: 168px;

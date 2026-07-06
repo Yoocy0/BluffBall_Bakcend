@@ -23,7 +23,7 @@ import java.util.List;
  *
  * <h3>특수 번호 미매칭 시</h3>
  * <ul>
- *   <li>주사위 2개 + 두 눈금 동일 (더블) → 2루타</li>
+ *   <li>주사위 2개 + 경기 시작 시 정해진 위치(앞/뒤)의 눈금이 목표값(1~6)과 일치 → 2루타</li>
  *   <li>그 외 → 1루타</li>
  * </ul>
  */
@@ -33,41 +33,39 @@ public class BluffingJudgmentCalculator {
     /**
      * 주사위 눈금 합을 블러핑 숫자와 대조해 최종 {@link TurnResult}를 확정한다.
      *
-     * @param diceResults        각 주사위 눈금(1~6) 목록
-     * @param outNumbers         투수 아웃 유발 번호
-     * @param dpNumbers          투수 병살 유발 번호
-     * @param tripleNumbers      타자 3루타 유발 번호
-     * @param hrNumbers          타자 홈런 유발 번호
-     * @param hasRunnersOnBase   루상 주자 존재 여부 (병살 판정용)
+     * @param diceResults           각 주사위 눈금(1~6) 목록
+     * @param outNumbers            투수 아웃 유발 번호
+     * @param dpNumbers             투수 병살 유발 번호
+     * @param tripleNumbers         타자 3루타 유발 번호
+     * @param hrNumbers             타자 홈런 유발 번호
+     * @param hasRunnersOnBase      루상 주자 존재 여부 (병살 판정용)
+     * @param doubleTargetFace      2루타 판정 목표 주사위 눈금 (1~6)
+     * @param doubleUseFrontDice    {@code true}면 앞 주사위, {@code false}면 뒷 주사위와 비교
      */
     public TurnResult judge(List<Integer> diceResults,
                             List<Integer> outNumbers,
                             List<Integer> dpNumbers,
                             List<Integer> tripleNumbers,
                             List<Integer> hrNumbers,
-                            boolean hasRunnersOnBase) {
-        // 타이밍 완벽=주사위2개(합2~12), 1칸 어긋=주사위1개(합1~6)
+                            boolean hasRunnersOnBase,
+                            int doubleTargetFace,
+                            boolean doubleUseFrontDice) {
         int sum = diceResults.stream().mapToInt(Integer::intValue).sum();
 
-        // setup-numbers로 등록한 각 블러핑 숫자와 주사위 합 대조
         boolean matchOut = contains(outNumbers, sum);
         boolean rawMatchDp = contains(dpNumbers, sum);
-        boolean matchDp = hasRunnersOnBase && rawMatchDp;   // 병살: 루상 주자 있을 때만 유효
+        boolean matchDp = hasRunnersOnBase && rawMatchDp;
         boolean matchTriple = contains(tripleNumbers, sum);
         boolean matchHr = contains(hrNumbers, sum);
 
-        // 병살 번호 매칭 + 루상 주자 없음 → 병살 불가, 일반 아웃
         if (rawMatchDp && !hasRunnersOnBase) {
             matchOut = true;
         }
 
-        // --- 겹침(동일 합) 소멸 규칙 ---
-        // HR + OUT/DP → HR 승 (OUT·DP 소멸)
         if (matchHr && (matchOut || matchDp)) {
             matchOut = false;
             matchDp = false;
         }
-        // 3B + DP → OUT (DP·3B 소멸) | 3B + OUT → OUT (3B 소멸)
         if (matchTriple && rawMatchDp) {
             matchDp = false;
             matchOut = true;
@@ -76,7 +74,6 @@ public class BluffingJudgmentCalculator {
             matchTriple = false;
         }
 
-        // --- 소멸 후 우선순위: DP → OUT → HR → 3B → (미매칭) DOUBLE → SINGLE ---
         if (matchDp) {
             return TurnResult.DOUBLE_PLAY;
         }
@@ -89,16 +86,23 @@ public class BluffingJudgmentCalculator {
         if (matchTriple) {
             return TurnResult.TRIPLE;
         }
-        // 특수 번호 미매칭: 주사위 2개 동일 눈금 → 2루타, 그 외 → 1루타
-        if (isDoubleDice(diceResults)) {
+        if (isDoubleDice(diceResults, doubleTargetFace, doubleUseFrontDice)) {
             return TurnResult.DOUBLE;
         }
         return TurnResult.SINGLE;
     }
 
-    /** 주사위 2개이며 두 눈금이 동일한지 (1,1)~(6,6) */
-    private boolean isDoubleDice(List<Integer> diceResults) {
-        return diceResults.size() == 2 && diceResults.get(0).equals(diceResults.get(1));
+    /**
+     * 주사위 2개이며, 경기 시작 시 정해진 앞/뒤 주사위 눈금이 목표값과 일치하는지 확인한다.
+     */
+    private boolean isDoubleDice(List<Integer> diceResults,
+                                   int targetFace,
+                                   boolean useFrontDice) {
+        if (diceResults.size() != 2) {
+            return false;
+        }
+        int diceIndex = useFrontDice ? 0 : 1;
+        return diceResults.get(diceIndex) == targetFace;
     }
 
     private boolean contains(List<Integer> numbers, int sum) {
