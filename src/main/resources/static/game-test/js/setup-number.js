@@ -295,7 +295,9 @@
         }
 
         try {
-            BluffBallGameWs.publish('setup-numbers', buildPayload());
+            const payload = buildPayload();
+            BluffBallNav.persistMySetupNumbers(payload);
+            BluffBallGameWs.publish('setup-numbers', payload);
             state.submitted = true;
             setSetupStatus('제출 완료 — 상대방·카드 드로우 대기 중...', true);
             log('setup-numbers 제출 완료', 'ok');

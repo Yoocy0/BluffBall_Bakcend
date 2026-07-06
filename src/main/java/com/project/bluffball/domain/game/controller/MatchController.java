@@ -70,7 +70,7 @@ public class MatchController {
         return response.isWaiting()
                 ? ResponseEntity.status(HttpStatus.ACCEPTED).body(response)
                 : ResponseEntity.ok(response);
-    }
+    }   
 
     /**
      * 싱글 모드 매칭 큐 취소.

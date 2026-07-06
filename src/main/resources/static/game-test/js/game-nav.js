@@ -1,5 +1,132 @@
 (() => {
     const HOME = '/game-test/Home.html';
+    const STORAGE_SETUP_NUMBERS = 'bluffball.mySetupNumbers';
+
+    function persistMySetupNumbers(numbers) {
+        if (!numbers) {
+            return;
+        }
+        sessionStorage.setItem(STORAGE_SETUP_NUMBERS, JSON.stringify(numbers));
+    }
+
+    function getStoredMySetupNumbers() {
+        try {
+            const raw = sessionStorage.getItem(STORAGE_SETUP_NUMBERS);
+            return raw ? JSON.parse(raw) : null;
+        } catch (_) {
+            return null;
+        }
+    }
+
+    function pickUserMapEntry(map, userId) {
+        if (!map || userId == null) {
+            return null;
+        }
+        return map[userId] ?? map[String(userId)] ?? null;
+    }
+
+    async function fetchMySetupNumbers(matchSessionId) {
+        const userId = window.BluffBallAuth?.getUserIdFromToken?.();
+        if (!matchSessionId || !userId) {
+            return null;
+        }
+
+        const res = await fetch(`/game-test/api/match/${encodeURIComponent(matchSessionId)}/setup-numbers`);
+        if (!res.ok) {
+            return null;
+        }
+
+        const data = await res.json();
+        const numbers = {
+            outNumList: pickUserMapEntry(data.outNumbers, userId) || [],
+            dpNumList: pickUserMapEntry(data.dpNumbers, userId) || [],
+            tripleNumList: pickUserMapEntry(data.tripleNumbers, userId) || [],
+            hrNumList: pickUserMapEntry(data.hrNumbers, userId) || [],
+        };
+
+        const hasAny = numbers.outNumList.length
+            || numbers.dpNumList.length
+            || numbers.tripleNumList.length
+            || numbers.hrNumList.length;
+        if (!hasAny) {
+            return null;
+        }
+
+        persistMySetupNumbers(numbers);
+        return numbers;
+    }
+
+    async function resolveMySetupNumbers(matchSessionId) {
+        const stored = getStoredMySetupNumbers();
+        if (stored?.outNumList?.length) {
+            return stored;
+        }
+        return fetchMySetupNumbers(matchSessionId);
+    }
+
+    function formatNumberList(list) {
+        if (!Array.isArray(list) || list.length === 0) {
+            return '-';
+        }
+        return list.join(' · ');
+    }
+
+    function renderSetupNumbersHud(container, numbers) {
+        if (!container) {
+            return;
+        }
+        if (!numbers) {
+            container.hidden = true;
+            container.innerHTML = '';
+            return;
+        }
+
+        container.hidden = false;
+        container.innerHTML = `
+            <p class="setup-numbers-title">내 셋업 숫자</p>
+            <dl class="setup-numbers-list">
+                <div class="setup-numbers-row">
+                    <dt>아웃</dt>
+                    <dd>${formatNumberList(numbers.outNumList)}</dd>
+                </div>
+                <div class="setup-numbers-row">
+                    <dt>병살</dt>
+                    <dd>${formatNumberList(numbers.dpNumList)}</dd>
+                </div>
+                <div class="setup-numbers-row">
+                    <dt>3루타</dt>
+                    <dd>${formatNumberList(numbers.tripleNumList)}</dd>
+                </div>
+                <div class="setup-numbers-row">
+                    <dt>홈런</dt>
+                    <dd>${formatNumberList(numbers.hrNumList)}</dd>
+                </div>
+            </dl>
+        `;
+    }
+
+    async function mountSetupNumbersHud(containerId) {
+        const el = document.getElementById(containerId || 'setupNumbersHud');
+        const matchSessionId = getMatchSessionId();
+        if (!el || !matchSessionId) {
+            return null;
+        }
+
+        try {
+            const numbers = await resolveMySetupNumbers(matchSessionId);
+            renderSetupNumbersHud(el, numbers);
+            return numbers;
+        } catch (_) {
+            el.hidden = true;
+            return null;
+        }
+    }
+
+    async function mountInGameHud(options = {}) {
+        const broadcastStatus = await mountBroadcastHud(options.broadcastContainerId);
+        const setupNumbers = await mountSetupNumbersHud(options.setupContainerId);
+        return { broadcastStatus, setupNumbers };
+    }
 
     function isHomePage() {
         const path = window.location.pathname;
@@ -128,6 +255,10 @@
         fetchGameStatus,
         renderBroadcastHud,
         mountBroadcastHud,
+        mountSetupNumbersHud,
+        mountInGameHud,
+        persistMySetupNumbers,
+        getStoredMySetupNumbers,
         formatInning,
     };
 })();

@@ -327,6 +327,7 @@
         els.btnSwap.addEventListener('click', swapCards);
         els.btnConfirm.addEventListener('click', confirmHand);
         connectWebSocket(matchSessionId);
+        BluffBallNav.mountInGameHud();
     }
 
     init();

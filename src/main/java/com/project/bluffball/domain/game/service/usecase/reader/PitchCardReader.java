@@ -49,6 +49,14 @@ public class PitchCardReader {
                 .collect(Collectors.toList());
     }
 
+    /** 구종 카드명 조회 — Service 전용 */
+    public String getPitchCardName(Long cardId) {
+        if (cardId == null) {
+            return null;
+        }
+        return getById(cardId).getName();
+    }
+
     /** Executor·Reader 내부 전용 — Service에서 호출 금지 */
     public PitchCard getById(Long cardId) {
         return pitchCardRepository.findById(cardId)

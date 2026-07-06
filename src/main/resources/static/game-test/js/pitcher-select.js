@@ -1,5 +1,5 @@
 (() => {
-    const { getMatchSessionId, goWithMatch, mountBroadcastHud } = window.BluffBallNav;
+    const { getMatchSessionId, goWithMatch, mountInGameHud } = window.BluffBallNav;
 
     const pitchHand = document.getElementById('pitchHand');
 
@@ -59,7 +59,7 @@
             reconnectDelay: 5000,
         });
 
-        mountBroadcastHud();
+        mountInGameHud();
     }
 
     init();

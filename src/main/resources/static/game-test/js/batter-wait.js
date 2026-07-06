@@ -1,5 +1,5 @@
 (() => {
-    const { getMatchSessionId, goWithMatch, mountBroadcastHud } = window.BluffBallNav;
+    const { getMatchSessionId, goWithMatch, mountInGameHud } = window.BluffBallNav;
 
     const statusEl = document.getElementById('batterWaitStatus');
 
@@ -23,6 +23,22 @@
 
     function handleGameEnd() {
         goWithMatch('/game-test/GameEnd.html');
+    }
+
+    async function loadPitchTips() {
+        const rail = document.getElementById('pitchTipsRail');
+        const listEl = document.getElementById('pitchTipsList');
+        if (!rail || !listEl) {
+            return;
+        }
+
+        try {
+            const cards = await BluffBallCards.fetchPitchCards();
+            BluffBallCards.mountPitchTipsRail(listEl, cards);
+            rail.hidden = false;
+        } catch (e) {
+            setStatus(`구종 정보를 불러오지 못했습니다. (${e.message || e})`);
+        }
     }
 
     function init() {
@@ -70,7 +86,8 @@
             onDisconnect: () => setStatus('연결이 끊어졌습니다.'),
         });
 
-        mountBroadcastHud();
+        mountInGameHud();
+        loadPitchTips();
     }
 
     init();

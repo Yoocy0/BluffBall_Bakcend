@@ -3,13 +3,14 @@
     const DICE_ROLL_MS = 1800;
     const DICE_TICK_MS = 70;
 
-    const { goWithMatch, mountBroadcastHud, renderBroadcastHud } = window.BluffBallNav;
+    const { goWithMatch, mountInGameHud, renderBroadcastHud } = window.BluffBallNav;
 
     const diceRollOverlay = document.getElementById('diceRollOverlay');
     const diceStage = document.getElementById('diceStage');
     const resultCard = document.getElementById('resultCard');
     const turnResultEl = document.getElementById('turnResult');
     const resultDetailEl = document.getElementById('resultDetail');
+    const pitchTypeLineEl = document.getElementById('pitchTypeLine');
     const countdownEl = document.getElementById('countdown');
 
     function readData() {
@@ -49,6 +50,12 @@
             `B${data.balls} S${data.strikes} O${data.outs}`,
             `AWAY ${data.awayScore} : ${data.homeScore} HOME`,
         ].filter(Boolean).join(' · ');
+
+        if (pitchTypeLineEl) {
+            const pitchName = data.pitchCardName;
+            pitchTypeLineEl.textContent = pitchName ? `구종 : ${pitchName}` : '';
+            pitchTypeLineEl.hidden = !pitchName;
+        }
     }
 
     function startCountdown(onDone) {
@@ -148,11 +155,11 @@
         sessionStorage.removeItem('bluffball.batterTimerStartedAt');
         sessionStorage.removeItem('bluffball.selectedPitchCard');
 
-        mountBroadcastHud().then((status) => {
+        mountInGameHud().then(({ broadcastStatus }) => {
             const hud = document.getElementById('broadcastHud');
             if (hud && data) {
                 renderBroadcastHud(hud, {
-                    ...(status || {}),
+                    ...(broadcastStatus || {}),
                     balls: data.balls,
                     strikes: data.strikes,
                     outs: data.outs,

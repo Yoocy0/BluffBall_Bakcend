@@ -1,5 +1,5 @@
 (() => {
-    const { getMatchSessionId, goWithMatch, mountBroadcastHud } = window.BluffBallNav;
+    const { getMatchSessionId, goWithMatch, mountInGameHud } = window.BluffBallNav;
 
     const selectedPitchSummary = document.getElementById('selectedPitchSummary');
     const coordGrid = document.getElementById('coordGrid');
@@ -111,7 +111,7 @@
             return;
         }
 
-        mountBroadcastHud();
+        mountInGameHud();
     }
 
     init();

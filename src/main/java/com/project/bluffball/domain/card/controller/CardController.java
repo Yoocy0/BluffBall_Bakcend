@@ -1,8 +1,11 @@
 package com.project.bluffball.domain.card.controller;
 
 import com.project.bluffball.domain.card.dto.response.CoordinateCardResponse;
+import com.project.bluffball.domain.card.dto.response.PitchCardResponse;
 import com.project.bluffball.domain.card.entity.CoordinateCard;
+import com.project.bluffball.domain.card.entity.PitchCard;
 import com.project.bluffball.domain.card.repository.CoordinateCardRepository;
+import com.project.bluffball.domain.card.repository.PitchCardRepository;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.responses.ApiResponses;
@@ -38,6 +41,7 @@ import java.util.List;
 public class CardController {
 
     private final CoordinateCardRepository coordinateCardRepository;
+    private final PitchCardRepository pitchCardRepository;
 
     /**
      * 구종 카드 전체 목록 조회.
@@ -62,9 +66,12 @@ public class CardController {
             @ApiResponse(responseCode = "200", description = "구종 카드 목록 반환 성공")
     })
     @GetMapping("/pitch")
-    public ResponseEntity<List<?>> getPitchCards() {
-        // TODO: CardService.getPitchCards()
-        return ResponseEntity.ok().build();
+    public ResponseEntity<List<PitchCardResponse>> getPitchCards() {
+        List<PitchCardResponse> cards = pitchCardRepository.findAll().stream()
+                .sorted(Comparator.comparing(PitchCard::getName))
+                .map(PitchCardResponse::from)
+                .toList();
+        return ResponseEntity.ok(cards);
     }
 
     /**

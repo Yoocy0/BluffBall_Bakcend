@@ -12,6 +12,8 @@ public record TurnResultEvent(
         TurnResult turnResult,
         int finalCoordinateNumber,
         Timing pitchTiming,
+        /** 이번 턴 투수가 선택한 구종명 (예: 포심 패스트볼) */
+        String pitchCardName,
         List<Integer> diceResults,
         int inning,
         boolean isTop,
