@@ -240,6 +240,7 @@
             turnResult: event.turnResult,
             finalCoordinateNumber: event.finalCoordinateNumber,
             pitchTiming: event.pitchTiming,
+            pitchCardName: event.pitchCardName,
             diceResults: event.diceResults,
             inning: event.inning,
             isTop: event.isTop,

@@ -828,6 +828,74 @@ button.danger {
     backdrop-filter: blur(8px);
 }
 
+.setup-numbers-hud {
+    position: fixed;
+    top: 12px;
+    left: 12px;
+    z-index: 100;
+    max-width: 220px;
+    padding: 12px 14px;
+    border-radius: 12px;
+    background: rgba(10, 12, 16, 0.92);
+    border: 1px solid #3c4043;
+    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.45);
+    backdrop-filter: blur(8px);
+}
+
+.setup-numbers-title {
+    margin: 0 0 8px;
+    font-size: 0.72rem;
+    font-weight: 700;
+    color: #81c995;
+    letter-spacing: 0.06em;
+}
+
+.setup-numbers-list {
+    margin: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+}
+
+.setup-numbers-row {
+    display: grid;
+    grid-template-columns: 42px 1fr;
+    gap: 6px;
+    align-items: start;
+}
+
+.setup-numbers-row dt {
+    margin: 0;
+    font-size: 0.68rem;
+    font-weight: 700;
+    color: #9aa0a6;
+    line-height: 1.35;
+}
+
+.setup-numbers-row dd {
+    margin: 0;
+    font-size: 0.78rem;
+    font-weight: 600;
+    color: #e8eaed;
+    line-height: 1.35;
+    word-break: break-word;
+}
+
+@media (max-width: 640px) {
+    .setup-numbers-hud {
+        max-width: 168px;
+        padding: 10px 12px;
+    }
+
+    .setup-numbers-row {
+        grid-template-columns: 36px 1fr;
+    }
+
+    .setup-numbers-row dd {
+        font-size: 0.72rem;
+    }
+}
+
 .broadcast-inning {
     font-size: 0.75rem;
     font-weight: 700;
@@ -988,10 +1056,17 @@ button.danger {
 }
 
 .turn-result-detail {
-    margin: 0 0 20px;
+    margin: 0 0 12px;
     color: #bdc1c6;
     font-size: 0.9rem;
     line-height: 1.5;
+}
+
+.turn-result-pitch-type {
+    margin: 0 0 20px;
+    color: #8ab4f8;
+    font-size: 0.95rem;
+    font-weight: 600;
 }
 
 .batter-timer-row {
@@ -1089,8 +1164,18 @@ button.danger {
     padding: 72px 16px 32px;
 }
 
+.batter-wait-layout {
+    display: flex;
+    align-items: flex-start;
+    justify-content: center;
+    gap: 20px;
+    width: 100%;
+    max-width: 820px;
+}
+
 .batter-wait-card {
     text-align: center;
+    flex: 1 1 360px;
     max-width: 420px;
     width: 100%;
     padding: 40px 28px;
@@ -1140,6 +1225,100 @@ button.danger {
     margin: 0;
     color: #bdc1c6;
     font-size: 0.85rem;
+}
+
+.pitch-tips-rail {
+    flex: 0 0 260px;
+    max-width: 280px;
+    padding: 20px 16px;
+    border-radius: 16px;
+    background: #1e2128;
+    border: 1px solid #3c4043;
+}
+
+.pitch-tips-title {
+    margin: 0 0 6px;
+    font-size: 1rem;
+    font-weight: 700;
+    color: #e8eaed;
+}
+
+.pitch-tips-hint {
+    margin: 0 0 14px;
+    font-size: 0.78rem;
+    color: #9aa0a6;
+    line-height: 1.4;
+}
+
+.pitch-tips-list {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+}
+
+.pitch-tip-item {
+    position: relative;
+}
+
+.pitch-tip-btn {
+    width: 100%;
+    padding: 10px 12px;
+    border: 1px solid #3c4043;
+    border-radius: 10px;
+    background: #252830;
+    color: #e8eaed;
+    font-size: 0.88rem;
+    font-weight: 600;
+    text-align: left;
+    cursor: pointer;
+    transition: border-color 0.15s ease, background 0.15s ease;
+}
+
+.pitch-tip-btn:hover,
+.pitch-tip-btn.is-open {
+    border-color: #8ab4f8;
+    background: #2a3140;
+}
+
+.pitch-tip-popover {
+    margin-top: 8px;
+    padding: 12px;
+    border-radius: 10px;
+    background: #15171c;
+    border: 1px solid #5f6368;
+    box-shadow: 0 8px 24px rgba(0, 0, 0, 0.35);
+}
+
+.pitch-tip-popover-title {
+    margin: 0 0 8px;
+    font-size: 0.85rem;
+    font-weight: 700;
+    color: #8ab4f8;
+}
+
+.pitch-tip-popover-body {
+    margin: 0;
+    padding-left: 18px;
+    color: #bdc1c6;
+    font-size: 0.78rem;
+    line-height: 1.45;
+}
+
+.pitch-tip-popover-body li + li {
+    margin-top: 4px;
+}
+
+@media (max-width: 720px) {
+    .batter-wait-layout {
+        flex-direction: column;
+        align-items: center;
+    }
+
+    .pitch-tips-rail {
+        flex: 1 1 auto;
+        width: 100%;
+        max-width: 420px;
+    }
 }
 
 .wait-panel {

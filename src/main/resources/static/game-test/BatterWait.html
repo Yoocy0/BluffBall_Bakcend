@@ -7,23 +7,32 @@
     <link rel="stylesheet" href="/game-test/css/game-test.css">
 </head>
 <body class="play-body batter-wait-page">
+<div id="setupNumbersHud" class="setup-numbers-hud" hidden></div>
 <div id="broadcastHud" class="broadcast-hud"></div>
 <main class="batter-wait-main">
-    <div class="batter-wait-card">
-        <p class="batter-wait-label">HIT</p>
-        <h1 class="batter-wait-title">투수가 투구를 준비하고 있습니다</h1>
-        <p class="batter-wait-sub">투수의 구종·좌표 선택이 끝나면 타격 화면으로 이동합니다.</p>
-        <div class="batter-wait-spinner" aria-hidden="true"></div>
-        <p id="batterWaitStatus" class="batter-wait-status">WebSocket 연결 중…</p>
+    <div class="batter-wait-layout">
+        <div class="batter-wait-card">
+            <p class="batter-wait-label">HIT</p>
+            <h1 class="batter-wait-title">투수가 투구를 준비하고 있습니다</h1>
+            <p class="batter-wait-sub">투수의 구종·좌표 선택이 끝나면 타격 화면으로 이동합니다.</p>
+            <div class="batter-wait-spinner" aria-hidden="true"></div>
+            <p id="batterWaitStatus" class="batter-wait-status">WebSocket 연결 중…</p>
+        </div>
+        <aside id="pitchTipsRail" class="pitch-tips-rail" hidden>
+            <h2 class="pitch-tips-title">구종 정보</h2>
+            <p class="pitch-tips-hint">구종을 눌러 tip을 확인하세요.</p>
+            <div id="pitchTipsList" class="pitch-tips-list"></div>
+        </aside>
     </div>
 </main>
 <script src="https://cdn.jsdelivr.net/npm/sockjs-client@1/dist/sockjs.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/@stomp/stompjs@7/bundles/stomp.umd.min.js"></script>
 <script src="/game-test/js/auth.js?v=1"></script>
 <script src="/game-test/js/ws-client.js?v=1"></script>
+<script src="/game-test/js/card-catalog.js?v=2"></script>
 <script src="/game-test/js/game-role.js?v=3"></script>
-<script src="/game-test/js/game-ws.js?v=6"></script>
-<script src="/game-test/js/game-nav.js?v=2"></script>
-<script src="/game-test/js/batter-wait.js?v=5"></script>
+<script src="/game-test/js/game-ws.js?v=7"></script>
+<script src="/game-test/js/game-nav.js?v=3"></script>
+<script src="/game-test/js/batter-wait.js?v=6"></script>
 </body>
 </html>

@@ -9,6 +9,8 @@ import java.util.List;
 
 public interface PitchCardRepository extends JpaRepository<PitchCard, Long> {
 
+    boolean existsByName(String name);
+
     @Query("SELECT p.id FROM PitchCard p")
     List<Long> findAllIds();
 

@@ -9,7 +9,7 @@
         { value: 'TOO_LATE', label: '너무 늦게' },
     ];
 
-    const { getMatchSessionId, goWithMatch, mountBroadcastHud } = window.BluffBallNav;
+    const { getMatchSessionId, goWithMatch, mountInGameHud } = window.BluffBallNav;
 
     const startCoordinateEl = document.getElementById('startCoordinate');
     const timerDisplay = document.getElementById('timerDisplay');
@@ -261,7 +261,7 @@
         });
 
         beginBatterTurn(Number(storedStart));
-        mountBroadcastHud();
+        mountInGameHud();
     }
 
     btnCoordZero?.addEventListener('click', () => selectCoordinate(0));
