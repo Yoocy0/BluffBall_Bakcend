@@ -74,6 +74,7 @@ public class GameTestMatchService {
                 .batterLineup(List.of(TEST_OPPONENT_USER_ID))
                 .build();
         matchInfo.ensureCollectionsInitialized();
+        matchInfo.initializeDoubleJudgmentSettings();
 
         GameState gameState = GameState.builder()
                 .id(matchSessionId)
@@ -101,7 +102,9 @@ public class GameTestMatchService {
                 matchInfo.getDpNumbers(),
                 matchInfo.getTripleNumbers(),
                 matchInfo.getHrNumbers(),
-                matchInfoReader.isSetupNumbersComplete(matchSessionId));
+                matchInfoReader.isSetupNumbersComplete(matchSessionId),
+                matchInfo.isDoubleJudgmentConfigured() ? matchInfo.getDoubleJudgmentTargetFace() : 0,
+                matchInfo.isDoubleJudgmentUseFrontDice());
     }
 
     /** 멀리건 화면 진입 — 2인 setup 완료 + 구종 3장 드로우 (멀리건은 하지 않음) */

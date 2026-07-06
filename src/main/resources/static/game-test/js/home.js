@@ -148,6 +148,7 @@
         sessionStorage.removeItem('bluffball.batterResult');
         sessionStorage.removeItem('bluffball.gameEnd');
         sessionStorage.removeItem('bluffball.mySetupNumbers');
+        sessionStorage.removeItem('bluffball.doubleJudgment');
         window.location.href =
             `/game-test/SetupNumber.html?matchSessionId=${encodeURIComponent(matchSessionId)}`;
     }

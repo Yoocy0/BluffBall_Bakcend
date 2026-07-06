@@ -11,9 +11,9 @@
     };
 
     const DIRECTION_LABELS = {
-        NONE: '변화 없음 (직구)',
         DOWN: '아래',
-        SIDE: '옆',
+        SIDE: '옆(→)',
+        REVERSE: '역(←)',
     };
 
     const PITCH_FLAVOR = {
@@ -30,7 +30,7 @@
     }
 
     function formatChange(changeAmount, direction) {
-        if (!direction || direction === 'NONE' || changeAmount === 0) {
+        if (changeAmount === 0) {
             return '좌표 변화 없음';
         }
         const dir = DIRECTION_LABELS[direction] || direction;

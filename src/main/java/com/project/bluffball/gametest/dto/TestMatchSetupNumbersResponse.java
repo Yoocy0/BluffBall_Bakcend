@@ -12,6 +12,10 @@ public record TestMatchSetupNumbersResponse(
         Map<Long, List<Integer>> dpNumbers,
         Map<Long, List<Integer>> tripleNumbers,
         Map<Long, List<Integer>> hrNumbers,
-        boolean setupComplete
+        boolean setupComplete,
+        /** 2루타 판정 목표 주사위 눈금 (1~6), 미설정 시 0 */
+        int doubleJudgmentTargetFace,
+        /** true = 앞 주사위, false = 뒷 주사위 */
+        boolean doubleJudgmentUseFrontDice
 ) {
 }

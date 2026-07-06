@@ -18,6 +18,7 @@ import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.concurrent.ThreadLocalRandom;
 
 /**
  * Redis 저장용 매치 설정 및 진행 정보 객체.
@@ -81,6 +82,38 @@ public class MatchInfo {
 
     /** 플레이어별 블러핑 숫자 — Redis에 List로 저장 */
     private List<PlayerSetupNumbers> playerSetupNumbers;
+
+    /**
+     * 2루타 판정용 목표 주사위 눈금 (1~6).
+     * 경기(매치) 생성 시 {@link #initializeDoubleJudgmentSettings()}로 랜덤 설정한다.
+     */
+    private int doubleJudgmentTargetFace;
+
+    /**
+     * 2루타 판정 시 비교할 주사위 위치.
+     * {@code true} = 앞 주사위(diceResults[0]), {@code false} = 뒷 주사위(diceResults[1]).
+     */
+    private boolean doubleJudgmentUseFrontDice;
+
+    /** 경기 시작 시 2루타 판정 규칙을 랜덤 생성한다. */
+    public void initializeDoubleJudgmentSettings() {
+        this.doubleJudgmentTargetFace = ThreadLocalRandom.current().nextInt(1, 7);
+        this.doubleJudgmentUseFrontDice = ThreadLocalRandom.current().nextBoolean();
+    }
+
+    public boolean isDoubleJudgmentConfigured() {
+        return doubleJudgmentTargetFace >= 1 && doubleJudgmentTargetFace <= 6;
+    }
+
+    /** Redis 역직렬화용 */
+    void setDoubleJudgmentTargetFace(int doubleJudgmentTargetFace) {
+        this.doubleJudgmentTargetFace = doubleJudgmentTargetFace;
+    }
+
+    /** Redis 역직렬화용 */
+    void setDoubleJudgmentUseFrontDice(boolean doubleJudgmentUseFrontDice) {
+        this.doubleJudgmentUseFrontDice = doubleJudgmentUseFrontDice;
+    }
 
     /** 멀리건 완료 처리 — 모든 참가자 완료 시 호출 (하위 호환). */
     public void completeMulligan() {

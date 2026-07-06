@@ -1,6 +1,7 @@
 (() => {
     const HOME = '/game-test/Home.html';
     const STORAGE_SETUP_NUMBERS = 'bluffball.mySetupNumbers';
+    const STORAGE_DOUBLE_JUDGMENT = 'bluffball.doubleJudgment';
 
     function persistMySetupNumbers(numbers) {
         if (!numbers) {
@@ -25,7 +26,7 @@
         return map[userId] ?? map[String(userId)] ?? null;
     }
 
-    async function fetchMySetupNumbers(matchSessionId) {
+    async function fetchSetupMetaFromServer(matchSessionId) {
         const userId = window.BluffBallAuth?.getUserIdFromToken?.();
         if (!matchSessionId || !userId) {
             return null;
@@ -48,12 +49,44 @@
             || numbers.dpNumList.length
             || numbers.tripleNumList.length
             || numbers.hrNumList.length;
-        if (!hasAny) {
-            return null;
+
+        let doubleJudgment = null;
+        if (data.doubleJudgmentTargetFace >= 1 && data.doubleJudgmentTargetFace <= 6) {
+            doubleJudgment = {
+                targetFace: data.doubleJudgmentTargetFace,
+                useFrontDice: data.doubleJudgmentUseFrontDice === true,
+            };
+            sessionStorage.setItem(STORAGE_DOUBLE_JUDGMENT, JSON.stringify(doubleJudgment));
         }
 
-        persistMySetupNumbers(numbers);
-        return numbers;
+        if (hasAny) {
+            persistMySetupNumbers(numbers);
+        }
+
+        return { numbers: hasAny ? numbers : null, doubleJudgment };
+    }
+
+    async function fetchMySetupNumbers(matchSessionId) {
+        const meta = await fetchSetupMetaFromServer(matchSessionId);
+        return meta?.numbers ?? null;
+    }
+
+    function getStoredDoubleJudgment() {
+        try {
+            const raw = sessionStorage.getItem(STORAGE_DOUBLE_JUDGMENT);
+            return raw ? JSON.parse(raw) : null;
+        } catch (_) {
+            return null;
+        }
+    }
+
+    async function resolveDoubleJudgment(matchSessionId) {
+        const stored = getStoredDoubleJudgment();
+        if (stored?.targetFace) {
+            return stored;
+        }
+        const meta = await fetchSetupMetaFromServer(matchSessionId);
+        return meta?.doubleJudgment ?? null;
     }
 
     async function resolveMySetupNumbers(matchSessionId) {
@@ -71,18 +104,25 @@
         return list.join(' · ');
     }
 
-    function renderSetupNumbersHud(container, numbers) {
+    function formatDoubleJudgmentLabel(doubleJudgment) {
+        if (!doubleJudgment?.targetFace) {
+            return '';
+        }
+        const side = doubleJudgment.useFrontDice ? '앞면' : '뒷면';
+        return `${side} - ${doubleJudgment.targetFace}`;
+    }
+
+    function renderSetupNumbersHud(container, numbers, doubleJudgment) {
         if (!container) {
             return;
         }
-        if (!numbers) {
+        if (!numbers && !doubleJudgment?.targetFace) {
             container.hidden = true;
             container.innerHTML = '';
             return;
         }
 
-        container.hidden = false;
-        container.innerHTML = `
+        const numbersBlock = numbers ? `
             <p class="setup-numbers-title">내 셋업 숫자</p>
             <dl class="setup-numbers-list">
                 <div class="setup-numbers-row">
@@ -102,7 +142,18 @@
                     <dd>${formatNumberList(numbers.hrNumList)}</dd>
                 </div>
             </dl>
-        `;
+        ` : '';
+
+        const doubleLabel = formatDoubleJudgmentLabel(doubleJudgment);
+        const doubleBlock = doubleLabel ? `
+            <div class="setup-numbers-double">
+                <p class="setup-numbers-subtitle">2루타 조건</p>
+                <p class="setup-numbers-double-value">${doubleLabel}</p>
+            </div>
+        ` : '';
+
+        container.hidden = false;
+        container.innerHTML = `${numbersBlock}${doubleBlock}`;
     }
 
     async function mountSetupNumbersHud(containerId) {
@@ -113,9 +164,12 @@
         }
 
         try {
-            const numbers = await resolveMySetupNumbers(matchSessionId);
-            renderSetupNumbersHud(el, numbers);
-            return numbers;
+            const [numbers, doubleJudgment] = await Promise.all([
+                resolveMySetupNumbers(matchSessionId),
+                resolveDoubleJudgment(matchSessionId),
+            ]);
+            renderSetupNumbersHud(el, numbers, doubleJudgment);
+            return { numbers, doubleJudgment };
         } catch (_) {
             el.hidden = true;
             return null;

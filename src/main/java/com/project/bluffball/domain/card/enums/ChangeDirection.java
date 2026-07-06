@@ -5,7 +5,10 @@ package com.project.bluffball.domain.card.enums;
  * DB에는 ordinal(0, 1, 2) 정수로 저장된다.
  */
 public enum ChangeDirection {
-    NONE,   // 0 - 변화 없음 (직구)
-    DOWN,   // 1 - 아래 방향 (낙차)
-    SIDE    // 2 - 옆 방향 (횡변화)
+    /** 아래 방향 (낙차) — changeAmount만큼 Y 증가 */
+    DOWN,
+    /** 옆 방향 (횡 변화) — changeAmount만큼 X 증가 (우측) */
+    SIDE,
+    /** 역 방향 (역회전·횡 변화) — changeAmount만큼 X 감소 (좌측) */
+    REVERSE
 }

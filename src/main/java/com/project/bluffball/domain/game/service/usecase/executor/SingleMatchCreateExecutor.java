@@ -89,8 +89,7 @@ public class SingleMatchCreateExecutor {
                 .build();
 
         matchInfo.ensureCollectionsInitialized();
-
-
+        matchInfo.initializeDoubleJudgmentSettings();
 
         GameState gameState = GameState.builder()
 

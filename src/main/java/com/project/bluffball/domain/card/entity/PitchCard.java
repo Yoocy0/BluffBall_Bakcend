@@ -35,7 +35,7 @@ public class PitchCard extends Card {
     @Column(name = "change_amount", nullable = false)
     private int changeAmount;
 
-    /** 구종의 변화 방향 — DB에 ordinal(0=NONE, 1=DOWN, 2=SIDE) 정수로 저장 */
+    /** 구종의 변화 방향 — DB에 ordinal(0=DOWN, 1=SIDE, 2=REVERSE) 정수로 저장 */
     @Enumerated(EnumType.ORDINAL)
     @Column(name = "direction", nullable = false)
     private ChangeDirection direction;
@@ -81,13 +81,22 @@ public class PitchCard extends Card {
         switch (direction) {
             case SIDE -> {
                 finalX = startX + this.changeAmount;
-                if (finalX > 4) return 0;
+                if (finalX > 4) {
+                    return 0;
+                }
+            }
+            case REVERSE -> {
+                finalX = startX - this.changeAmount;
+                if (finalX < 0) {
+                    return 0;
+                }
             }
             case DOWN -> {
                 finalY = startY + this.changeAmount;
-                if (finalY > 4) return 0;
+                if (finalY > 4) {
+                    return 0;
+                }
             }
-            case NONE -> { /* 직구 계열 — 좌표 변동 없음 */ }
         }
 
         return (finalY * 5) + finalX + 1;
