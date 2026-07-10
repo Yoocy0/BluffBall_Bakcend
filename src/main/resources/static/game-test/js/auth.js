@@ -78,17 +78,19 @@
 
         sessionStorage.setItem(OAUTH_PROVIDER_KEY, provider);
 
+        const redirectUri = provider === 'kakao' ? config.kakaoRedirectUri : config.googleRedirectUri;
+
         let authorizeUrl;
         if (provider === 'kakao') {
             authorizeUrl = 'https://kauth.kakao.com/oauth/authorize'
                 + `?client_id=${encodeURIComponent(config.kakaoClientId)}`
-                + `&redirect_uri=${encodeURIComponent(config.redirectUri)}`
+                + `&redirect_uri=${encodeURIComponent(redirectUri)}`
                 + '&response_type=code';
         } else if (provider === 'google') {
             const scope = encodeURIComponent('openid email profile');
             authorizeUrl = 'https://accounts.google.com/o/oauth2/v2/auth'
                 + `?client_id=${encodeURIComponent(config.googleClientId)}`
-                + `&redirect_uri=${encodeURIComponent(config.redirectUri)}`
+                + `&redirect_uri=${encodeURIComponent(redirectUri)}`
                 + '&response_type=code'
                 + `&scope=${scope}`;
         } else {

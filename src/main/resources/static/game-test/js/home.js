@@ -351,6 +351,19 @@
 
     window.addEventListener('pagehide', releaseQueueOnPageHide);
 
+    // ngrok 백엔드 콜백 후 토큰이 쿼리 파라미터로 전달된 경우 localStorage에 저장
+    const urlParams = new URLSearchParams(window.location.search);
+    const cbAccessToken = urlParams.get('accessToken');
+    const cbRefreshToken = urlParams.get('refreshToken');
+    if (cbAccessToken && cbRefreshToken) {
+        BluffBallAuth.saveTokens({
+            accessToken: cbAccessToken,
+            refreshToken: cbRefreshToken,
+            isNewUser: urlParams.get('isNewUser') === 'true',
+        });
+        window.history.replaceState({}, '', '/game-test/Home.html');
+    }
+
     renderLoginState();
     if (!BluffBallAuth.isLoggedIn()) {
         showOAuthSetupHint();

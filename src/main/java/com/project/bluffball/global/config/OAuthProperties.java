@@ -17,6 +17,9 @@ import java.util.List;
 @ConfigurationProperties(prefix = "oauth")
 public class OAuthProperties {
 
+    /** ngrok 영구 도메인 (예: https://xxx.ngrok-free.dev) — 설정 시 game-test redirect URI를 ngrok 기반으로 구성 */
+    private String ngrokBaseUrl = "";
+
     /** 클라이언트 redirect URI 허용 목록 */
     private List<String> allowedRedirectUris = new ArrayList<>();
 

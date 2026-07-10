@@ -5,19 +5,27 @@ import com.project.bluffball.domain.auth.dto.request.TokenRefreshRequest;
 import com.project.bluffball.domain.auth.dto.response.LoginResponse;
 import com.project.bluffball.domain.auth.dto.response.TokenRefreshResponse;
 import com.project.bluffball.domain.auth.service.AuthService;
+import com.project.bluffball.global.config.OAuthProperties;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.responses.ApiResponses;
 import io.swagger.v3.oas.annotations.tags.Tag;
+import jakarta.servlet.http.HttpServletResponse;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
+import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
+
+import java.io.IOException;
+import java.net.URLEncoder;
+import java.nio.charset.StandardCharsets;
 
 /**
  * 소셜 OAuth 로그인 컨트롤러.
@@ -33,6 +41,7 @@ import org.springframework.web.bind.annotation.RestController;
 public class AuthController {
 
     private final AuthService authService;
+    private final OAuthProperties oauthProperties;
 
     /**
      * 소셜 로그인.
@@ -69,6 +78,34 @@ public class AuthController {
             @PathVariable String provider,
             @Valid @RequestBody SocialLoginRequest request) {
         return ResponseEntity.ok(authService.login(provider, request));
+    }
+
+    /**
+     * 소셜 로그인 서버 콜백 (game-test ngrok 전용).
+     *
+     * <p>ngrok redirect URI({@code /api/v1/auth/login/{provider}})로 소셜 플랫폼이 리다이렉트하면
+     * 서버가 인가 코드를 교환하고, game-test Home 화면으로 토큰을 쿼리 파라미터로 전달한다.</p>
+     */
+    @GetMapping("/login/{provider}")
+    public void loginCallback(
+            @Parameter(description = "소셜 로그인 제공자 (kakao | google)", example = "kakao")
+            @PathVariable String provider,
+            @RequestParam String code,
+            HttpServletResponse response) throws IOException {
+
+        String ngrokBase = oauthProperties.getNgrokBaseUrl();
+        String redirectUri = (ngrokBase != null && !ngrokBase.isBlank())
+                ? ngrokBase + "/api/v1/auth/login/" + provider
+                : "http://localhost:8080/api/v1/auth/login/" + provider;
+
+        LoginResponse loginResponse = authService.login(provider, new SocialLoginRequest(code, redirectUri));
+
+        String homeUrl = "/game-test/Home.html"
+                + "?accessToken=" + URLEncoder.encode(loginResponse.accessToken(), StandardCharsets.UTF_8)
+                + "&refreshToken=" + URLEncoder.encode(loginResponse.refreshToken(), StandardCharsets.UTF_8)
+                + "&isNewUser=" + loginResponse.isNewUser();
+
+        response.sendRedirect(homeUrl);
     }
 
     /**
