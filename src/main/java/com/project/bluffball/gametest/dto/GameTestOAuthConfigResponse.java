@@ -11,8 +11,11 @@ public record GameTestOAuthConfigResponse(
         /** 구글 OAuth Client ID */
         String googleClientId,
 
-        /** OAuth Callback redirect URI (백엔드 허용 목록과 동일해야 함) */
-        String redirectUri,
+        /** 카카오 OAuth Callback redirect URI (백엔드 허용 목록과 동일해야 함) */
+        String kakaoRedirectUri,
+
+        /** 구글 OAuth Callback redirect URI (백엔드 허용 목록과 동일해야 함) */
+        String googleRedirectUri,
 
         /** 카카오 Client ID 설정 여부 */
         boolean kakaoConfigured,

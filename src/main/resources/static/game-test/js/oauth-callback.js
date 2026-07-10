@@ -35,7 +35,8 @@
 
         try {
             const config = await BluffBallAuth.fetchOAuthConfig();
-            const tokens = await BluffBallAuth.exchangeCodeForTokens(provider, code, config.redirectUri);
+            const redirectUri = provider === 'kakao' ? config.kakaoRedirectUri : config.googleRedirectUri;
+            const tokens = await BluffBallAuth.exchangeCodeForTokens(provider, code, redirectUri);
             BluffBallAuth.saveTokens(tokens);
             sessionStorage.removeItem(BluffBallAuth.OAUTH_PROVIDER_KEY);
             window.location.replace('/game-test/Home.html');
