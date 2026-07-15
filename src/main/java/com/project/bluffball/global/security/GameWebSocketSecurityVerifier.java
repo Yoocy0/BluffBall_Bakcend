@@ -2,6 +2,8 @@ package com.project.bluffball.global.security;
 
 import com.project.bluffball.domain.game.service.usecase.reader.MatchInfoReader;
 import com.project.bluffball.domain.game.service.usecase.validator.MatchParticipantValidator;
+import com.project.bluffball.global.exception.AuthUnauthorizedException;
+import com.project.bluffball.global.exception.ErrorCode;
 import lombok.RequiredArgsConstructor;
 import org.springframework.messaging.simp.stomp.StompHeaderAccessor;
 import org.springframework.stereotype.Component;
@@ -48,8 +50,7 @@ public class GameWebSocketSecurityVerifier {
      */
     public Long requireUserIdFromSession(StompHeaderAccessor accessor) {
         if (accessor.getUser() == null) {
-            throw new com.project.bluffball.global.exception.AuthUnauthorizedException(
-                    "WebSocket 인증 세션이 없습니다.");
+            throw new AuthUnauthorizedException(ErrorCode.AUTH_WS_SESSION_MISSING);
         }
         return authenticatedUserResolver.requireUserId(accessor.getUser());
     }

@@ -2,6 +2,7 @@ package com.project.bluffball.global.security;
 
 import com.project.bluffball.global.exception.AuthForbiddenException;
 import com.project.bluffball.global.exception.AuthUnauthorizedException;
+import com.project.bluffball.global.exception.ErrorCode;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Component;
@@ -30,7 +31,7 @@ public class AuthenticatedUserResolver {
     public Long requireUserId() {
         Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
         if (authentication == null || !authentication.isAuthenticated()) {
-            throw new AuthUnauthorizedException("인증이 필요합니다.");
+            throw new AuthUnauthorizedException(ErrorCode.AUTH_REQUIRED);
         }
         Object principal = authentication.getPrincipal();
         if (principal instanceof Long userId) {
@@ -39,7 +40,7 @@ public class AuthenticatedUserResolver {
         if (principal instanceof Principal namedPrincipal) {
             return requireUserId(namedPrincipal);
         }
-        throw new AuthUnauthorizedException("유효하지 않은 인증 정보입니다.");
+        throw new AuthUnauthorizedException(ErrorCode.AUTH_INVALID);
     }
 
     /**
@@ -53,7 +54,7 @@ public class AuthenticatedUserResolver {
      */
     public Long requireUserId(Principal principal) {
         if (principal == null || !StringUtils.hasText(principal.getName())) {
-            throw new AuthUnauthorizedException("WebSocket 인증 정보가 없습니다.");
+            throw new AuthUnauthorizedException(ErrorCode.AUTH_WS_REQUIRED);
         }
         return parseUserId(principal.getName());
     }
@@ -73,7 +74,7 @@ public class AuthenticatedUserResolver {
             return;
         }
         if (!pathUserId.equals(authenticatedUserId)) {
-            throw new AuthForbiddenException("다른 유저의 개인 채널을 구독할 수 없습니다.");
+            throw new AuthForbiddenException(ErrorCode.AUTH_CHANNEL_FORBIDDEN);
         }
     }
 
@@ -87,7 +88,7 @@ public class AuthenticatedUserResolver {
         try {
             return Long.parseLong(principalName);
         } catch (NumberFormatException ex) {
-            throw new AuthUnauthorizedException("유효하지 않은 인증 정보입니다.");
+            throw new AuthUnauthorizedException(ErrorCode.AUTH_INVALID);
         }
     }
 
@@ -118,7 +119,7 @@ public class AuthenticatedUserResolver {
         try {
             return Long.parseLong(userIdSegment);
         } catch (NumberFormatException ex) {
-            throw new AuthForbiddenException("유효하지 않은 유저 구독 경로입니다.");
+            throw new AuthForbiddenException(ErrorCode.AUTH_INVALID_SUBSCRIPTION_PATH);
         }
     }
 }

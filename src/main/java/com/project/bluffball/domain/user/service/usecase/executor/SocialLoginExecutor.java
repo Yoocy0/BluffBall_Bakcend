@@ -5,6 +5,8 @@ import com.project.bluffball.domain.user.entity.User;
 import com.project.bluffball.domain.user.enums.SocialProvider;
 import com.project.bluffball.domain.user.repository.SocialAccountRepository;
 import com.project.bluffball.domain.user.repository.UserRepository;
+import com.project.bluffball.global.exception.ErrorCode;
+import com.project.bluffball.global.exception.NotFoundException;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Component;
 import org.springframework.transaction.annotation.Transactional;
@@ -44,9 +46,9 @@ public class SocialLoginExecutor {
     public void relink(SocialProvider provider, String providerUserId) {
         SocialAccount account = socialAccountRepository
                 .findByProviderAndProviderUserId(provider, providerUserId)
-                .orElseThrow(() -> new IllegalArgumentException(
-                        "소셜 계정을 찾을 수 없습니다. provider=" + provider
-                                + ", providerUserId=" + providerUserId));
+                .orElseThrow(() -> new NotFoundException(
+                        ErrorCode.SOCIAL_ACCOUNT_NOT_FOUND,
+                        "provider=" + provider + ", providerUserId=" + providerUserId));
         account.relink();
     }
 

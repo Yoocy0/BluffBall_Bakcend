@@ -7,6 +7,8 @@ import jakarta.persistence.EnumType;
 import jakarta.persistence.Enumerated;
 import lombok.AccessLevel;
 import lombok.Builder;
+import com.project.bluffball.global.exception.BadRequestException;
+import com.project.bluffball.global.exception.ErrorCode;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import org.springframework.data.annotation.Id;
@@ -46,6 +48,12 @@ public class MatchInfo {
 
     @Enumerated(EnumType.ORDINAL)
     private GameStatus matchStatus;
+
+    /** 홈팀 유저 ID — 매치 생성 시 초기 투수로 고정 (공수 교대와 무관) */
+    private Long homeUserId;
+
+    /** 어웨이팀 유저 ID — 매치 생성 시 초기 타자로 고정 (공수 교대와 무관) */
+    private Long awayUserId;
 
     /** 현재 등판 중인 투수 유저 ID */
     private Long pitcherUserId;
@@ -203,7 +211,7 @@ public class MatchInfo {
     public Long swapRolesForSingleMode() {
         ensureCollectionsInitialized();
         if (batterLineup.isEmpty()) {
-            throw new IllegalStateException("타순이 비어 있어 역할 교환을 할 수 없습니다.");
+            throw new BadRequestException(ErrorCode.GAME_LINEUP_EMPTY);
         }
 
         Long previousPitcher = pitcherUserId;
@@ -305,6 +313,8 @@ public class MatchInfo {
         this.gameMode = gameMode;
         this.matchStatus = GameStatus.WAITING;
         this.pitcherUserId = pitcherUserId;
+        this.homeUserId = pitcherUserId;
+        this.awayUserId = batterLineup != null && !batterLineup.isEmpty() ? batterLineup.get(0) : null;
         this.batterLineup = batterLineup != null ? batterLineup : new ArrayList<>();
         this.currentBatterIndex = 0;
         this.pitcherCardHand = new ArrayList<>();

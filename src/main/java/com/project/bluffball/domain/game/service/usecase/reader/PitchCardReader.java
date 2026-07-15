@@ -4,6 +4,8 @@ import com.project.bluffball.domain.card.entity.PitchCard;
 import com.project.bluffball.domain.card.repository.PitchCardRepository;
 import com.project.bluffball.domain.game.dto.response.CardInfo;
 import com.project.bluffball.domain.game.enums.Timing;
+import com.project.bluffball.global.exception.ErrorCode;
+import com.project.bluffball.global.exception.NotFoundException;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Component;
 
@@ -60,8 +62,7 @@ public class PitchCardReader {
     /** Executor·Reader 내부 전용 — Service에서 호출 금지 */
     public PitchCard getById(Long cardId) {
         return pitchCardRepository.findById(cardId)
-                .orElseThrow(() -> new IllegalArgumentException(
-                        "구종 카드를 찾을 수 없습니다. cardId=" + cardId));
+                .orElseThrow(() -> new NotFoundException(ErrorCode.PITCH_CARD_NOT_FOUND, "cardId=" + cardId));
     }
 
     /**

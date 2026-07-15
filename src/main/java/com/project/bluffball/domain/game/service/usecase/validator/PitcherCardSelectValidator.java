@@ -1,5 +1,7 @@
 package com.project.bluffball.domain.game.service.usecase.validator;
 
+import com.project.bluffball.global.exception.BadRequestException;
+import com.project.bluffball.global.exception.ErrorCode;
 import org.springframework.stereotype.Component;
 
 import java.util.List;
@@ -18,20 +20,19 @@ public class PitcherCardSelectValidator {
                          boolean pitcherMulliganDone,
                          boolean pitcherAlreadySelected) {
         if (pitcherAlreadySelected) {
-            throw new IllegalStateException("이미 투수 카드 선택이 완료된 턴입니다.");
+            throw new BadRequestException(ErrorCode.GAME_PITCHER_ALREADY_SELECTED);
         }
         if (!pitcherMulliganDone) {
-            throw new IllegalStateException("카드 교체(멀리건) 확정 후에 투구할 수 있습니다.");
+            throw new BadRequestException(ErrorCode.GAME_MULLIGAN_REQUIRED);
         }
         if (pitcherUserId == null || !pitcherUserId.equals(requestUserId)) {
-            throw new IllegalArgumentException("현재 등판 투수만 카드를 선택할 수 있습니다.");
+            throw new BadRequestException(ErrorCode.GAME_NOT_PITCHER);
         }
         if (pitchCardId == null || coordinateCardId == null) {
-            throw new IllegalArgumentException("구종 카드와 시작 좌표 카드를 모두 선택해야 합니다.");
+            throw new BadRequestException(ErrorCode.GAME_CARD_SELECTION_INCOMPLETE);
         }
         if (!pitcherCardHand.contains(pitchCardId)) {
-            throw new IllegalArgumentException(
-                    "선택한 구종 카드가 현재 패에 없습니다. pitchCardId=" + pitchCardId);
+            throw new BadRequestException(ErrorCode.GAME_CARD_NOT_IN_HAND, "pitchCardId=" + pitchCardId);
         }
     }
 }
