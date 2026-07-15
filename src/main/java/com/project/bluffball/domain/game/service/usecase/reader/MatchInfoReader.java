@@ -4,6 +4,9 @@ import com.project.bluffball.domain.game.config.GameModeRule;
 import com.project.bluffball.domain.game.redis.MatchInfo;
 import com.project.bluffball.domain.game.repository.MatchInfoRepository;
 import com.project.bluffball.domain.user.record.enums.GameMode;
+import com.project.bluffball.global.exception.BadRequestException;
+import com.project.bluffball.global.exception.ErrorCode;
+import com.project.bluffball.global.exception.NotFoundException;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Component;
 
@@ -28,8 +31,8 @@ public class MatchInfoReader {
     /** Executor·Reader 내부 전용 — Service에서 호출 금지 */
     public MatchInfo getById(String matchSessionId) {
         MatchInfo matchInfo = matchInfoRepository.findById(matchSessionId)
-                .orElseThrow(() -> new IllegalArgumentException(
-                        "매치를 찾을 수 없습니다. matchSessionId=" + matchSessionId));
+                .orElseThrow(() -> new NotFoundException(
+                        ErrorCode.MATCH_SESSION_NOT_FOUND, "matchSessionId=" + matchSessionId));
         matchInfo.ensureCollectionsInitialized();
         return matchInfo;
     }
@@ -70,12 +73,33 @@ public class MatchInfoReader {
         return getById(matchSessionId).getPitcherUserId();
     }
 
+    /** 홈팀 userId — 매치 생성 시 고정 (Service ✅) */
+    public Long getHomeUserId(String matchSessionId) {
+        MatchInfo matchInfo = getById(matchSessionId);
+        return matchInfo.getHomeUserId() != null
+                ? matchInfo.getHomeUserId()
+                : matchInfo.getPitcherUserId();
+    }
+
+    /** 어웨이팀 userId — 매치 생성 시 고정 (Service ✅) */
+    public Long getAwayUserId(String matchSessionId) {
+        MatchInfo matchInfo = getById(matchSessionId);
+        if (matchInfo.getAwayUserId() != null) {
+            return matchInfo.getAwayUserId();
+        }
+        List<Long> lineup = matchInfo.getBatterLineup();
+        if (lineup.isEmpty()) {
+            throw new BadRequestException(ErrorCode.GAME_LINEUP_EMPTY, "matchSessionId=" + matchSessionId);
+        }
+        return lineup.get(0);
+    }
+
     /** 현재 타석 타자 userId 반환 (Service ✅) */
     public Long getCurrentBatterUserId(String matchSessionId) {
         MatchInfo matchInfo = getById(matchSessionId);
         List<Long> lineup = matchInfo.getBatterLineup();
         if (lineup.isEmpty()) {
-            throw new IllegalStateException("타순이 비어 있습니다. matchSessionId=" + matchSessionId);
+            throw new BadRequestException(ErrorCode.GAME_LINEUP_EMPTY, "matchSessionId=" + matchSessionId);
         }
         return lineup.get(matchInfo.getCurrentBatterIndex());
     }
@@ -146,8 +170,8 @@ public class MatchInfoReader {
     public int getDoubleJudgmentTargetFace(String matchSessionId) {
         MatchInfo matchInfo = getById(matchSessionId);
         if (!matchInfo.isDoubleJudgmentConfigured()) {
-            throw new IllegalStateException(
-                    "2루타 판정 설정이 없습니다. matchSessionId=" + matchSessionId);
+            throw new BadRequestException(
+                    ErrorCode.GAME_DOUBLE_JUDGMENT_NOT_CONFIGURED, "matchSessionId=" + matchSessionId);
         }
         return matchInfo.getDoubleJudgmentTargetFace();
     }
@@ -156,8 +180,8 @@ public class MatchInfoReader {
     public boolean isDoubleJudgmentUseFrontDice(String matchSessionId) {
         MatchInfo matchInfo = getById(matchSessionId);
         if (!matchInfo.isDoubleJudgmentConfigured()) {
-            throw new IllegalStateException(
-                    "2루타 판정 설정이 없습니다. matchSessionId=" + matchSessionId);
+            throw new BadRequestException(
+                    ErrorCode.GAME_DOUBLE_JUDGMENT_NOT_CONFIGURED, "matchSessionId=" + matchSessionId);
         }
         return matchInfo.isDoubleJudgmentUseFrontDice();
     }

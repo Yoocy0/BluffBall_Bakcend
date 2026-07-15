@@ -1,6 +1,8 @@
 package com.project.bluffball.domain.game.service.usecase.validator;
 
 import com.project.bluffball.domain.game.enums.Timing;
+import com.project.bluffball.global.exception.BadRequestException;
+import com.project.bluffball.global.exception.ErrorCode;
 import org.springframework.stereotype.Component;
 
 /**
@@ -19,24 +21,24 @@ public class BatterCardSelectValidator {
                          boolean pitcherSelectionComplete,
                          boolean batterAlreadySelected) {
         if (batterAlreadySelected) {
-            throw new IllegalStateException("이미 타자 선택이 완료된 턴입니다.");
+            throw new BadRequestException(ErrorCode.GAME_BATTER_ALREADY_SELECTED);
         }
         if (!pitcherSelectionComplete) {
-            throw new IllegalStateException("투수의 카드 선택이 완료되지 않았습니다.");
+            throw new BadRequestException(ErrorCode.GAME_PITCHER_SELECTION_REQUIRED);
         }
         if (batterUserId == null || !batterUserId.equals(requestUserId)) {
-            throw new IllegalArgumentException("현재 타석 타자만 선택할 수 있습니다.");
+            throw new BadRequestException(ErrorCode.GAME_NOT_BATTER);
         }
         if (responseTimeSec < 0) {
-            throw new IllegalArgumentException("응답 시간은 0 이상이어야 합니다.");
+            throw new BadRequestException(ErrorCode.GAME_INVALID_RESPONSE_TIME);
         }
         if (responseTimeSec <= MAX_RESPONSE_TIME_SEC) {
             if (timing == null) {
-                throw new IllegalArgumentException("5초 이내 응답 시 타이밍을 선택해야 합니다.");
+                throw new BadRequestException(ErrorCode.GAME_INVALID_TIMING);
             }
             if (batterCoordinateNumber < 0 || batterCoordinateNumber > 25) {
-                throw new IllegalArgumentException(
-                        "좌표는 0(폭투 존) 또는 1~25 사이여야 합니다. coordinate=" + batterCoordinateNumber);
+                throw new BadRequestException(
+                        ErrorCode.GAME_INVALID_COORDINATE, "coordinate=" + batterCoordinateNumber);
             }
         }
     }

@@ -1,5 +1,6 @@
 package com.project.bluffball.global.config;
 
+import com.project.bluffball.global.security.CustomStompSubProtocolErrorHandler;
 import com.project.bluffball.global.security.WebSocketAuthChannelInterceptor;
 import lombok.RequiredArgsConstructor;
 import org.springframework.context.annotation.Configuration;
@@ -29,6 +30,7 @@ import java.util.List;
 public class WebSocketConfig implements WebSocketMessageBrokerConfigurer {
 
     private final WebSocketAuthChannelInterceptor webSocketAuthChannelInterceptor;
+    private final CustomStompSubProtocolErrorHandler stompSubProtocolErrorHandler;
 
     @Override
     public void configureClientInboundChannel(ChannelRegistration registration) {
@@ -48,6 +50,7 @@ public class WebSocketConfig implements WebSocketMessageBrokerConfigurer {
         registry.addEndpoint("/ws")
                 .setAllowedOriginPatterns("*")
                 .withSockJS();
+        registry.setErrorHandler(stompSubProtocolErrorHandler);
     }
 
     /** @Payload JSON 역직렬화 — content-type: application/json */

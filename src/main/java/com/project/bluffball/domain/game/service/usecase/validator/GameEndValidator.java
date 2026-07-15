@@ -1,6 +1,8 @@
 package com.project.bluffball.domain.game.service.usecase.validator;
 
 import com.project.bluffball.domain.game.redis.TurnResultSession;
+import com.project.bluffball.global.exception.BadRequestException;
+import com.project.bluffball.global.exception.ErrorCode;
 import org.springframework.stereotype.Component;
 
 import java.util.List;
@@ -13,34 +15,34 @@ public class GameEndValidator {
 
     public void validateArchiveReady(boolean initialized, boolean gameEnded, boolean alreadyArchived) {
         if (!initialized) {
-            throw new IllegalStateException("경기 진행이 초기화되지 않았습니다.");
+            throw new BadRequestException(ErrorCode.GAME_NOT_INITIALIZED);
         }
         if (!gameEnded) {
-            throw new IllegalStateException("경기가 종료되지 않았습니다.");
+            throw new BadRequestException(ErrorCode.GAME_NOT_ENDED);
         }
         if (alreadyArchived) {
-            throw new IllegalStateException("이미 DB에 저장된 경기입니다. matchSessionId 중복 저장을 방지합니다.");
+            throw new BadRequestException(ErrorCode.GAME_ALREADY_ARCHIVED);
         }
     }
 
     public void validateCompletedTurnSessions(List<TurnResultSession> sessions) {
         if (sessions.isEmpty()) {
-            throw new IllegalStateException("저장할 턴 결과가 없습니다.");
+            throw new BadRequestException(ErrorCode.GAME_NO_TURN_RESULTS);
         }
 
         for (TurnResultSession session : sessions) {
             if (session.getTurnResult() == null) {
-                throw new IllegalStateException(
-                        "미완료 턴이 포함되어 있습니다. turnNumber=" + session.getTurnNumber());
+                throw new BadRequestException(
+                        ErrorCode.GAME_INCOMPLETE_TURN, "turnNumber=" + session.getTurnNumber());
             }
             if (session.getSelectedPitchCardId() == null
                     || session.getSelectedCoordinateCardId() == null) {
-                throw new IllegalStateException(
-                        "투수 선택 정보가 없는 턴이 포함되어 있습니다. turnNumber=" + session.getTurnNumber());
+                throw new BadRequestException(
+                        ErrorCode.GAME_INCOMPLETE_PITCHER_SELECTION, "turnNumber=" + session.getTurnNumber());
             }
             if (session.getCurrentPitcherUserId() == null || session.getCurrentBatterUserId() == null) {
-                throw new IllegalStateException(
-                        "투수·타자 정보가 없는 턴이 포함되어 있습니다. turnNumber=" + session.getTurnNumber());
+                throw new BadRequestException(
+                        ErrorCode.GAME_INCOMPLETE_PLAYER_INFO, "turnNumber=" + session.getTurnNumber());
             }
         }
     }

@@ -1,6 +1,8 @@
 package com.project.bluffball.domain.game.redis;
 
 import com.project.bluffball.domain.game.dto.progress.GameProgressSituation;
+import com.project.bluffball.global.exception.BadRequestException;
+import com.project.bluffball.global.exception.ErrorCode;
 import lombok.AccessLevel;
 import lombok.Builder;
 import lombok.Getter;
@@ -93,7 +95,7 @@ public class GameState {
      */
     public void initializeProgress(int totalInnings) {
         if (totalInnings <= 0) {
-            throw new IllegalArgumentException("totalInnings must be positive. value=" + totalInnings);
+            throw new BadRequestException(ErrorCode.GAME_INVALID_INNINGS, "totalInnings=" + totalInnings);
         }
         this.totalInnings = totalInnings;
         this.gameOver = false;
@@ -112,6 +114,16 @@ public class GameState {
 
     /** GameProgressExecutor에서만 호출한다. */
     void markGameOver() {
+        this.gameOver = true;
+    }
+
+    /**
+     * 접속 끊김 몰수패 점수를 반영하고 경기를 종료한다.
+     * {@link com.project.bluffball.domain.game.service.usecase.executor.GameForfeitExecutor}에서만 호출한다.
+     */
+    public void applyForfeitResult(int homeScore, int awayScore) {
+        this.homeScore = homeScore;
+        this.awayScore = awayScore;
         this.gameOver = true;
     }
 

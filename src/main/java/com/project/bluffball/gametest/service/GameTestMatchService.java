@@ -13,6 +13,8 @@ import com.project.bluffball.domain.game.repository.GameStateRepository;
 import com.project.bluffball.domain.game.repository.MatchInfoRepository;
 import com.project.bluffball.domain.game.service.GamePrepService;
 import com.project.bluffball.domain.game.service.GameTurnService;
+import com.project.bluffball.global.exception.BadRequestException;
+import com.project.bluffball.global.exception.ErrorCode;
 import com.project.bluffball.domain.game.service.usecase.reader.GameProgressReader;
 import com.project.bluffball.domain.game.service.usecase.reader.GameStateReader;
 import com.project.bluffball.domain.game.service.usecase.reader.MatchInfoReader;
@@ -142,10 +144,10 @@ public class GameTestMatchService {
     /** 투수 선택 화면 — 멀리건 완료 후 패·좌표 옵션 반환 */
     public TestPreparePitchResponse prepareForPitcher(String matchSessionId) {
         if (!matchInfoReader.isMulliganDone(matchSessionId)) {
-            throw new IllegalStateException("멀리건(카드 교체/확정)을 먼저 완료하세요.");
+            throw new BadRequestException(ErrorCode.GAME_MULLIGAN_REQUIRED);
         }
         if (gameProgressReader.isGameOver(matchSessionId)) {
-            throw new IllegalStateException("경기가 이미 종료되었습니다.");
+            throw new BadRequestException(ErrorCode.GAME_ALREADY_ENDED);
         }
 
         TestPitchHandResponse hand = getPitchHand(matchSessionId);
@@ -180,10 +182,10 @@ public class GameTestMatchService {
     /** 타자 선택 화면 — 투수가 공개한 시작 좌표 */
     public TestBatterPrepareResponse prepareForBatter(String matchSessionId) {
         if (gameProgressReader.isGameOver(matchSessionId)) {
-            throw new IllegalStateException("경기가 이미 종료되었습니다.");
+            throw new BadRequestException(ErrorCode.GAME_ALREADY_ENDED);
         }
         if (!turnResultSessionReader.isPitcherSelectionComplete(matchSessionId)) {
-            throw new IllegalStateException("투수 구종·좌표 선택을 먼저 완료하세요.");
+            throw new BadRequestException(ErrorCode.GAME_PITCHER_SELECTION_REQUIRED);
         }
         var session = turnResultSessionReader.getCurrentSession(matchSessionId);
         return new TestBatterPrepareResponse(
@@ -248,8 +250,8 @@ public class GameTestMatchService {
         MatchInfo.PlayerSetupNumbers first = matchInfo.getPlayerSetupNumbers().stream()
                 .filter(entry -> TEST_USER_ID.equals(entry.getUserId()))
                 .findFirst()
-                .orElseThrow(() -> new IllegalStateException(
-                        "userId=" + TEST_USER_ID + "의 setup-numbers가 없습니다. 먼저 숫자를 제출하세요."));
+                .orElseThrow(() -> new BadRequestException(
+                        ErrorCode.GAME_SETUP_NUMBERS_MISSING, "userId=" + TEST_USER_ID));
 
         SetupNumberRequest duplicate = new SetupNumberRequest(
                 first.getOutNumList(),

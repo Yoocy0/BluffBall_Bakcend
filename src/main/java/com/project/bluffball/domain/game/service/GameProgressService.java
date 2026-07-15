@@ -22,6 +22,8 @@ import com.project.bluffball.domain.game.service.usecase.reader.PitchCardReader;
 import com.project.bluffball.domain.game.service.usecase.reader.TurnResultSessionReader;
 import com.project.bluffball.domain.game.service.usecase.validator.GameEndValidator;
 import com.project.bluffball.domain.user.record.enums.GameMode;
+import com.project.bluffball.global.exception.BadRequestException;
+import com.project.bluffball.global.exception.ErrorCode;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.context.ApplicationEventPublisher;
@@ -82,7 +84,7 @@ public class GameProgressService {
      */
     public void initializeGame(String matchSessionId, int totalInnings) {
         if (totalInnings <= 0) {
-            throw new IllegalArgumentException("총 이닝 수는 1 이상이어야 합니다. totalInnings=" + totalInnings);
+            throw new BadRequestException(ErrorCode.GAME_INVALID_INNINGS, "totalInnings=" + totalInnings);
         }
         gameProgressExecutor.initialize(matchSessionId, totalInnings);
     }
@@ -166,6 +168,38 @@ public class GameProgressService {
     }
 
     /**
+     * 경기 종료 시 DB 아카이브·큐 정리·클라이언트 이벤트 발행.
+     *
+     * <p>정상 종료·몰수패 공통 처리. 턴 기록이 없으면 아카이브는 생략한다.</p>
+     */
+    public void finalizeGameEnd(String matchSessionId, Long winnerUserId) {
+        if (!gameEndReader.isGameEnded(matchSessionId)) {
+            return;
+        }
+
+        GameStateSnapshot snapshot = gameStateReader.getSnapshot(matchSessionId);
+        publishGameEndEvent(matchSessionId, snapshot, winnerUserId);
+
+        if (gameEndReader.isAlreadyArchived(matchSessionId)) {
+            return;
+        }
+
+        var completedSessions = gameEndReader.getCompletedTurnSessions(matchSessionId);
+        if (completedSessions.isEmpty()) {
+            matchService.clearQueueEntriesForMatch(matchSessionId);
+            return;
+        }
+
+        gameEndValidator.validateArchiveReady(
+                gameProgressReader.isInitialized(matchSessionId),
+                true,
+                false);
+        gameEndValidator.validateCompletedTurnSessions(completedSessions);
+        gameEndExecutor.archive(completedSessions);
+        matchService.clearQueueEntriesForMatch(matchSessionId);
+    }
+
+    /**
      * 경기 종료 시 Reader 조회 → Validator 검증 → Executor DB 저장 → 클라이언트 이벤트 발행.
      */
     private boolean handleGameEndIfNeeded(String matchSessionId, GameStateSnapshot snapshot) {
@@ -173,23 +207,18 @@ public class GameProgressService {
             return false;
         }
 
-        publishGameEndEvent(matchSessionId, snapshot);
-
-        if (gameEndReader.isAlreadyArchived(matchSessionId)) {
-            return true;
-        }
-
-        gameEndValidator.validateArchiveReady(
-                gameProgressReader.isInitialized(matchSessionId),
-                gameEndReader.isGameEnded(matchSessionId),
-                gameEndReader.isAlreadyArchived(matchSessionId));
-
-        var completedSessions = gameEndReader.getCompletedTurnSessions(matchSessionId);
-        gameEndValidator.validateCompletedTurnSessions(completedSessions);
-        gameEndExecutor.archive(completedSessions);
-        matchService.clearQueueEntriesForMatch(matchSessionId);
-
+        finalizeGameEnd(matchSessionId, resolveWinnerUserId(matchSessionId, snapshot));
         return true;
+    }
+
+    private Long resolveWinnerUserId(String matchSessionId, GameStateSnapshot snapshot) {
+        if (snapshot.homeScore() > snapshot.awayScore()) {
+            return matchInfoReader.getHomeUserId(matchSessionId);
+        }
+        if (snapshot.awayScore() > snapshot.homeScore()) {
+            return matchInfoReader.getAwayUserId(matchSessionId);
+        }
+        return null;
     }
 
     private void publishTurnResultEvent(String matchSessionId,
@@ -223,14 +252,12 @@ public class GameProgressService {
 
     /**
      * 경기 종료 이벤트를 브로드캐스트한다.
-     *
-     * <p>TODO: 승자 판정(winnerUserId) — 모드별 홈/어웨이·팀 매핑 후 구현</p>
      */
-    private void publishGameEndEvent(String matchSessionId, GameStateSnapshot snapshot) {
+    private void publishGameEndEvent(String matchSessionId, GameStateSnapshot snapshot, Long winnerUserId) {
         GameEndEvent event = new GameEndEvent(
                 snapshot.homeScore(),
                 snapshot.awayScore(),
-                null);
+                winnerUserId);
         messagingTemplate.convertAndSend(GAME_TOPIC + matchSessionId + END_TOPIC_SUFFIX, event);
     }
 }

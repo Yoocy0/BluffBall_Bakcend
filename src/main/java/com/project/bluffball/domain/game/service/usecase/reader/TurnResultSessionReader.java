@@ -2,6 +2,8 @@ package com.project.bluffball.domain.game.service.usecase.reader;
 
 import com.project.bluffball.domain.game.redis.TurnResultSession;
 import com.project.bluffball.domain.game.repository.TurnResultSessionRepository;
+import com.project.bluffball.global.exception.ErrorCode;
+import com.project.bluffball.global.exception.NotFoundException;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Component;
 
@@ -20,8 +22,8 @@ public class TurnResultSessionReader {
     /** Executor·Reader 내부 전용 — Service에서 호출 금지 */
     public TurnResultSession getById(String sessionId) {
         return turnResultSessionRepository.findById(sessionId)
-                .orElseThrow(() -> new IllegalArgumentException(
-                        "턴 세션을 찾을 수 없습니다. sessionId=" + sessionId));
+                .orElseThrow(() -> new NotFoundException(
+                        ErrorCode.TURN_SESSION_NOT_FOUND, "sessionId=" + sessionId));
     }
 
     /** 현재 턴의 TurnResultSession 반환 (Executor·Reader 내부) */
@@ -33,6 +35,16 @@ public class TurnResultSessionReader {
     /** 특정 턴 번호의 TurnResultSession (Service ✅ — TurnResultEvent 조립용) */
     public TurnResultSession getSession(String matchSessionId, int turnNumber) {
         return getById(matchSessionId + ":" + turnNumber);
+    }
+
+    /** 현재 턴 TurnResultSession 조회 — 없으면 empty */
+    public Optional<TurnResultSession> findCurrentSession(String matchSessionId) {
+        return findSession(matchSessionId, gameStateReader.getTurnNumber(matchSessionId));
+    }
+
+    /** 지정 턴 TurnResultSession 조회 — 없으면 empty */
+    public Optional<TurnResultSession> findSession(String matchSessionId, int turnNumber) {
+        return turnResultSessionRepository.findById(matchSessionId + ":" + turnNumber);
     }
 
     /** 현재 턴에 투수 카드 선택이 완료되었는지 (Service ✅) */
@@ -48,10 +60,5 @@ public class TurnResultSessionReader {
         return findCurrentSession(matchSessionId)
                 .map(session -> session.getTurnResult() != null)
                 .orElse(false);
-    }
-
-    private Optional<TurnResultSession> findCurrentSession(String matchSessionId) {
-        int turnNumber = gameStateReader.getTurnNumber(matchSessionId);
-        return turnResultSessionRepository.findById(matchSessionId + ":" + turnNumber);
     }
 }
