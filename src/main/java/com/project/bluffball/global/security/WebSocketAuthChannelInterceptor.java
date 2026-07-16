@@ -2,6 +2,7 @@ package com.project.bluffball.global.security;
 
 import com.project.bluffball.domain.auth.infrastructure.jwt.JwtTokenProvider;
 import com.project.bluffball.global.exception.AuthUnauthorizedException;
+import com.project.bluffball.global.exception.ErrorCode;
 import lombok.RequiredArgsConstructor;
 import org.springframework.messaging.Message;
 import org.springframework.messaging.MessageChannel;
@@ -85,7 +86,7 @@ public class WebSocketAuthChannelInterceptor implements ChannelInterceptor {
     private Long resolveUserIdFromConnect(StompHeaderAccessor accessor) {
         String token = resolveBearerToken(accessor.getFirstNativeHeader("Authorization"));
         if (!StringUtils.hasText(token) || !jwtTokenProvider.validateToken(token)) {
-            throw new AuthUnauthorizedException("WebSocket 연결에 유효한 JWT가 필요합니다.");
+            throw new AuthUnauthorizedException(ErrorCode.AUTH_WS_JWT_REQUIRED);
         }
         return jwtTokenProvider.extractUserId(token);
     }

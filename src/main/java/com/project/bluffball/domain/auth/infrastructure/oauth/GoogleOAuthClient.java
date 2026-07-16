@@ -3,6 +3,7 @@ package com.project.bluffball.domain.auth.infrastructure.oauth;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.project.bluffball.domain.auth.dto.SocialUserInfo;
 import com.project.bluffball.global.config.OAuthProperties;
+import com.project.bluffball.global.exception.ErrorCode;
 import com.project.bluffball.global.exception.OAuthApiException;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpHeaders;
@@ -34,11 +35,11 @@ public class GoogleOAuthClient implements OAuthUserInfoClient {
             String accessToken = requestAccessToken(authorizationCode, redirectUri);
             return requestUserInfo(accessToken);
         } catch (RestClientResponseException ex) {
-            throw new OAuthApiException("구글 OAuth API 호출에 실패했습니다.", ex);
+            throw new OAuthApiException(ErrorCode.OAUTH_API_FAILED, ex);
         } catch (OAuthApiException ex) {
             throw ex;
         } catch (Exception ex) {
-            throw new OAuthApiException("구글 OAuth 응답 처리 중 오류가 발생했습니다.", ex);
+            throw new OAuthApiException(ErrorCode.OAUTH_API_FAILED, ex);
         }
     }
 
@@ -72,7 +73,7 @@ public class GoogleOAuthClient implements OAuthUserInfoClient {
                 .body(JsonNode.class);
 
         if (response == null || !response.hasNonNull("sub")) {
-            throw new OAuthApiException("구글 유저 정보 응답에 sub가 없습니다.");
+            throw new OAuthApiException(ErrorCode.OAUTH_API_FAILED);
         }
 
         return new SocialUserInfo(response.get("sub").asText());
@@ -81,7 +82,7 @@ public class GoogleOAuthClient implements OAuthUserInfoClient {
     /** OAuth Token 응답에서 access_token 추출 */
     private String extractAccessToken(JsonNode response, String providerLabel) {
         if (response == null || !response.hasNonNull("access_token")) {
-            throw new OAuthApiException(providerLabel + " Token 응답에 access_token이 없습니다.");
+            throw new OAuthApiException(ErrorCode.OAUTH_API_FAILED);
         }
         return response.get("access_token").asText();
     }

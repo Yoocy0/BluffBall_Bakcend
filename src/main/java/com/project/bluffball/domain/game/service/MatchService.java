@@ -10,6 +10,7 @@ import com.project.bluffball.domain.game.service.usecase.reader.MatchInfoReader;
 import com.project.bluffball.domain.game.service.usecase.reader.MatchQueueReader;
 import com.project.bluffball.domain.game.service.usecase.validator.MatchQueueValidator;
 import com.project.bluffball.domain.user.record.enums.GameMode;
+import com.project.bluffball.global.exception.ErrorCode;
 import com.project.bluffball.global.exception.MatchNotFoundException;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -49,7 +50,7 @@ public class MatchService {
 
     public void cancelQueue(Long userId) {
         if (!matchQueueReader.hasQueueEntry(userId)) {
-            throw new MatchNotFoundException("매칭 큐에 등록된 유저가 아닙니다.");
+            throw new MatchNotFoundException(ErrorCode.MATCH_NOT_FOUND);
         }
 
         MatchQueueState state = matchQueueReader.getQueueState(userId);

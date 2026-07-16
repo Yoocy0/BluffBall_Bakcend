@@ -1,6 +1,7 @@
 package com.project.bluffball.domain.game.service.usecase.validator;
 
 import com.project.bluffball.global.exception.AuthForbiddenException;
+import com.project.bluffball.global.exception.ErrorCode;
 import org.springframework.stereotype.Component;
 
 /**
@@ -19,7 +20,7 @@ public class MatchParticipantValidator {
      */
     public void validateParticipant(boolean isParticipant) {
         if (!isParticipant) {
-            throw new AuthForbiddenException("해당 매치의 참가자가 아닙니다.");
+            throw new AuthForbiddenException(ErrorCode.MATCH_NOT_PARTICIPANT);
         }
     }
 }

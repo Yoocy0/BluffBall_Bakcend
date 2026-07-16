@@ -6,6 +6,7 @@ import com.project.bluffball.domain.game.dto.request.PitcherCardSelectRequest;
 import com.project.bluffball.domain.game.dto.request.SetupNumberRequest;
 import com.project.bluffball.domain.game.service.GamePrepService;
 import com.project.bluffball.domain.game.service.GameTurnService;
+import com.project.bluffball.domain.game.service.MatchPresenceService;
 import com.project.bluffball.global.security.AuthenticatedUserResolver;
 import lombok.RequiredArgsConstructor;
 import org.springframework.messaging.handler.annotation.DestinationVariable;
@@ -58,6 +59,7 @@ public class GameWebSocketController {
 
     private final GamePrepService gamePrepService;
     private final GameTurnService gameTurnService;
+    private final MatchPresenceService matchPresenceService;
 
     /** STOMP CONNECT principal에서 userId 추출 */
     private final AuthenticatedUserResolver authenticatedUserResolver;
@@ -116,5 +118,18 @@ public class GameWebSocketController {
             Principal principal) {
         Long userId = authenticatedUserResolver.requireUserId(principal);
         gameTurnService.batterSelectCard(matchSessionId, userId, request);
+    }
+
+    /**
+     * 접속 유지 heartbeat — 120초 유예 판정 전 연결 상태 갱신.
+     *
+     * <b>수신 경로:</b> {@code /app/game/{matchSessionId}/presence/heartbeat}
+     */
+    @MessageMapping("/game/{matchSessionId}/presence/heartbeat")
+    public void presenceHeartbeat(
+            @DestinationVariable String matchSessionId,
+            Principal principal) {
+        Long userId = authenticatedUserResolver.requireUserId(principal);
+        matchPresenceService.refreshHeartbeat(matchSessionId, userId);
     }
 }

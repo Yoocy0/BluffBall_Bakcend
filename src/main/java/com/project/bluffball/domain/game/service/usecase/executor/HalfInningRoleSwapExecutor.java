@@ -4,6 +4,8 @@ import com.project.bluffball.domain.game.redis.MatchInfo;
 import com.project.bluffball.domain.game.repository.MatchInfoRepository;
 import com.project.bluffball.domain.game.service.usecase.reader.MatchInfoReader;
 import com.project.bluffball.domain.user.record.enums.GameMode;
+import com.project.bluffball.global.exception.BadRequestException;
+import com.project.bluffball.global.exception.ErrorCode;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Component;
 
@@ -25,12 +27,10 @@ public class HalfInningRoleSwapExecutor {
     public Long swapForSingleMode(String matchSessionId) {
         MatchInfo matchInfo = matchInfoReader.getById(matchSessionId);
         if (matchInfo.getGameMode() != GameMode.SHOWDOWN) {
-            throw new IllegalStateException(
-                    "쇼다운 모드에서만 공수 교대 역할 교환이 지원됩니다.");
+            throw new BadRequestException(ErrorCode.GAME_ROLE_SWAP_UNSUPPORTED);
         }
         if (matchInfo.getBatterLineup().size() != 1) {
-            throw new IllegalStateException(
-                    "1 vs 1 매치에서만 공수 교대 역할 교환이 지원됩니다.");
+            throw new BadRequestException(ErrorCode.GAME_ROLE_SWAP_UNSUPPORTED);
         }
 
         Long newPitcherUserId = matchInfo.swapRolesForSingleMode();

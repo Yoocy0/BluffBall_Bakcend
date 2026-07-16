@@ -1,6 +1,7 @@
 package com.project.bluffball.domain.auth.service.usecase.validator;
 
 import com.project.bluffball.global.exception.AuthForbiddenException;
+import com.project.bluffball.global.exception.ErrorCode;
 import org.springframework.stereotype.Component;
 
 /**
@@ -18,7 +19,7 @@ public class AccountStatusValidator {
      */
     public void validateActive(boolean isActive) {
         if (!isActive) {
-            throw new AuthForbiddenException("정지된 계정입니다. 로그인할 수 없습니다.");
+            throw new AuthForbiddenException(ErrorCode.AUTH_ACCOUNT_SUSPENDED);
         }
     }
 }

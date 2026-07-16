@@ -1,6 +1,8 @@
 package com.project.bluffball.domain.user.record.entity;
 
 import com.project.bluffball.domain.user.record.enums.GameMode;
+import com.project.bluffball.global.exception.BadRequestException;
+import com.project.bluffball.global.exception.ErrorCode;
 import jakarta.persistence.*;
 import lombok.AccessLevel;
 import lombok.Getter;
@@ -65,11 +67,11 @@ public class PitcherRecord extends UserRecord {
      * totalOuts = 6 → innings = 2 + 2 = 4, outCounts = 0</p>
      *
      * @param additionalOuts 추가할 아웃 카운트 (0 이상의 정수)
-     * @throws IllegalArgumentException additionalOuts가 음수인 경우
+     * @throws BadRequestException additionalOuts가 음수인 경우
      */
     public void addOutCounts(int additionalOuts) {
         if (additionalOuts < 0) {
-            throw new IllegalArgumentException("추가 아웃 카운트는 0 이상이어야 합니다. 입력값: " + additionalOuts);
+            throw new BadRequestException(ErrorCode.PITCHER_RECORD_INVALID, "additionalOuts=" + additionalOuts);
         }
         int totalOuts = this.outCounts + additionalOuts;
         this.innings += (totalOuts / 3);

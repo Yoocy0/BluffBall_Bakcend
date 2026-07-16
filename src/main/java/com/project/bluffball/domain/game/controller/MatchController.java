@@ -59,7 +59,7 @@
                 @ApiResponse(responseCode = "200", description = "매칭 성사 — status=MATCHED, matchSessionId 포함"),
                 @ApiResponse(responseCode = "202", description = "매칭 대기 중 — status=WAITING"),
                 @ApiResponse(responseCode = "401", description = "인증 토큰 없음 또는 만료"),
-                @ApiResponse(responseCode = "409", description = "이미 큐에 등록된 유저")
+                @ApiResponse(responseCode = "409", description = "이미 큐에 등록g된 유저")
         })
         @PostMapping("/queue/join")
         public ResponseEntity<MatchJoinResponse> joinQueue() {
