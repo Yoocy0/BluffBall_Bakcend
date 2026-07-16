@@ -80,7 +80,7 @@ public class SingleMatchCreateExecutor {
 
                 .id(matchSessionId)
 
-                .gameMode(GameMode.GENERAL)
+                .gameMode(GameMode.SHOWDOWN)
 
                 .pitcherUserId(pitcherUserId)
 

@@ -148,7 +148,7 @@ public class MatchQueueRedisOps {
 
      * @param gameMode 큐를 구분하는 게임 모드
 
-     * @return 예: {@code match:queue:GENERAL}
+     * @return 예: {@code match:queue:SHOWDOWN}
 
      */
 

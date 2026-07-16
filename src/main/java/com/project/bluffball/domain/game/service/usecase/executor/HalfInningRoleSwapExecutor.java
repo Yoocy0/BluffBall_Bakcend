@@ -24,9 +24,9 @@ public class HalfInningRoleSwapExecutor {
      */
     public Long swapForSingleMode(String matchSessionId) {
         MatchInfo matchInfo = matchInfoReader.getById(matchSessionId);
-        if (matchInfo.getGameMode() != GameMode.GENERAL) {
+        if (matchInfo.getGameMode() != GameMode.SHOWDOWN) {
             throw new IllegalStateException(
-                    "싱글 모드(GENERAL)에서만 공수 교대 역할 교환이 지원됩니다.");
+                    "쇼다운 모드에서만 공수 교대 역할 교환이 지원됩니다.");
         }
         if (matchInfo.getBatterLineup().size() != 1) {
             throw new IllegalStateException(
