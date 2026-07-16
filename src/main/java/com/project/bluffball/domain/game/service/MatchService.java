@@ -25,7 +25,7 @@ import org.springframework.stereotype.Service;
 @Slf4j
 public class MatchService {
 
-    private static final GameMode SINGLE_MODE = GameMode.GENERAL;
+    private static final GameMode SINGLE_MODE = GameMode.SHOWDOWN;
     private static final String USER_MATCH_TOPIC_PREFIX = "/topic/user/";
 
     private final MatchQueueValidator matchQueueValidator;

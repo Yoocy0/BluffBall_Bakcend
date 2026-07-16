@@ -10,6 +10,9 @@ import lombok.NoArgsConstructor;
 
 /**
  * 투수 상세 성적 엔터티 (record_type_code = 1).
+ *
+ * <p>표시용 ERA = 자책점 × 9 / 이닝(소수 포함).
+ * 이닝은 {@code innings + outCounts/3} 로 환산한다.</p>
  */
 @Entity
 @DiscriminatorValue("1")
@@ -17,7 +20,7 @@ import lombok.NoArgsConstructor;
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
 public class PitcherRecord extends UserRecord {
 
-    /** 총 소화 이닝 수 */
+    /** 총 소화 이닝 수 (정수 이닝) */
     @Column(name = "innings", nullable = false)
     private int innings;
 
@@ -53,6 +56,10 @@ public class PitcherRecord extends UserRecord {
     @Column(name = "home_runs_allowed", nullable = false)
     private int homeRunsAllowed;
 
+    /** 폭투 */
+    @Column(name = "wild_pitches", nullable = false)
+    private int wildPitches;
+
     /**
      * 아웃 카운트를 누적하고, 3개가 쌓일 때마다 이닝을 자동으로 증가시킨다.
      *
@@ -71,11 +78,12 @@ public class PitcherRecord extends UserRecord {
         this.outCounts = (totalOuts % 3);
     }
 
-    public PitcherRecord(Long userId, GameMode gameMode, int totalGames, int wins, int loses,
-                        int innings, int outCounts, int strikeOuts, int baseOnBalls,
-                        int hits, int earnedRuns, int doublesAllowed, int triplesAllowed,
-                        int homeRunsAllowed) {
-        super(userId, gameMode, totalGames, wins, loses);
+    public PitcherRecord(Long userId, GameMode gameMode, Long leagueId,
+                         int totalGames, int wins, int loses,
+                         int innings, int outCounts, int strikeOuts, int baseOnBalls,
+                         int hits, int earnedRuns, int doublesAllowed, int triplesAllowed,
+                         int homeRunsAllowed, int wildPitches) {
+        super(userId, gameMode, leagueId, totalGames, wins, loses);
         this.innings = innings;
         this.outCounts = outCounts;
         this.strikeOuts = strikeOuts;
@@ -85,5 +93,6 @@ public class PitcherRecord extends UserRecord {
         this.doublesAllowed = doublesAllowed;
         this.triplesAllowed = triplesAllowed;
         this.homeRunsAllowed = homeRunsAllowed;
+        this.wildPitches = wildPitches;
     }
 }

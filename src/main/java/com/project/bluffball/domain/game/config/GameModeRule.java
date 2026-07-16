@@ -10,15 +10,13 @@ import org.springframework.stereotype.Component;
  *
  * <h3>투수 카드 핸드 장수</h3>
  * <ul>
- *   <li>GENERAL(싱글) — 3장</li>
- *   <li>CLAN_MINI / CLAN_GENERAL(팀전) — 5장</li>
- *   <li>CUSTOM — 3장 (기본값)</li>
+ *   <li>SHOWDOWN / CUSTOM — 3장</li>
+ *   <li>FULL_LEAGUE / COMPACT_LEAGUE — 5장</li>
  * </ul>
  *
  * <h3>블러핑 숫자 제출 인원 수</h3>
  * <ul>
- *   <li>GENERAL(싱글) — 2명 (home + away)</li>
- *   <li>CLAN_MINI / CLAN_GENERAL / CUSTOM — 2명 (팀 대표)</li>
+ *   <li>전 모드 — 2명 (추후 모드별 확장 가능)</li>
  * </ul>
  */
 @Component
@@ -27,8 +25,8 @@ public class GameModeRule {
     // 게임 모드에 따른 초기 드로우 장수 반환 메서드
     public int getHandSize(GameMode gameMode) {
         return switch (gameMode) {
-            case GENERAL, CUSTOM -> 3;
-            case CLAN_MINI, CLAN_GENERAL -> 5;
+            case SHOWDOWN, CUSTOM -> 3;
+            case FULL_LEAGUE, COMPACT_LEAGUE -> 5;
         };
     }
 
@@ -40,10 +38,9 @@ public class GameModeRule {
     /** 모드별 기본 총 이닝 수 — 커스텀 모드는 매치 설정값을 직접 전달한다. */
     public int getDefaultInnings(GameMode gameMode) {
         return switch (gameMode) {
-            case GENERAL -> 1;
-            case CLAN_MINI -> 3;
-            case CLAN_GENERAL -> 9;
-            case CUSTOM -> 1;
+            case SHOWDOWN, CUSTOM -> 1;
+            case COMPACT_LEAGUE -> 3;
+            case FULL_LEAGUE -> 9;
         };
     }
 }

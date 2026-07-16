@@ -26,7 +26,7 @@ public class HalfInningRoleSwapExecutor {
      */
     public Long swapForSingleMode(String matchSessionId) {
         MatchInfo matchInfo = matchInfoReader.getById(matchSessionId);
-        if (matchInfo.getGameMode() != GameMode.GENERAL) {
+        if (matchInfo.getGameMode() != GameMode.SHOWDOWN) {
             throw new BadRequestException(ErrorCode.GAME_ROLE_SWAP_UNSUPPORTED);
         }
         if (matchInfo.getBatterLineup().size() != 1) {

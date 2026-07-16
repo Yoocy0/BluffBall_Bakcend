@@ -71,7 +71,7 @@ public class GameTestMatchService {
 
         MatchInfo matchInfo = MatchInfo.builder()
                 .id(matchSessionId)
-                .gameMode(GameMode.GENERAL)
+                .gameMode(GameMode.SHOWDOWN)
                 .pitcherUserId(TEST_USER_ID)
                 .batterLineup(List.of(TEST_OPPONENT_USER_ID))
                 .build();
