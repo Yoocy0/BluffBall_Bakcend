@@ -8,10 +8,11 @@ import lombok.Getter;
 import lombok.NoArgsConstructor;
 
 /**
- * 리그 카탈로그 엔터티.
+ * 리그 등급 카탈로그 엔터티.
  *
  * <p>풀/컴팩트 × 7티어 = 최대 14개 행이 존재한다.
- * 유저 성적({@code user_record.league_id})이 이 테이블을 참조한다.</p>
+ * 유저 성적({@code user_record.league_id})은 이 등급을 참조한다.
+ * 실제 진행 단위는 {@link LeagueSeason}이다.</p>
  */
 @Entity
 @Table(
@@ -44,9 +45,14 @@ public class League {
     @Column(name = "name", nullable = false, length = 40)
     private String name;
 
-    public League(LeagueFormat format, LeagueTier tier, String name) {
+    /** 리그 참여권 가격 (팀 재정으로 지불) */
+    @Column(name = "entry_fee", nullable = false)
+    private long entryFee;
+
+    public League(LeagueFormat format, LeagueTier tier, String name, long entryFee) {
         this.format = format;
         this.tier = tier;
         this.name = name;
+        this.entryFee = entryFee;
     }
 }
