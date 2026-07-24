@@ -7,6 +7,13 @@ import org.springframework.stereotype.Component;
 /**
  * {@link TurnResult} → 경기 상태(카운트·주자·점수·이닝) 순수 계산.
  * DB·Redis 접근 없음. {@link com.project.bluffball.domain.game.service.GameProgressService#applyTurnResult}에서 호출.
+ *
+ * <h3>종료·연장 규칙</h3>
+ * <ul>
+ *   <li>규정 이닝(및 이후) 말 공격에서 홈이 동점·열세였다가 앞서면 즉시 종료(끝내기)</li>
+ *   <li>규정 이닝 말 종료 시 동점이면 다음 이닝 초로 연장</li>
+ *   <li>규정 이닝 말 종료 시 점수 차가 있으면 경기 종료</li>
+ * </ul>
  */
 @Component
 public class GameProgressCalculator {
@@ -192,7 +199,12 @@ public class GameProgressCalculator {
         }
     }
 
-    /** 3아웃 — 카운트·주자 리셋 후 초→말, 말→다음 이닝 또는 경기 종료 */
+    /**
+     * 3아웃 — 카운트·주자 리셋 후 초→말, 말→다음 이닝 또는 경기 종료.
+     *
+     * <p>규정 이닝(및 연장) 말 종료 시 동점이면 {@code totalInnings}는 유지한 채
+     * {@code currentInning}만 올려 연장 초로 진행한다.</p>
+     */
     private void endHalfInning(MutableState state) {
         resetCount(state);
         clearBases(state);
@@ -204,7 +216,13 @@ public class GameProgressCalculator {
         }
 
         if (state.currentInning >= state.totalInnings) {
-            state.gameOver = true; // 말 종료 + 마지막 이닝 → 경기 종료
+            if (state.homeScore == state.awayScore) {
+                // 동점 → 연장 (다음 이닝 초). totalInnings는 규정 이닝 길이로 유지
+                state.isTop = true;
+                state.currentInning++;
+                return;
+            }
+            state.gameOver = true; // 점수 차 확정 → 경기 종료
             return;
         }
 
@@ -242,15 +260,26 @@ public class GameProgressCalculator {
         return count;
     }
 
-    /** 초(isTop)=어웨이 득점, 말=홈 득점 */
+    /**
+     * 초(isTop)=어웨이 득점, 말=홈 득점.
+     *
+     * <p>규정 이닝 이상 말 공격에서 홈이 동점·열세였다가 앞서면 끝내기로 즉시 종료한다.</p>
+     */
     private void addRun(MutableState state, int runs) {
         if (runs <= 0) {
             return;
         }
         if (state.isTop) {
             state.awayScore += runs;
-        } else {
-            state.homeScore += runs;
+            return;
+        }
+
+        boolean wasNotLeading = state.homeScore <= state.awayScore;
+        state.homeScore += runs;
+        if (wasNotLeading
+                && state.homeScore > state.awayScore
+                && state.currentInning >= state.totalInnings) {
+            state.gameOver = true;
         }
     }
 

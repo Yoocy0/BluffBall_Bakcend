@@ -22,7 +22,7 @@ public class GameEndReader {
     private final InningLogRepository inningLogRepository;
 
     /**
-     * 모드별 총 이닝의 말 공격까지 끝나 경기가 종료됐는지 여부.
+     * 경기가 종료됐는지 여부 (끝내기·규정/연장 말 종료 후 승패 확정·몰수 등).
      */
     public boolean isGameEnded(String matchSessionId) {
         return gameProgressReader.isGameOver(matchSessionId);

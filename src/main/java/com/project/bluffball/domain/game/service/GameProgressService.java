@@ -34,7 +34,8 @@ import org.springframework.stereotype.Service;
  * 야구 경기 진행 서비스 — 턴 판정 결과를 받아 경기 상태를 구성한다.
  *
  * <p>판정 Executor는 {@link com.project.bluffball.domain.game.enums.TurnResult}만 반환하고,
- * 카운트·주자·점수 갱신 및 {@link TurnResultEvent} 클라이언트 전송은 이 Service가 담당한다.</p>
+ * 카운트·주자·점수 갱신 및 {@link TurnResultEvent} 클라이언트 전송은 이 Service가 담당한다.
+ * 동점 연장·끝내기 등 종료 판정 규칙 자체는 {@link GameProgressCalculator}에 있다.</p>
  *
  * <h3>연동</h3>
  * <ul>
@@ -42,10 +43,17 @@ import org.springframework.stereotype.Service;
  *   <li>{@link GameTurnService} — 타자 선택·판정 직후 {@link #applyTurnResult(String, GameTurnOutcome)} 호출</li>
  * </ul>
  *
+ * <h3>종료 흐름</h3>
+ * <ul>
+ *   <li>끝내기 — Calculator가 {@code gameOver}를 켜면 하프이닝 전환 없이 {@link #handleGameEndIfNeeded}로 종료</li>
+ *   <li>동점 연장 — 말 3아웃 후 동점이면 다음 이닝으로 진행되며 {@link HalfInningChangedEvent}로 공수 교대</li>
+ * </ul>
+ *
  * <p>총 이닝 수와 {@code TurnResult}만 입력받으므로 모드·커스텀 룰이 달라도 동일 인터페이스로 확장 가능하다.</p>
  *
  * @see GamePrepService 준비 단계(숫자 셋업, 카드 드로우·멀리건)
  * @see GameTurnService 반복 턴(투수/타자 선택, 타격 판정)
+ * @see GameProgressCalculator 동점 연장·끝내기 규칙
  */
 @Service
 @RequiredArgsConstructor
