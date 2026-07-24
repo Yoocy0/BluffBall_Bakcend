@@ -1,9 +1,12 @@
 package com.project.bluffball.domain.game.service.usecase.validator;
 
+import com.project.bluffball.domain.game.config.GameModeRule;
 import com.project.bluffball.domain.game.service.usecase.reader.MatchInfoReader;
+import com.project.bluffball.domain.user.record.enums.GameMode;
 import com.project.bluffball.global.exception.BadRequestException;
 import com.project.bluffball.global.exception.ErrorCode;
 import com.project.bluffball.global.exception.ForbiddenException;
+import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Component;
 
 import java.util.HashSet;
@@ -13,7 +16,16 @@ import java.util.List;
  * 멀리건(카드 교체) 요청 검증 컴포넌트.
  */
 @Component
+@RequiredArgsConstructor
 public class MulliganValidator {
+
+    private final GameModeRule gameModeRule;
+
+    public void validateInGameMulliganSupported(GameMode gameMode) {
+        if (!gameModeRule.usesInGameCardDrawAndMulligan(gameMode)) {
+            throw new BadRequestException(ErrorCode.GAME_INGAME_MULLIGAN_UNSUPPORTED);
+        }
+    }
 
     public void validateMulliganAllowedForUser(boolean mulliganDoneForUser) {
         if (mulliganDoneForUser) {

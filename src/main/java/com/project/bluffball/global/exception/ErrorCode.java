@@ -76,6 +76,7 @@ public enum ErrorCode {
     GAME_BATTER_ALREADY_SELECTED(HttpStatus.BAD_REQUEST, "이미 타자 선택이 완료된 턴입니다."),
     GAME_MULLIGAN_REQUIRED(HttpStatus.BAD_REQUEST, "카드 교체(멀리건) 확정 후에 진행할 수 있습니다."),
     GAME_MULLIGAN_ALREADY_USED(HttpStatus.BAD_REQUEST, "멀리건은 등판 당 1회만 가능합니다."),
+    GAME_INGAME_MULLIGAN_UNSUPPORTED(HttpStatus.BAD_REQUEST, "현재 매치에서는 인게임 멀리건이 지원되지 않습니다."),
     GAME_PITCHER_SELECTION_REQUIRED(HttpStatus.BAD_REQUEST, "투수 카드 선택이 완료되지 않았습니다."),
     GAME_LINEUP_EMPTY(HttpStatus.BAD_REQUEST, "타순이 비어 있습니다."),
     GAME_DOUBLE_JUDGMENT_NOT_CONFIGURED(HttpStatus.BAD_REQUEST, "2루타 판정 설정이 없습니다."),

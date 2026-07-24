@@ -14,6 +14,12 @@ import org.springframework.stereotype.Component;
  *   <li>FULL_LEAGUE / COMPACT_LEAGUE — 5장</li>
  * </ul>
  *
+ * <h3>인게임 카드 드로우·멀리건</h3>
+ * <ul>
+ *   <li>SHOWDOWN / CUSTOM — 셋업 숫자 이후 인게임에서 드로우·멀리건</li>
+ *   <li>FULL_LEAGUE / COMPACT_LEAGUE — 매치 전 구종 사전 선택(인게임 드로우·멀리건 없음)</li>
+ * </ul>
+ *
  * <h3>블러핑 숫자 제출 인원 수</h3>
  * <ul>
  *   <li>전 모드 — 2명 (추후 모드별 확장 가능)</li>
@@ -27,6 +33,18 @@ public class GameModeRule {
         return switch (gameMode) {
             case SHOWDOWN, CUSTOM -> 3;
             case FULL_LEAGUE, COMPACT_LEAGUE -> 5;
+        };
+    }
+
+    /**
+     * 셋업 숫자 완료 후 인게임에서 구종 카드 드로우·멀리건을 진행하는 모드인지.
+     *
+     * <p>리그 모드는 매치 시작 전 구종을 사전 선택하므로 false.</p>
+     */
+    public boolean usesInGameCardDrawAndMulligan(GameMode gameMode) {
+        return switch (gameMode) {
+            case SHOWDOWN, CUSTOM -> true;
+            case FULL_LEAGUE, COMPACT_LEAGUE -> false;
         };
     }
 
