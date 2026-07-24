@@ -93,4 +93,20 @@ public class User {
         }
         this.currency += amount;
     }
+
+    /**
+     * 재화를 차감한다. (팀 기부 등)
+     *
+     * @param amount 차감 금액 (양수)
+     * @throws IllegalArgumentException 금액이 0 이하이거나 잔액 부족 시
+     */
+    public void spendCurrency(long amount) {
+        if (amount <= 0) {
+            throw new IllegalArgumentException("차감 금액은 0보다 커야 합니다.");
+        }
+        if (this.currency < amount) {
+            throw new IllegalArgumentException("보유 재화가 부족합니다.");
+        }
+        this.currency -= amount;
+    }
 }

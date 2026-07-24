@@ -85,6 +85,33 @@ public enum ErrorCode {
     GAME_CARD_REDRAW_INSUFFICIENT(HttpStatus.BAD_REQUEST, "재뽑기 풀의 카드가 부족합니다."),
     GAME_ROLE_SWAP_UNSUPPORTED(HttpStatus.BAD_REQUEST, "현재 매치에서는 공수 교대 역할 교환이 지원되지 않습니다."),
 
+    // Team
+    TEAM_NOT_FOUND(HttpStatus.NOT_FOUND, "팀을 찾을 수 없습니다."),
+    TEAM_NAME_DUPLICATED(HttpStatus.CONFLICT, "이미 사용 중인 팀 이름입니다."),
+    TEAM_ALREADY_JOINED(HttpStatus.CONFLICT, "이미 팀에 소속되어 있습니다."),
+    TEAM_NOT_MEMBER(HttpStatus.FORBIDDEN, "해당 팀의 멤버가 아닙니다."),
+    TEAM_FORBIDDEN(HttpStatus.FORBIDDEN, "팀 리더만 수행할 수 있습니다."),
+    TEAM_LEADER_CANNOT_LEAVE(HttpStatus.CONFLICT, "팀 리더는 탈퇴할 수 없습니다. 리더를 위임한 뒤 탈퇴하세요."),
+    TEAM_LEADER_CANNOT_KICK_SELF(HttpStatus.BAD_REQUEST, "팀 리더 자신은 강제 탈퇴할 수 없습니다."),
+    TEAM_MEMBER_NOT_FOUND(HttpStatus.NOT_FOUND, "팀 멤버를 찾을 수 없습니다."),
+    TEAM_CURRENCY_INSUFFICIENT(HttpStatus.BAD_REQUEST, "보유 재화가 부족합니다."),
+    TEAM_DONATE_AMOUNT_INVALID(HttpStatus.BAD_REQUEST, "기부 금액이 올바르지 않습니다."),
+    TEAM_RECORD_NOT_FOUND(HttpStatus.NOT_FOUND, "해당 시즌의 팀 기록을 찾을 수 없습니다."),
+    TEAM_NAME_INVALID(HttpStatus.BAD_REQUEST, "팀 이름이 올바르지 않습니다."),
+    TEAM_MEMBER_LIMIT_EXCEEDED(HttpStatus.CONFLICT, "팀 최대 인원(50명)을 초과할 수 없습니다."),
+
+    // League
+    LEAGUE_NOT_FOUND(HttpStatus.NOT_FOUND, "리그를 찾을 수 없습니다."),
+    LEAGUE_SEASON_NOT_FOUND(HttpStatus.NOT_FOUND, "리그 시즌을 찾을 수 없습니다."),
+    LEAGUE_NOT_RECRUITING(HttpStatus.BAD_REQUEST, "모집 중인 시즌이 아닙니다."),
+    LEAGUE_TICKET_ALREADY_OWNED(HttpStatus.CONFLICT, "이미 해당 시즌 참여권을 보유하고 있습니다."),
+    LEAGUE_TICKET_NOT_FOUND(HttpStatus.BAD_REQUEST, "리그 참여권이 없습니다."),
+    LEAGUE_TREASURY_INSUFFICIENT(HttpStatus.BAD_REQUEST, "팀 재정이 부족하여 참여권을 구매할 수 없습니다."),
+    LEAGUE_MEMBERS_INSUFFICIENT(HttpStatus.BAD_REQUEST, "리그 참가에 필요한 최소 팀원 수가 부족합니다."),
+    LEAGUE_ALREADY_JOINED(HttpStatus.CONFLICT, "이미 해당 시즌에 참가 중입니다."),
+    LEAGUE_SEASON_FULL(HttpStatus.CONFLICT, "시즌 참가 정원이 초과되었습니다."),
+    LEAGUE_AFFILIATION_NOT_FOUND(HttpStatus.NOT_FOUND, "현재 소속된 리그가 없습니다."),
+
     // External
     OAUTH_API_FAILED(HttpStatus.SERVICE_UNAVAILABLE, "소셜 로그인 서비스에 연결할 수 없습니다."),
     ;

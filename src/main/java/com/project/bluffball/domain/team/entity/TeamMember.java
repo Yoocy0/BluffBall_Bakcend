@@ -54,4 +54,14 @@ public class TeamMember {
         this.userId = userId;
         this.role = role;
     }
+
+    /**
+     * 팀 내 계급을 변경한다.
+     */
+    public void changeRole(TeamMemberRole role) {
+        if (role == null) {
+            throw new IllegalArgumentException("계급은 null일 수 없습니다.");
+        }
+        this.role = role;
+    }
 }
