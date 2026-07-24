@@ -116,4 +116,14 @@ public class TeamMemberReader {
                 teamPresenceReader.isOnline(teamId, member.getUserId()),
                 member.getJoinedAt());
     }
+
+    /**
+     * 팀 멤버 수를 반환한다.
+     *
+     * @param teamId 팀 ID
+     * @return 멤버 수
+     */
+    public long countMembers(Long teamId) {
+        return teamMemberRepository.countByTeamId(teamId);
+    }
 }
