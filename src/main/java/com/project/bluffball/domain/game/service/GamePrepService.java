@@ -88,6 +88,7 @@ public class GamePrepService {
     }
 
     public void processMulligan(String matchSessionId, Long userId, MulliganRequest request) {
+        mulliganValidator.validateInGameMulliganSupported(matchInfoReader.getGameMode(matchSessionId));
         mulliganValidator.validateParticipant(matchInfoReader, matchSessionId, userId);
         mulliganValidator.validateMulliganAllowedForUser(
                 matchInfoReader.isMulliganDoneForUser(matchSessionId, userId));
