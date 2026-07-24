@@ -126,4 +126,20 @@ public class TeamMemberReader {
     public long countMembers(Long teamId) {
         return teamMemberRepository.countByTeamId(teamId);
     }
+
+    /**
+     * 주어진 유저 ID가 모두 해당 팀 멤버인지 반환한다.
+     *
+     * @param teamId 팀 ID
+     * @param userIds 유저 ID 목록
+     * @return 전원이 멤버이면 true
+     */
+    public boolean areAllMembers(Long teamId, List<Long> userIds) {
+        for (Long userId : userIds) {
+            if (!isMember(teamId, userId)) {
+                return false;
+            }
+        }
+        return true;
+    }
 }

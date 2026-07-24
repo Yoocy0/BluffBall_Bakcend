@@ -5,6 +5,7 @@ import com.project.bluffball.domain.team.dto.request.UpsertTeamLineupRequest;
 import com.project.bluffball.domain.team.dto.request.UpsertTeamPitchCardsRequest;
 import com.project.bluffball.domain.team.dto.response.TeamLineupResponse;
 import com.project.bluffball.domain.team.dto.response.TeamPitchCardsResponse;
+import com.project.bluffball.domain.team.service.TeamLineupService;
 import com.project.bluffball.global.security.AuthenticatedUserResolver;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
@@ -31,6 +32,9 @@ import org.springframework.web.bind.annotation.RestController;
 @RequestMapping("/api/v1/teams/{teamId}/lineups")
 @RequiredArgsConstructor
 public class TeamLineupController {
+
+    /** 로스터·구종 사전 선택 서비스 */
+    private final TeamLineupService teamLineupService;
 
     /** JWT SecurityContext에서 userId 추출 */
     private final AuthenticatedUserResolver authenticatedUserResolver;
@@ -60,8 +64,7 @@ public class TeamLineupController {
             @PathVariable LeagueFormat format,
             @Valid @RequestBody UpsertTeamLineupRequest request) {
         Long userId = authenticatedUserResolver.requireUserId();
-        // TODO: return ResponseEntity.ok(teamLineupService.upsertLineup(userId, teamId, format, request));
-        return ResponseEntity.ok().build();
+        return ResponseEntity.ok(teamLineupService.upsertLineup(userId, teamId, format, request));
     }
 
     /**
@@ -86,8 +89,7 @@ public class TeamLineupController {
             @PathVariable Long teamId,
             @PathVariable LeagueFormat format) {
         authenticatedUserResolver.requireUserId();
-        // TODO: return ResponseEntity.ok(teamLineupService.getLineup(teamId, format));
-        return ResponseEntity.ok().build();
+        return ResponseEntity.ok(teamLineupService.getLineup(teamId, format));
     }
 
     /**
@@ -116,8 +118,7 @@ public class TeamLineupController {
             @PathVariable LeagueFormat format,
             @Valid @RequestBody UpsertTeamPitchCardsRequest request) {
         Long userId = authenticatedUserResolver.requireUserId();
-        // TODO: return ResponseEntity.ok(teamLineupService.upsertPitchCards(userId, teamId, format, request));
-        return ResponseEntity.ok().build();
+        return ResponseEntity.ok(teamLineupService.upsertPitchCards(userId, teamId, format, request));
     }
 
     /**
@@ -142,7 +143,6 @@ public class TeamLineupController {
             @PathVariable Long teamId,
             @PathVariable LeagueFormat format) {
         authenticatedUserResolver.requireUserId();
-        // TODO: return ResponseEntity.ok(teamLineupService.getPitchCards(teamId, format));
-        return ResponseEntity.ok().build();
+        return ResponseEntity.ok(teamLineupService.getPitchCards(teamId, format));
     }
 }
