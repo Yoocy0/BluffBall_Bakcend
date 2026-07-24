@@ -69,7 +69,7 @@ public class MatchInfo {
 
     /**
      * 투수의 현재 카드 패 — 카드 ID 목록.
-     * 싱글: 3장 / 팀전: 5장 / 투수 교체 등판: 4장
+     * 쇼다운: 3장 / Compact: 4장(교체 후 3) / Full: 5장(교체 후 4)
      */
     private List<Long> pitcherCardHand;
 

@@ -1,6 +1,8 @@
 package com.project.bluffball.domain.game.controller;
 
 import com.project.bluffball.domain.game.dto.request.BatterCardSelectRequest;
+import com.project.bluffball.domain.game.dto.request.LeagueStartingLineupRequest;
+import com.project.bluffball.domain.game.dto.request.LeagueSubstitutePitcherRequest;
 import com.project.bluffball.domain.game.dto.request.MulliganRequest;
 import com.project.bluffball.domain.game.dto.request.PitcherCardSelectRequest;
 import com.project.bluffball.domain.game.dto.request.SetupNumberRequest;
@@ -44,12 +46,14 @@ import java.security.Principal;
  * │ 4 │ [투수 → 서버] pitcher/select-card /app/game/{id}/pitcher/select-card │
  * │   │  └ 구종 카드 + 시작 좌표 카드 동시 제출 (UX는 2단계, 전송은 1회)        │
  * │   │ [서버 → 타자] PitcherReadyEvent   /topic/game/{id}                   │
- * │   │  └ 시작 좌표 번호 공개 + 5초 타이머 시작 신호                           │
+ * │   │  └ 시작 좌표 즉시 공개 + 5초 타이머 시작 신호                           │
  * ├───┼──────────────────────────────────────────────────────────────────────┤
  * │ 5 │ [타자 → 서버] batter/select-card  /app/game/{id}/batter/select-card  │
  * │   │  └ 예측 좌표 + 타이밍 카드 제출 (타임아웃 시 isTimeout=true)           │
  * │   │ [서버 → 양측] TurnResultEvent     /topic/game/{id}/result            │
  * │   │  └ 최종 판정 결과 + 업데이트된 카운트/점수 브로드캐스트                  │
+ * ├───┼──────────────────────────────────────────────────────────────────────┤
+ * │ L │ [리그] starting-lineup / substitute-pitcher (선발·교체)               │
  * └───┴──────────────────────────────────────────────────────────────────────┘
  * </pre>
  */
@@ -131,5 +135,44 @@ public class GameWebSocketController {
             Principal principal) {
         Long userId = authenticatedUserResolver.requireUserId(principal);
         matchPresenceService.refreshHeartbeat(matchSessionId, userId);
+    }
+
+    /**
+     * [리그] 선발 투수·타순 제출.
+     *
+     * <b>수신 경로:</b> {@code /app/game/{matchSessionId}/league/starting-lineup}
+     *
+     * @param matchSessionId 매치 세션 ID
+     * @param request 선발 투수·타순
+     * @param principal STOMP principal
+     */
+    @MessageMapping("/game/{matchSessionId}/league/starting-lineup")
+    public void leagueStartingLineup(
+            @DestinationVariable String matchSessionId,
+            @Payload LeagueStartingLineupRequest request,
+            Principal principal) {
+        Long userId = authenticatedUserResolver.requireUserId(principal);
+        // TODO: leagueGamePrepService.submitStartingLineup(matchSessionId, userId, request);
+    }
+
+    /**
+     * [리그] 투수 교체.
+     *
+     * <p>사전 지정 dropCardId가 핸드에서 빠지고 n장으로 등판한다.
+     * Compact 1회 / Full 3회 한도.</p>
+     *
+     * <b>수신 경로:</b> {@code /app/game/{matchSessionId}/league/substitute-pitcher}
+     *
+     * @param matchSessionId 매치 세션 ID
+     * @param request 교체 투수
+     * @param principal STOMP principal
+     */
+    @MessageMapping("/game/{matchSessionId}/league/substitute-pitcher")
+    public void leagueSubstitutePitcher(
+            @DestinationVariable String matchSessionId,
+            @Payload LeagueSubstitutePitcherRequest request,
+            Principal principal) {
+        Long userId = authenticatedUserResolver.requireUserId(principal);
+        // TODO: leagueGameTurnService.substitutePitcher(matchSessionId, userId, request);
     }
 }
