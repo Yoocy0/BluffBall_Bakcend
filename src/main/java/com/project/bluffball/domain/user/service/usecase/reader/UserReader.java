@@ -21,11 +21,43 @@ public class UserReader {
                 .orElseThrow(() -> new NotFoundException(ErrorCode.USER_NOT_FOUND, "userId=" + userId));
     }
 
+    /**
+     * 계정 활성 여부를 반환한다.
+     *
+     * @param userId 유저 ID
+     * @return 활성이면 true
+     */
     public boolean isActive(Long userId) {
         return getById(userId).isActive();
     }
 
+    /**
+     * 유저 권한 이름을 반환한다.
+     *
+     * @param userId 유저 ID
+     * @return 권한 enum 이름
+     */
     public String getRoleName(Long userId) {
         return getById(userId).getRole().name();
+    }
+
+    /**
+     * 유저 닉네임을 반환한다.
+     *
+     * @param userId 유저 ID
+     * @return 닉네임
+     */
+    public String getNickname(Long userId) {
+        return getById(userId).getNickname();
+    }
+
+    /**
+     * 유저 보유 재화를 반환한다.
+     *
+     * @param userId 유저 ID
+     * @return 재화 잔액
+     */
+    public long getCurrency(Long userId) {
+        return getById(userId).getCurrency();
     }
 }

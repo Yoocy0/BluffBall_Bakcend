@@ -11,6 +11,7 @@ import com.project.bluffball.domain.team.dto.response.TeamRecordItemResponse;
 import com.project.bluffball.domain.team.dto.response.TeamRecordsResponse;
 import com.project.bluffball.domain.team.dto.response.TeamResponse;
 import com.project.bluffball.domain.team.dto.response.TeamTreasuryResponse;
+import com.project.bluffball.domain.team.service.TeamService;
 import com.project.bluffball.global.security.AuthenticatedUserResolver;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
@@ -36,7 +37,7 @@ import java.util.List;
 /**
  * 팀(클랜) REST 컨트롤러.
  *
- * <p>팀 창단·가입·탈퇴·삭제, 재화 기부, 멤버/기록 조회 등 팀 API 껍데기를 제공한다.</p>
+ * <p>팀 창단·가입·탈퇴·삭제, 재화 기부, 멤버/기록 조회 등 팀 API를 제공한다.</p>
  */
 @Tag(name = "Team", description = "팀(클랜) API")
 @RestController
@@ -44,8 +45,18 @@ import java.util.List;
 @RequiredArgsConstructor
 public class TeamController {
 
+    /** 팀 유스케이스 조립 서비스 */
+    private final TeamService teamService;
+
+    /** JWT SecurityContext에서 userId 추출 */
     private final AuthenticatedUserResolver authenticatedUserResolver;
 
+    /**
+     * 팀을 창단한다.
+     *
+     * @param request 창단 요청
+     * @return 생성된 팀 정보
+     */
     @Operation(
             summary = "팀 창단",
             description = "팀을 생성한다. 팀 이름은 unique이며 이후 변경할 수 없다.",
@@ -59,10 +70,14 @@ public class TeamController {
     @PostMapping
     public ResponseEntity<TeamResponse> create(@Valid @RequestBody CreateTeamRequest request) {
         Long userId = authenticatedUserResolver.requireUserId();
-        // TODO: return ResponseEntity.ok(teamService.create(userId, request));
-        return ResponseEntity.ok().build();
+        return ResponseEntity.ok(teamService.create(userId, request));
     }
 
+    /**
+     * 내 소속 팀을 조회한다.
+     *
+     * @return 팀 정보
+     */
     @Operation(
             summary = "내 팀 조회",
             description = "현재 로그인한 유저가 소속된 팀 정보를 반환한다.",
@@ -76,10 +91,15 @@ public class TeamController {
     @GetMapping("/me")
     public ResponseEntity<TeamResponse> getMyTeam() {
         Long userId = authenticatedUserResolver.requireUserId();
-        // TODO: return ResponseEntity.ok(teamService.getMyTeam(userId));
-        return ResponseEntity.ok().build();
+        return ResponseEntity.ok(teamService.getMyTeam(userId));
     }
 
+    /**
+     * 팀 이름으로 검색한다.
+     *
+     * @param name 검색어
+     * @return 팀 목록
+     */
     @Operation(
             summary = "팀 검색",
             description = "팀 이름으로 가입 대상 팀을 검색한다.",
@@ -94,10 +114,15 @@ public class TeamController {
             @Parameter(description = "팀 이름 (부분 일치)")
             @RequestParam(required = false) String name) {
         authenticatedUserResolver.requireUserId();
-        // TODO: return ResponseEntity.ok(teamService.search(name));
-        return ResponseEntity.ok().build();
+        return ResponseEntity.ok(teamService.search(name));
     }
 
+    /**
+     * 팀 상세를 조회한다.
+     *
+     * @param teamId 팀 ID
+     * @return 팀 정보
+     */
     @Operation(
             summary = "팀 상세 조회",
             description = "팀 ID로 팀 상세 정보를 조회한다.",
@@ -111,10 +136,15 @@ public class TeamController {
     @GetMapping("/{teamId}")
     public ResponseEntity<TeamResponse> getTeam(@PathVariable Long teamId) {
         authenticatedUserResolver.requireUserId();
-        // TODO: return ResponseEntity.ok(teamService.getTeam(teamId));
-        return ResponseEntity.ok().build();
+        return ResponseEntity.ok(teamService.getTeam(teamId));
     }
 
+    /**
+     * 팀을 삭제한다.
+     *
+     * @param teamId 팀 ID
+     * @return 본문 없음
+     */
     @Operation(
             summary = "팀 삭제",
             description = "팀을 삭제한다. 리더만 가능하다.",
@@ -129,10 +159,16 @@ public class TeamController {
     @DeleteMapping("/{teamId}")
     public ResponseEntity<Void> delete(@PathVariable Long teamId) {
         Long userId = authenticatedUserResolver.requireUserId();
-        // TODO: teamService.delete(userId, teamId);
+        teamService.delete(userId, teamId);
         return ResponseEntity.noContent().build();
     }
 
+    /**
+     * 팀에 가입한다.
+     *
+     * @param teamId 팀 ID
+     * @return 가입한 팀 정보
+     */
     @Operation(
             summary = "팀 가입",
             description = "팀에 가입한다.",
@@ -147,10 +183,15 @@ public class TeamController {
     @PostMapping("/{teamId}/join")
     public ResponseEntity<TeamResponse> join(@PathVariable Long teamId) {
         Long userId = authenticatedUserResolver.requireUserId();
-        // TODO: return ResponseEntity.ok(teamService.join(userId, teamId));
-        return ResponseEntity.ok().build();
+        return ResponseEntity.ok(teamService.join(userId, teamId));
     }
 
+    /**
+     * 팀에서 탈퇴한다.
+     *
+     * @param teamId 팀 ID
+     * @return 본문 없음
+     */
     @Operation(
             summary = "팀 탈퇴",
             description = "소속 팀에서 탈퇴한다. 리더는 위임 후 탈퇴해야 한다.",
@@ -164,10 +205,17 @@ public class TeamController {
     @PostMapping("/{teamId}/leave")
     public ResponseEntity<Void> leave(@PathVariable Long teamId) {
         Long userId = authenticatedUserResolver.requireUserId();
-        // TODO: teamService.leave(userId, teamId);
+        teamService.leave(userId, teamId);
         return ResponseEntity.noContent().build();
     }
 
+    /**
+     * 멤버를 강제 탈퇴시킨다.
+     *
+     * @param teamId 팀 ID
+     * @param userId 대상 유저 ID
+     * @return 본문 없음
+     */
     @Operation(
             summary = "멤버 강제 탈퇴",
             description = "리더가 특정 멤버를 팀에서 내보낸다.",
@@ -181,10 +229,16 @@ public class TeamController {
     @PostMapping("/{teamId}/members/{userId}/kick")
     public ResponseEntity<Void> kick(@PathVariable Long teamId, @PathVariable Long userId) {
         Long requesterId = authenticatedUserResolver.requireUserId();
-        // TODO: teamService.kick(requesterId, teamId, userId);
+        teamService.kick(requesterId, teamId, userId);
         return ResponseEntity.noContent().build();
     }
 
+    /**
+     * 팀 멤버 목록을 조회한다.
+     *
+     * @param teamId 팀 ID
+     * @return 멤버 목록
+     */
     @Operation(
             summary = "팀 멤버 목록",
             description = "팀 소속 유저 리스트와 계급, 온/오프라인 상태를 반환한다.",
@@ -198,10 +252,17 @@ public class TeamController {
     @GetMapping("/{teamId}/members")
     public ResponseEntity<List<TeamMemberResponse>> getMembers(@PathVariable Long teamId) {
         authenticatedUserResolver.requireUserId();
-        // TODO: return ResponseEntity.ok(teamService.getMembers(teamId));
-        return ResponseEntity.ok().build();
+        return ResponseEntity.ok(teamService.getMembers(teamId));
     }
 
+    /**
+     * 멤버 계급을 변경한다.
+     *
+     * @param teamId 팀 ID
+     * @param userId 대상 유저 ID
+     * @param request 계급 변경 요청
+     * @return 변경된 멤버 정보
+     */
     @Operation(
             summary = "멤버 계급 변경",
             description = "리더가 팀원 계급을 변경한다.",
@@ -218,10 +279,16 @@ public class TeamController {
             @PathVariable Long userId,
             @Valid @RequestBody UpdateMemberRoleRequest request) {
         Long requesterId = authenticatedUserResolver.requireUserId();
-        // TODO: return ResponseEntity.ok(teamService.updateMemberRole(requesterId, teamId, userId, request));
-        return ResponseEntity.ok().build();
+        return ResponseEntity.ok(teamService.updateMemberRole(requesterId, teamId, userId, request));
     }
 
+    /**
+     * 팀 재정에 재화를 기부한다.
+     *
+     * @param teamId 팀 ID
+     * @param request 기부 요청
+     * @return 갱신된 재정 정보
+     */
     @Operation(
             summary = "팀 재화 기부",
             description = "유저 재화를 팀 재정에 기부한다.",
@@ -237,10 +304,15 @@ public class TeamController {
             @PathVariable Long teamId,
             @Valid @RequestBody DonateTeamRequest request) {
         Long userId = authenticatedUserResolver.requireUserId();
-        // TODO: return ResponseEntity.ok(teamService.donate(userId, teamId, request));
-        return ResponseEntity.ok().build();
+        return ResponseEntity.ok(teamService.donate(userId, teamId, request));
     }
 
+    /**
+     * 팀 재정을 조회한다.
+     *
+     * @param teamId 팀 ID
+     * @return 재정 정보
+     */
     @Operation(
             summary = "팀 재정 조회",
             description = "팀 재화 잔액과 거래 내역을 반환한다.",
@@ -254,10 +326,16 @@ public class TeamController {
     @GetMapping("/{teamId}/treasury")
     public ResponseEntity<TeamTreasuryResponse> getTreasury(@PathVariable Long teamId) {
         authenticatedUserResolver.requireUserId();
-        // TODO: return ResponseEntity.ok(teamService.getTreasury(teamId));
-        return ResponseEntity.ok().build();
+        return ResponseEntity.ok(teamService.getTreasury(teamId));
     }
 
+    /**
+     * 팀 로고를 변경한다.
+     *
+     * @param teamId 팀 ID
+     * @param request 로고 변경 요청
+     * @return 갱신된 팀 정보
+     */
     @Operation(
             summary = "팀 로고 변경",
             description = "팀 로고를 변경한다. 리더만 가능하다.",
@@ -273,10 +351,19 @@ public class TeamController {
             @PathVariable Long teamId,
             @Valid @RequestBody UpdateTeamLogoRequest request) {
         Long userId = authenticatedUserResolver.requireUserId();
-        // TODO: return ResponseEntity.ok(teamService.updateLogo(userId, teamId, request));
-        return ResponseEntity.ok().build();
+        return ResponseEntity.ok(teamService.updateLogo(userId, teamId, request));
     }
 
+    /**
+     * 팀 리그 기록을 조회한다.
+     *
+     * @param teamId 팀 ID
+     * @param seasonId 시즌 필터
+     * @param format 포맷 필터
+     * @param tier 티어 필터
+     * @param aggregate 합산 여부
+     * @return 기록 응답
+     */
     @Operation(
             summary = "팀 리그 기록 조회",
             description = "시즌/포맷/티어 필터로 이력을 조회하거나, aggregate=true로 승·패·득실 합산을 반환한다.",
@@ -299,10 +386,16 @@ public class TeamController {
             @Parameter(description = "true면 필터 범위 승/패/득실 합산")
             @RequestParam(required = false, defaultValue = "false") boolean aggregate) {
         authenticatedUserResolver.requireUserId();
-        // TODO: return ResponseEntity.ok(teamService.getRecords(teamId, seasonId, format, tier, aggregate));
-        return ResponseEntity.ok().build();
+        return ResponseEntity.ok(teamService.getRecords(teamId, seasonId, format, tier, aggregate));
     }
 
+    /**
+     * 특정 시즌 팀 기록을 조회한다.
+     *
+     * @param teamId 팀 ID
+     * @param seasonId 시즌 ID
+     * @return 시즌 기록
+     */
     @Operation(
             summary = "특정 시즌 팀 기록 조회",
             description = "특정 시즌의 승/패/득실 기록을 반환한다.",
@@ -318,10 +411,15 @@ public class TeamController {
             @PathVariable Long teamId,
             @PathVariable Long seasonId) {
         authenticatedUserResolver.requireUserId();
-        // TODO: return ResponseEntity.ok(teamService.getSeasonRecord(teamId, seasonId));
-        return ResponseEntity.ok().build();
+        return ResponseEntity.ok(teamService.getSeasonRecord(teamId, seasonId));
     }
 
+    /**
+     * 팀 멤버 프레즌스 하트비트를 전송한다.
+     *
+     * @param teamId 팀 ID
+     * @return 본문 없음
+     */
     @Operation(
             summary = "팀 멤버 프레즌스 하트비트",
             description = "팀 멤버 온/오프라인 유지를 위한 하트비트를 전송한다.",
@@ -334,7 +432,7 @@ public class TeamController {
     @PostMapping("/{teamId}/presence/heartbeat")
     public ResponseEntity<Void> heartbeat(@PathVariable Long teamId) {
         Long userId = authenticatedUserResolver.requireUserId();
-        // TODO: teamService.heartbeat(userId, teamId);
+        teamService.heartbeat(userId, teamId);
         return ResponseEntity.noContent().build();
     }
 }
