@@ -49,10 +49,42 @@ public class League {
     @Column(name = "entry_fee", nullable = false)
     private long entryFee;
 
-    public League(LeagueFormat format, LeagueTier tier, String name, long entryFee) {
+    /**
+     * 시즌 1등 상금.
+     * 2등 이후 상금은 {@link LeaguePrizeRule}의 1등 대비 퍼센트로 산정한다.
+     */
+    @Column(name = "first_place_prize", nullable = false)
+    private long firstPlacePrize;
+
+    /** 리그 참가에 필요한 최소 팀원 수 */
+    @Column(name = "min_team_members", nullable = false)
+    private int minTeamMembers;
+
+    public League(LeagueFormat format, LeagueTier tier, String name, long entryFee,
+                  long firstPlacePrize, int minTeamMembers) {
+        if (firstPlacePrize < 0) {
+            throw new IllegalArgumentException("1등 상금은 0 이상이어야 합니다.");
+        }
+        if (minTeamMembers < 1) {
+            throw new IllegalArgumentException("최소 팀원 수는 1 이상이어야 합니다.");
+        }
         this.format = format;
         this.tier = tier;
         this.name = name;
         this.entryFee = entryFee;
+        this.firstPlacePrize = firstPlacePrize;
+        this.minTeamMembers = minTeamMembers;
+    }
+
+    /**
+     * 순위별 상금액을 계산한다.
+     *
+     * @param percentOfFirst 1등 상금 대비 퍼센트 (1등=100)
+     */
+    public long calculatePrizeAmount(int percentOfFirst) {
+        if (percentOfFirst < 0) {
+            throw new IllegalArgumentException("상금 비율은 0 이상이어야 합니다.");
+        }
+        return this.firstPlacePrize * percentOfFirst / 100L;
     }
 }

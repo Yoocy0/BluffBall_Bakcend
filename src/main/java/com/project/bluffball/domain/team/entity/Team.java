@@ -30,6 +30,10 @@ public class Team {
     @Column(name = "name", nullable = false, unique = true, length = 30)
     private String name;
 
+    /** 팀 로고 URL (변경 가능) */
+    @Column(name = "logo_url", length = 512)
+    private String logoUrl;
+
     /** 팀장 유저 ID */
     @Column(name = "leader_user_id", nullable = false)
     private Long leaderUserId;
@@ -47,9 +51,31 @@ public class Team {
     }
 
     public Team(String name, Long leaderUserId) {
+        this(name, leaderUserId, null);
+    }
+
+    public Team(String name, Long leaderUserId, String logoUrl) {
         this.name = name;
         this.leaderUserId = leaderUserId;
+        this.logoUrl = logoUrl;
         this.treasury = 0L;
+    }
+
+    /**
+     * 팀 로고를 변경한다.
+     */
+    public void updateLogo(String logoUrl) {
+        this.logoUrl = logoUrl;
+    }
+
+    /**
+     * 팀장을 변경한다.
+     */
+    public void changeLeader(Long newLeaderUserId) {
+        if (newLeaderUserId == null) {
+            throw new IllegalArgumentException("팀장 유저 ID는 null일 수 없습니다.");
+        }
+        this.leaderUserId = newLeaderUserId;
     }
 
     /**
