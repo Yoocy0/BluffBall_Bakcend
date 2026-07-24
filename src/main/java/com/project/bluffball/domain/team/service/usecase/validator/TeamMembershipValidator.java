@@ -12,6 +12,9 @@ import org.springframework.stereotype.Component;
 @Component
 public class TeamMembershipValidator {
 
+    /** 팀 최대 인원 (Team.MAX_MEMBERS와 동일) */
+    private static final int MAX_MEMBERS = 50;
+
     /**
      * 팀 멤버인지 검증한다.
      *
@@ -45,6 +48,20 @@ public class TeamMembershipValidator {
     public void validateCanJoin(boolean alreadyJoined) {
         if (alreadyJoined) {
             throw new ConflictException(ErrorCode.TEAM_ALREADY_JOINED);
+        }
+    }
+
+    /**
+     * 팀 최대 인원 초과 여부를 검증한다.
+     *
+     * @param memberCount 현재 멤버 수
+     * @throws ConflictException 정원이 가득 찼으면
+     */
+    public void validateCapacity(long memberCount) {
+        if (memberCount >= MAX_MEMBERS) {
+            throw new ConflictException(
+                    ErrorCode.TEAM_MEMBER_LIMIT_EXCEEDED,
+                    "memberCount=" + memberCount + ", max=" + MAX_MEMBERS);
         }
     }
 

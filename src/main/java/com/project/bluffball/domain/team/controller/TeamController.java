@@ -178,7 +178,7 @@ public class TeamController {
             @ApiResponse(responseCode = "200", description = "가입 성공"),
             @ApiResponse(responseCode = "401", description = "인증 토큰 없음 또는 만료"),
             @ApiResponse(responseCode = "404", description = "팀 없음"),
-            @ApiResponse(responseCode = "409", description = "이미 다른 팀 소속")
+            @ApiResponse(responseCode = "409", description = "이미 다른 팀 소속 또는 팀 인원 초과(최대 50명)")
     })
     @PostMapping("/{teamId}/join")
     public ResponseEntity<TeamResponse> join(@PathVariable Long teamId) {

@@ -98,6 +98,7 @@ public enum ErrorCode {
     TEAM_DONATE_AMOUNT_INVALID(HttpStatus.BAD_REQUEST, "기부 금액이 올바르지 않습니다."),
     TEAM_RECORD_NOT_FOUND(HttpStatus.NOT_FOUND, "해당 시즌의 팀 기록을 찾을 수 없습니다."),
     TEAM_NAME_INVALID(HttpStatus.BAD_REQUEST, "팀 이름이 올바르지 않습니다."),
+    TEAM_MEMBER_LIMIT_EXCEEDED(HttpStatus.CONFLICT, "팀 최대 인원(50명)을 초과할 수 없습니다."),
 
     // League
     LEAGUE_NOT_FOUND(HttpStatus.NOT_FOUND, "리그를 찾을 수 없습니다."),

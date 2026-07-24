@@ -133,6 +133,7 @@ public class TeamService {
         // 팀 존재 확인
         teamReader.getTeamResponse(teamId);
         teamMembershipValidator.validateCanJoin(teamMemberReader.existsByUserId(userId));
+        teamMembershipValidator.validateCapacity(teamMemberReader.countMembers(teamId));
 
         Long joinedTeamId = teamMembershipExecutor.join(userId, teamId);
         return teamReader.getTeamResponse(joinedTeamId);

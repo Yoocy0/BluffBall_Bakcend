@@ -22,6 +22,9 @@ public class Team {
 
     private static final ZoneId KST = ZoneId.of("Asia/Seoul");
 
+    /** 팀 최대 인원 */
+    public static final int MAX_MEMBERS = 50;
+
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     @Column(name = "team_id")
