@@ -2,6 +2,7 @@ package com.project.bluffball.domain.game.redis;
 
 import com.project.bluffball.domain.game.dto.request.SetupNumberRequest;
 import com.project.bluffball.domain.game.enums.GameStatus;
+import com.project.bluffball.domain.league.enums.LeagueTier;
 import com.project.bluffball.domain.user.record.enums.GameMode;
 import jakarta.persistence.EnumType;
 import jakarta.persistence.Enumerated;
@@ -54,6 +55,22 @@ public class MatchInfo {
 
     /** 어웨이팀 유저 ID — 매치 생성 시 초기 타자로 고정 (공수 교대와 무관) */
     private Long awayUserId;
+
+    /** 홈 팀 ID — 리그 매치에서 사용 */
+    private Long homeTeamId;
+
+    /** 어웨이 팀 ID — 리그 매치에서 사용 */
+    private Long awayTeamId;
+
+    /** 리그 티어 — 리그 매치에서 사용 */
+    @Enumerated(EnumType.ORDINAL)
+    private LeagueTier leagueTier;
+
+    /** 홈 출전 로스터 — 리그 매치 */
+    private List<Long> homeRosterUserIds;
+
+    /** 어웨이 출전 로스터 — 리그 매치 */
+    private List<Long> awayRosterUserIds;
 
     /** 현재 등판 중인 투수 유저 ID */
     private Long pitcherUserId;
@@ -154,6 +171,13 @@ public class MatchInfo {
     public List<Long> getParticipantUserIds() {
         ensureCollectionsInitialized();
         Set<Long> ids = new LinkedHashSet<>();
+        // 리그: 양 팀 로스터 전원
+        if (!homeRosterUserIds.isEmpty() || !awayRosterUserIds.isEmpty()) {
+            ids.addAll(homeRosterUserIds);
+            ids.addAll(awayRosterUserIds);
+            return new ArrayList<>(ids);
+        }
+        // 쇼다운: 투수 + 타순
         if (pitcherUserId != null) {
             ids.add(pitcherUserId);
         }
@@ -251,6 +275,12 @@ public class MatchInfo {
         if (mulliganDoneUserIds == null) {
             mulliganDoneUserIds = new ArrayList<>();
         }
+        if (homeRosterUserIds == null) {
+            homeRosterUserIds = new ArrayList<>();
+        }
+        if (awayRosterUserIds == null) {
+            awayRosterUserIds = new ArrayList<>();
+        }
         for (PlayerSetupNumbers entry : playerSetupNumbers) {
             entry.ensureListsInitialized();
         }
@@ -323,6 +353,57 @@ public class MatchInfo {
         this.mulliganDoneUserIds = new ArrayList<>();
         this.usedAsPitcherIds = new ArrayList<>();
         this.playerSetupNumbers = new ArrayList<>();
+        this.homeRosterUserIds = new ArrayList<>();
+        this.awayRosterUserIds = new ArrayList<>();
+    }
+
+    /**
+     * 리그 매치를 생성한다. 선발 투수·타순은 이후 starting-lineup으로 확정한다.
+     *
+     * @param id 매치 세션 ID
+     * @param gameMode COMPACT_LEAGUE / FULL_LEAGUE
+     * @param leagueTier 리그 단계
+     * @param homeTeamId 홈 팀 ID (선진입)
+     * @param awayTeamId 어웨이 팀 ID (후진입)
+     * @param homeLeaderUserId 홈 팀 리더
+     * @param awayLeaderUserId 어웨이 팀 리더
+     * @param homeRoster 홈 출전 로스터
+     * @param awayRoster 어웨이 출전 로스터
+     * @return 리그 MatchInfo
+     */
+    public static MatchInfo createLeague(
+            String id,
+            GameMode gameMode,
+            LeagueTier leagueTier,
+            Long homeTeamId,
+            Long awayTeamId,
+            Long homeLeaderUserId,
+            Long awayLeaderUserId,
+            List<Long> homeRoster,
+            List<Long> awayRoster) {
+
+        MatchInfo matchInfo = new MatchInfo();
+        matchInfo.id = id;
+        matchInfo.gameMode = gameMode;
+        matchInfo.matchStatus = GameStatus.WAITING;
+        matchInfo.leagueTier = leagueTier;
+        matchInfo.homeTeamId = homeTeamId;
+        matchInfo.awayTeamId = awayTeamId;
+        matchInfo.homeUserId = homeLeaderUserId;
+        matchInfo.awayUserId = awayLeaderUserId;
+        // 선발 확정 전 placeholder — 홈 리더를 임시 투수, 어웨이 로스터를 임시 타순
+        matchInfo.pitcherUserId = homeLeaderUserId;
+        matchInfo.batterLineup = new ArrayList<>(awayRoster);
+        matchInfo.homeRosterUserIds = new ArrayList<>(homeRoster);
+        matchInfo.awayRosterUserIds = new ArrayList<>(awayRoster);
+        matchInfo.currentBatterIndex = 0;
+        matchInfo.pitcherCardHand = new ArrayList<>();
+        matchInfo.mulliganDone = false;
+        matchInfo.playerCardHands = new ArrayList<>();
+        matchInfo.mulliganDoneUserIds = new ArrayList<>();
+        matchInfo.usedAsPitcherIds = new ArrayList<>();
+        matchInfo.playerSetupNumbers = new ArrayList<>();
+        return matchInfo;
     }
 
     /**

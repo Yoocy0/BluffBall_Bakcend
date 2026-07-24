@@ -2,6 +2,7 @@ package com.project.bluffball.domain.game.controller;
 
 import com.project.bluffball.domain.game.dto.request.LeagueMatchQueueJoinRequest;
 import com.project.bluffball.domain.game.dto.response.MatchJoinResponse;
+import com.project.bluffball.domain.game.service.LeagueMatchService;
 import com.project.bluffball.global.security.AuthenticatedUserResolver;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
@@ -10,6 +11,7 @@ import io.swagger.v3.oas.annotations.security.SecurityRequirement;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.PostMapping;
@@ -28,6 +30,9 @@ import org.springframework.web.bind.annotation.RestController;
 @RequestMapping("/api/v1/league-match")
 @RequiredArgsConstructor
 public class LeagueMatchController {
+
+    /** 리그 매칭 서비스 */
+    private final LeagueMatchService leagueMatchService;
 
     /** JWT SecurityContext에서 userId 추출 */
     private final AuthenticatedUserResolver authenticatedUserResolver;
@@ -56,8 +61,10 @@ public class LeagueMatchController {
     public ResponseEntity<MatchJoinResponse> joinQueue(
             @Valid @RequestBody LeagueMatchQueueJoinRequest request) {
         Long userId = authenticatedUserResolver.requireUserId();
-        // TODO: LeagueMatchService.joinQueue(userId, request) → 200/202 분기
-        return ResponseEntity.ok().build();
+        MatchJoinResponse response = leagueMatchService.joinQueue(userId, request);
+        return response.isWaiting()
+                ? ResponseEntity.status(HttpStatus.ACCEPTED).body(response)
+                : ResponseEntity.ok(response);
     }
 
     /**
@@ -78,7 +85,7 @@ public class LeagueMatchController {
     @DeleteMapping("/queue/cancel")
     public ResponseEntity<Void> cancelQueue() {
         Long userId = authenticatedUserResolver.requireUserId();
-        // TODO: leagueMatchService.cancelQueue(userId);
+        leagueMatchService.cancelQueue(userId);
         return ResponseEntity.noContent().build();
     }
 }

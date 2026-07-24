@@ -120,6 +120,8 @@ public enum ErrorCode {
     LEAGUE_ALREADY_JOINED(HttpStatus.CONFLICT, "이미 해당 시즌에 참가 중입니다."),
     LEAGUE_SEASON_FULL(HttpStatus.CONFLICT, "시즌 참가 정원이 초과되었습니다."),
     LEAGUE_AFFILIATION_NOT_FOUND(HttpStatus.NOT_FOUND, "현재 소속된 리그가 없습니다."),
+    LEAGUE_MATCH_NOT_READY(HttpStatus.BAD_REQUEST, "출전 로스터 또는 구종 사전 선택이 완료되지 않았습니다."),
+    LEAGUE_MATCH_SAME_TEAM(HttpStatus.CONFLICT, "같은 팀과는 매칭할 수 없습니다."),
 
     // External
     OAUTH_API_FAILED(HttpStatus.SERVICE_UNAVAILABLE, "소셜 로그인 서비스에 연결할 수 없습니다."),
