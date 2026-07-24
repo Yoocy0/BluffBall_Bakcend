@@ -72,6 +72,12 @@ public class MatchInfo {
     /** 어웨이 출전 로스터 — 리그 매치 */
     private List<Long> awayRosterUserIds;
 
+    /** 홈 선발 투수 — 리그 매치 (공수 교대 시 기준) */
+    private Long homeStartingPitcherUserId;
+
+    /** 어웨이 선발 투수 — 리그 매치 (공수 교대 시 기준) */
+    private Long awayStartingPitcherUserId;
+
     /** 현재 등판 중인 투수 유저 ID */
     private Long pitcherUserId;
 
@@ -358,7 +364,7 @@ public class MatchInfo {
     }
 
     /**
-     * 리그 매치를 생성한다. 선발 투수·타순은 이후 starting-lineup으로 확정한다.
+     * 리그 매치를 생성한다. 홈 선발 투수로 시작하며, 어웨이 타순이 초기 타순이다.
      *
      * @param id 매치 세션 ID
      * @param gameMode COMPACT_LEAGUE / FULL_LEAGUE
@@ -367,8 +373,10 @@ public class MatchInfo {
      * @param awayTeamId 어웨이 팀 ID (후진입)
      * @param homeLeaderUserId 홈 팀 리더
      * @param awayLeaderUserId 어웨이 팀 리더
-     * @param homeRoster 홈 출전 로스터
-     * @param awayRoster 어웨이 출전 로스터
+     * @param homeStartingPitcherUserId 홈 선발 투수
+     * @param awayStartingPitcherUserId 어웨이 선발 투수
+     * @param homeBattingOrder 홈 타순
+     * @param awayBattingOrder 어웨이 타순
      * @return 리그 MatchInfo
      */
     public static MatchInfo createLeague(
@@ -379,8 +387,10 @@ public class MatchInfo {
             Long awayTeamId,
             Long homeLeaderUserId,
             Long awayLeaderUserId,
-            List<Long> homeRoster,
-            List<Long> awayRoster) {
+            Long homeStartingPitcherUserId,
+            Long awayStartingPitcherUserId,
+            List<Long> homeBattingOrder,
+            List<Long> awayBattingOrder) {
 
         MatchInfo matchInfo = new MatchInfo();
         matchInfo.id = id;
@@ -391,11 +401,13 @@ public class MatchInfo {
         matchInfo.awayTeamId = awayTeamId;
         matchInfo.homeUserId = homeLeaderUserId;
         matchInfo.awayUserId = awayLeaderUserId;
-        // 선발 확정 전 placeholder — 홈 리더를 임시 투수, 어웨이 로스터를 임시 타순
-        matchInfo.pitcherUserId = homeLeaderUserId;
-        matchInfo.batterLineup = new ArrayList<>(awayRoster);
-        matchInfo.homeRosterUserIds = new ArrayList<>(homeRoster);
-        matchInfo.awayRosterUserIds = new ArrayList<>(awayRoster);
+        // 홈이 먼저 수비(투수), 어웨이가 공격(타순)
+        matchInfo.homeStartingPitcherUserId = homeStartingPitcherUserId;
+        matchInfo.awayStartingPitcherUserId = awayStartingPitcherUserId;
+        matchInfo.pitcherUserId = homeStartingPitcherUserId;
+        matchInfo.batterLineup = new ArrayList<>(awayBattingOrder);
+        matchInfo.homeRosterUserIds = new ArrayList<>(homeBattingOrder);
+        matchInfo.awayRosterUserIds = new ArrayList<>(awayBattingOrder);
         matchInfo.currentBatterIndex = 0;
         matchInfo.pitcherCardHand = new ArrayList<>();
         matchInfo.mulliganDone = false;

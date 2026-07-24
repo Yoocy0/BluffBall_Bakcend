@@ -12,17 +12,23 @@ import org.springframework.stereotype.Component;
 public class LeagueMatchValidator {
 
     /**
-     * 로스터·구종 사전 선택이 완료됐는지 검증한다.
+     * 로스터·선발 투수·구종 사전 선택이 완료됐는지 검증한다.
      *
      * @param lineupExists 로스터 존재 여부
+     * @param hasStartingPitcher 선발 투수 지정 여부
      * @param pitchCardsComplete 구종 사전 선택 완료 여부
      * @throws BadRequestException 미완료 시
      */
-    public void validateReady(boolean lineupExists, boolean pitchCardsComplete) {
-        if (!lineupExists || !pitchCardsComplete) {
+    public void validateReady(
+            boolean lineupExists,
+            boolean hasStartingPitcher,
+            boolean pitchCardsComplete) {
+        if (!lineupExists || !hasStartingPitcher || !pitchCardsComplete) {
             throw new BadRequestException(
                     ErrorCode.LEAGUE_MATCH_NOT_READY,
-                    "lineupExists=" + lineupExists + ", pitchComplete=" + pitchCardsComplete);
+                    "lineupExists=" + lineupExists
+                            + ", hasStartingPitcher=" + hasStartingPitcher
+                            + ", pitchComplete=" + pitchCardsComplete);
         }
     }
 

@@ -26,31 +26,36 @@ public class TeamLineupExecutor {
     private final TeamLineupReader teamLineupReader;
 
     /**
-     * 출전 로스터를 생성하거나 갱신한다.
+     * 출전 로스터(타순·선발 투수)를 생성하거나 갱신한다.
      *
      * <p>로스터에서 빠진 멤버의 구종 사전 선택은 삭제한다.</p>
      *
      * @param teamId 팀 ID
      * @param format 리그 구분
-     * @param userIds 출전 유저 ID 목록
+     * @param userIds 타순
+     * @param startingPitcherUserId 선발 투수
      * @return 팀 ID
      */
     @Transactional
-    public Long upsert(Long teamId, LeagueFormat format, List<Long> userIds) {
+    public Long upsert(
+            Long teamId,
+            LeagueFormat format,
+            List<Long> userIds,
+            Long startingPitcherUserId) {
         List<Long> nextUserIds = List.copyOf(userIds);
 
         teamLineupRepository.findByTeamIdAndFormat(teamId, format)
                 .ifPresentOrElse(
                         lineup -> {
                             List<Long> previous = new ArrayList<>(lineup.getUserIds());
-                            lineup.replaceUserIds(nextUserIds);
+                            lineup.replaceLineup(nextUserIds, startingPitcherUserId);
                             teamLineupRepository.save(lineup);
                             deleteOrphanPitchLoadouts(teamId, format, previous, nextUserIds);
                         },
-                        () -> teamLineupRepository.save(new TeamLineup(teamId, format, nextUserIds))
+                        () -> teamLineupRepository.save(
+                                new TeamLineup(teamId, format, nextUserIds, startingPitcherUserId))
                 );
 
-        // 존재 확인용 — 저장 후 조회 경로 통일
         teamLineupReader.getByTeamIdAndFormat(teamId, format);
         return teamId;
     }

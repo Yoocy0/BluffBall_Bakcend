@@ -53,4 +53,31 @@ public class TeamLineupValidator {
             throw new BadRequestException(ErrorCode.TEAM_LINEUP_MEMBER_INVALID);
         }
     }
+
+    /**
+     * 선발 투수가 타순(로스터)에 포함되는지 검증한다.
+     *
+     * @param userIds 타순
+     * @param startingPitcherUserId 선발 투수
+     * @throws BadRequestException 포함되지 않으면
+     */
+    public void validateStartingPitcherInRoster(List<Long> userIds, Long startingPitcherUserId) {
+        if (startingPitcherUserId == null || !userIds.contains(startingPitcherUserId)) {
+            throw new BadRequestException(
+                    ErrorCode.TEAM_LINEUP_STARTING_PITCHER_INVALID,
+                    "startingPitcherUserId=" + startingPitcherUserId);
+        }
+    }
+
+    /**
+     * 선발 투수가 지정되어 있는지 검증한다. (매칭 진입용)
+     *
+     * @param hasStartingPitcher 선발 투수 존재 여부
+     * @throws BadRequestException 없으면
+     */
+    public void validateStartingPitcherPresent(boolean hasStartingPitcher) {
+        if (!hasStartingPitcher) {
+            throw new BadRequestException(ErrorCode.TEAM_LINEUP_STARTING_PITCHER_INVALID);
+        }
+    }
 }

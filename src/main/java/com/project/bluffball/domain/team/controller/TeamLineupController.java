@@ -48,13 +48,14 @@ public class TeamLineupController {
      * @return 저장된 로스터
      */
     @Operation(
-            summary = "출전 로스터 저장",
-            description = "Compact 3명 / Full 9명의 출전 로스터를 저장한다. 리더만 가능하다.",
+            summary = "출전 로스터·선발 투수 저장",
+            description = "Compact 3명 / Full 9명의 타순(userIds 순서)과 선발 투수(startingPitcherUserId)를 "
+                    + "매칭 전에 저장한다. 선발 투수는 userIds에 포함되어야 한다. 리더만 가능하다.",
             security = @SecurityRequirement(name = "bearerAuth")
     )
     @ApiResponses({
             @ApiResponse(responseCode = "200", description = "저장 성공"),
-            @ApiResponse(responseCode = "400", description = "인원 수 불일치 또는 팀원 아님"),
+            @ApiResponse(responseCode = "400", description = "인원 수·선발 투수 불일치 또는 팀원 아님"),
             @ApiResponse(responseCode = "401", description = "인증 토큰 없음 또는 만료"),
             @ApiResponse(responseCode = "403", description = "리더가 아님")
     })
@@ -75,8 +76,8 @@ public class TeamLineupController {
      * @return 로스터
      */
     @Operation(
-            summary = "출전 로스터 조회",
-            description = "저장된 Compact/Full 출전 로스터를 반환한다.",
+            summary = "출전 로스터·선발 투수 조회",
+            description = "저장된 Compact/Full 타순과 선발 투수를 반환한다.",
             security = @SecurityRequirement(name = "bearerAuth")
     )
     @ApiResponses({

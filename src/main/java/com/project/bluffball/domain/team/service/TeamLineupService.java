@@ -46,12 +46,12 @@ public class TeamLineupService {
     private final TeamPitchCardsExecutor teamPitchCardsExecutor;
 
     /**
-     * 출전 로스터를 저장한다. 리더만 가능하다.
+     * 출전 로스터(타순·선발 투수)를 저장한다. 리더만 가능하다.
      *
      * @param userId 요청 유저 ID
      * @param teamId 팀 ID
      * @param format 리그 구분
-     * @param request 출전 유저 목록
+     * @param request 타순·선발 투수
      * @return 저장된 로스터
      */
     public TeamLineupResponse upsertLineup(
@@ -69,8 +69,10 @@ public class TeamLineupService {
         teamLineupValidator.validateSize(userIds.size(), requiredSize);
         teamLineupValidator.validateNoDuplicates(userIds);
         teamLineupValidator.validateAllMembers(teamMemberReader.areAllMembers(teamId, userIds));
+        teamLineupValidator.validateStartingPitcherInRoster(userIds, request.startingPitcherUserId());
 
-        Long savedTeamId = teamLineupExecutor.upsert(teamId, format, userIds);
+        Long savedTeamId = teamLineupExecutor.upsert(
+                teamId, format, userIds, request.startingPitcherUserId());
         return teamLineupReader.getLineupResponse(savedTeamId, format);
     }
 

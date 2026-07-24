@@ -103,6 +103,7 @@ public enum ErrorCode {
     TEAM_LINEUP_SIZE_INVALID(HttpStatus.BAD_REQUEST, "출전 로스터 인원 수가 올바르지 않습니다."),
     TEAM_LINEUP_MEMBER_INVALID(HttpStatus.BAD_REQUEST, "출전 로스터에 팀원이 아닌 유저가 포함되어 있습니다."),
     TEAM_LINEUP_DUPLICATE_MEMBER(HttpStatus.BAD_REQUEST, "출전 로스터에 중복된 유저가 있습니다."),
+    TEAM_LINEUP_STARTING_PITCHER_INVALID(HttpStatus.BAD_REQUEST, "선발 투수가 출전 로스터에 포함되어 있지 않습니다."),
     TEAM_PITCH_CARDS_NOT_FOUND(HttpStatus.NOT_FOUND, "구종 사전 선택을 찾을 수 없습니다."),
     TEAM_PITCH_CARDS_SIZE_INVALID(HttpStatus.BAD_REQUEST, "구종·강화 카드 장수가 올바르지 않습니다."),
     TEAM_PITCH_CARDS_INVALID(HttpStatus.BAD_REQUEST, "구종·강화 카드 선택이 올바르지 않습니다."),

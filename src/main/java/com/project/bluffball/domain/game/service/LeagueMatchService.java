@@ -74,6 +74,7 @@ public class LeagueMatchService {
         int rosterSize = gameModeRule.getRosterSize(gameMode);
         leagueMatchValidator.validateReady(
                 teamLineupReader.exists(teamId, format),
+                teamLineupReader.hasStartingPitcher(teamId, format),
                 teamPitchCardsReader.isComplete(teamId, format, rosterSize));
 
         matchQueueExecutor.evictStaleMatchedEntry(userId);
@@ -155,6 +156,8 @@ public class LeagueMatchService {
 
         List<Long> homeRoster = teamLineupReader.getUserIds(homeTeamId, format);
         List<Long> awayRoster = teamLineupReader.getUserIds(awayTeamId, format);
+        Long homeStartingPitcher = teamLineupReader.getStartingPitcherUserId(homeTeamId, format);
+        Long awayStartingPitcher = teamLineupReader.getStartingPitcherUserId(awayTeamId, format);
         TeamPitchCardsResponse homePitchCards = teamPitchCardsReader.getPitchCardsResponse(homeTeamId, format);
         TeamPitchCardsResponse awayPitchCards = teamPitchCardsReader.getPitchCardsResponse(awayTeamId, format);
 
@@ -165,6 +168,8 @@ public class LeagueMatchService {
                 awayTeamId,
                 homeLeaderUserId,
                 awayLeaderUserId,
+                homeStartingPitcher,
+                awayStartingPitcher,
                 homeRoster,
                 awayRoster,
                 homePitchCards,

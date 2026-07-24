@@ -47,14 +47,38 @@ public class TeamLineupReader {
     }
 
     /**
-     * 로스터 유저 ID 목록을 반환한다.
+     * 타순(출전 유저 ID)을 반환한다.
      *
      * @param teamId 팀 ID
      * @param format 리그 구분
-     * @return 유저 ID 목록
+     * @return 타순
      */
     public List<Long> getUserIds(Long teamId, LeagueFormat format) {
         return List.copyOf(getByTeamIdAndFormat(teamId, format).getUserIds());
+    }
+
+    /**
+     * 선발 투수 유저 ID를 반환한다.
+     *
+     * @param teamId 팀 ID
+     * @param format 리그 구분
+     * @return 선발 투수 ID
+     */
+    public Long getStartingPitcherUserId(Long teamId, LeagueFormat format) {
+        return getByTeamIdAndFormat(teamId, format).getStartingPitcherUserId();
+    }
+
+    /**
+     * 선발 투수가 지정되어 있는지 반환한다.
+     *
+     * @param teamId 팀 ID
+     * @param format 리그 구분
+     * @return 지정되어 있으면 true
+     */
+    public boolean hasStartingPitcher(Long teamId, LeagueFormat format) {
+        return teamLineupRepository.findByTeamIdAndFormat(teamId, format)
+                .map(lineup -> lineup.getStartingPitcherUserId() != null)
+                .orElse(false);
     }
 
     /**
@@ -69,6 +93,7 @@ public class TeamLineupReader {
         return new TeamLineupResponse(
                 lineup.getTeamId(),
                 lineup.getFormat(),
-                List.copyOf(lineup.getUserIds()));
+                List.copyOf(lineup.getUserIds()),
+                lineup.getStartingPitcherUserId());
     }
 }

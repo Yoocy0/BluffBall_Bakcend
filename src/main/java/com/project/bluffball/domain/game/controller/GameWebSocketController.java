@@ -53,7 +53,7 @@ import java.security.Principal;
  * │   │ [서버 → 양측] TurnResultEvent     /topic/game/{id}/result            │
  * │   │  └ 최종 판정 결과 + 업데이트된 카운트/점수 브로드캐스트                  │
  * ├───┼──────────────────────────────────────────────────────────────────────┤
- * │ L │ [리그] starting-lineup / substitute-pitcher (선발·교체)               │
+ * │ L │ [리그] starting-lineup(레거시 no-op) / substitute-pitcher (투수 교체) │
  * └───┴──────────────────────────────────────────────────────────────────────┘
  * </pre>
  */
@@ -138,7 +138,10 @@ public class GameWebSocketController {
     }
 
     /**
-     * [리그] 선발 투수·타순 제출.
+     * [리그] 선발 투수·타순 제출 (레거시 스텁).
+     *
+     * <p>선발·타순은 매칭 전 {@code PUT /api/v1/teams/{teamId}/lineups/{format}} 로 확정한다.
+     * 매치 생성 시 MatchInfo에 시드되므로 이 WS는 사용하지 않는다.</p>
      *
      * <b>수신 경로:</b> {@code /app/game/{matchSessionId}/league/starting-lineup}
      *
@@ -151,8 +154,8 @@ public class GameWebSocketController {
             @DestinationVariable String matchSessionId,
             @Payload LeagueStartingLineupRequest request,
             Principal principal) {
-        Long userId = authenticatedUserResolver.requireUserId(principal);
-        // TODO: leagueGamePrepService.submitStartingLineup(matchSessionId, userId, request);
+        authenticatedUserResolver.requireUserId(principal);
+        // no-op: pre-match lineup API가 선발·타순을 확정함
     }
 
     /**

@@ -14,7 +14,9 @@ import java.util.List;
 /**
  * 리그 포맷별 팀 출전 로스터.
  *
- * <p>Compact 3명 / Full 9명. 매칭 전 구성한다.</p>
+ * <p>Compact 3명 / Full 9명.
+ * {@code userIds} 순서 = 타순, {@code startingPitcherUserId} = 선발 투수.
+ * 매칭 전 구성한다.</p>
  */
 @Entity
 @Table(
@@ -42,7 +44,7 @@ public class TeamLineup {
     @Column(name = "format", nullable = false)
     private LeagueFormat format;
 
-    /** 출전 유저 ID (순서 유지) */
+    /** 출전 유저 ID — 순서 = 타순 */
     @ElementCollection
     @CollectionTable(
             name = "team_lineup_member",
@@ -52,6 +54,10 @@ public class TeamLineup {
     @OrderColumn(name = "slot_order")
     private List<Long> userIds = new ArrayList<>();
 
+    /** 선발 투수 유저 ID (출전 로스터에 포함) */
+    @Column(name = "starting_pitcher_user_id", nullable = false)
+    private Long startingPitcherUserId;
+
     @Column(name = "updated_at", nullable = false)
     private LocalDateTime updatedAt;
 
@@ -60,21 +66,28 @@ public class TeamLineup {
      *
      * @param teamId 팀 ID
      * @param format 리그 구분
-     * @param userIds 출전 유저 ID 목록
+     * @param userIds 타순(출전 유저 ID)
+     * @param startingPitcherUserId 선발 투수
      */
-    public TeamLineup(Long teamId, LeagueFormat format, List<Long> userIds) {
+    public TeamLineup(
+            Long teamId,
+            LeagueFormat format,
+            List<Long> userIds,
+            Long startingPitcherUserId) {
         this.teamId = teamId;
         this.format = format;
-        replaceUserIds(userIds);
+        replaceLineup(userIds, startingPitcherUserId);
     }
 
     /**
-     * 출전 유저 목록을 교체한다.
+     * 타순·선발 투수를 교체한다.
      *
-     * @param userIds 새 출전 유저 ID 목록
+     * @param userIds 타순
+     * @param startingPitcherUserId 선발 투수
      */
-    public void replaceUserIds(List<Long> userIds) {
+    public void replaceLineup(List<Long> userIds, Long startingPitcherUserId) {
         this.userIds = new ArrayList<>(userIds);
+        this.startingPitcherUserId = startingPitcherUserId;
         this.updatedAt = LocalDateTime.now(KST);
     }
 

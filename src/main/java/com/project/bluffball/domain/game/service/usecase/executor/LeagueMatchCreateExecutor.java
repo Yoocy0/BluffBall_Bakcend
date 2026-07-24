@@ -26,7 +26,7 @@ public class LeagueMatchCreateExecutor {
     private final GameStateRepository gameStateRepository;
 
     /**
-     * 리그 매치를 생성한다. 선진입 팀이 홈이다.
+     * 리그 매치를 생성한다. 선진입 팀이 홈이며, 홈 선발 투수로 시작한다.
      *
      * @param gameMode COMPACT_LEAGUE / FULL_LEAGUE
      * @param leagueTier 리그 단계
@@ -34,8 +34,10 @@ public class LeagueMatchCreateExecutor {
      * @param awayTeamId 어웨이 팀 ID
      * @param homeLeaderUserId 홈 리더 userId
      * @param awayLeaderUserId 어웨이 리더 userId
-     * @param homeRoster 홈 로스터
-     * @param awayRoster 어웨이 로스터
+     * @param homeStartingPitcherUserId 홈 선발 투수
+     * @param awayStartingPitcherUserId 어웨이 선발 투수 (공수 교대 시 사용)
+     * @param homeBattingOrder 홈 타순
+     * @param awayBattingOrder 어웨이 타순
      * @param homePitchCards 홈 구종 사전 선택
      * @param awayPitchCards 어웨이 구종 사전 선택
      * @return matchSessionId
@@ -47,8 +49,10 @@ public class LeagueMatchCreateExecutor {
             Long awayTeamId,
             Long homeLeaderUserId,
             Long awayLeaderUserId,
-            List<Long> homeRoster,
-            List<Long> awayRoster,
+            Long homeStartingPitcherUserId,
+            Long awayStartingPitcherUserId,
+            List<Long> homeBattingOrder,
+            List<Long> awayBattingOrder,
             TeamPitchCardsResponse homePitchCards,
             TeamPitchCardsResponse awayPitchCards) {
 
@@ -62,12 +66,13 @@ public class LeagueMatchCreateExecutor {
                 awayTeamId,
                 homeLeaderUserId,
                 awayLeaderUserId,
-                homeRoster,
-                awayRoster);
+                homeStartingPitcherUserId,
+                awayStartingPitcherUserId,
+                homeBattingOrder,
+                awayBattingOrder);
         matchInfo.ensureCollectionsInitialized();
         matchInfo.initializeDoubleJudgmentSettings();
 
-        // 사전 선택 구종·강화를 플레이어 핸드로 시드
         applyPitchCards(matchInfo, homePitchCards);
         applyPitchCards(matchInfo, awayPitchCards);
         matchInfo.syncPitcherCardHandFromPlayer();
