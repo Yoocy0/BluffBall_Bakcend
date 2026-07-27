@@ -30,7 +30,8 @@ public class Team {
     @Column(name = "team_id")
     private Long id;
 
-    @Column(name = "name", nullable = false, unique = true, length = 30)
+    /** 팀 이름 — 표시 폭 ≤ 16(한글 8자), 컬럼은 영문 16자 상한 */
+    @Column(name = "name", nullable = false, unique = true, length = 16)
     private String name;
 
     /** 팀 로고 URL (변경 가능) */
