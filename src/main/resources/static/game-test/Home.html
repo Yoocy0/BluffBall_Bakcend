@@ -26,32 +26,40 @@
         <p id="loginError" class="home-error" hidden></p>
     </section>
 
-    <!-- 로그인 후 — 모드 선택 -->
-    <section id="homeScreen" class="home-screen" hidden>
+    <!-- 로그인 후 — 허브 -->
+    <section id="hubScreen" class="home-screen" hidden>
         <h1 class="home-title">BluffBall</h1>
         <p id="userInfo" class="home-user-info"></p>
 
         <div class="home-mode-list">
-            <button type="button" id="btnModeSingle" class="home-mode-btn">싱글 모드</button>
-            <button type="button" id="btnModeClanMini" class="home-mode-btn home-mode-btn-disabled" disabled>
-                클랜전 (미니 모드)
-            </button>
-            <button type="button" id="btnModeClanRegular" class="home-mode-btn home-mode-btn-disabled" disabled>
-                클랜전 (정규 모드)
-            </button>
-            <button type="button" id="btnModeCustom" class="home-mode-btn home-mode-btn-disabled" disabled>
-                커스텀 모드
-            </button>
+            <button type="button" id="btnOpenGameStart" class="home-mode-btn">게임 시작</button>
+            <button type="button" id="btnOpenTeam" class="home-mode-btn home-mode-btn-alt">팀</button>
+            <button type="button" id="btnOpenPitchCards" class="home-mode-btn home-mode-btn-alt">구종 카드</button>
         </div>
 
         <button type="button" id="btnLogout" class="home-logout-btn">로그아웃</button>
+        <p id="hubError" class="home-error" hidden></p>
+    </section>
+
+    <!-- 모드 선택 -->
+    <section id="homeScreen" class="home-screen" hidden>
+        <h1 class="home-title home-title-sm">게임 시작</h1>
+        <p class="home-subtitle">모드를 선택하세요</p>
+
+        <div class="home-mode-list">
+            <button type="button" id="btnModeShowdown" class="home-mode-btn">쇼다운</button>
+            <button type="button" id="btnModeLeagueCompact" class="home-mode-btn">리그 (컴팩트)</button>
+            <button type="button" id="btnModeLeagueFull" class="home-mode-btn">리그 (풀)</button>
+            <button type="button" id="btnBackToHub" class="home-mode-btn home-mode-btn-cancel">뒤로</button>
+        </div>
+
         <p id="homeError" class="home-error" hidden></p>
     </section>
 
-    <!-- 싱글 모드 매칭 대기 -->
+    <!-- 매칭 대기 -->
     <section id="matchingScreen" class="home-screen" hidden>
         <h1 class="home-title home-title-sm">BluffBall</h1>
-        <p class="matching-status-label">매칭 중...</p>
+        <p id="matchingModeLabel" class="matching-status-label">매칭 중...</p>
         <p id="matchingTimer" class="matching-timer">00:00</p>
         <p class="matching-hint">상대방을 찾고 있습니다</p>
         <button type="button" id="btnCancelMatch" class="home-mode-btn home-mode-btn-cancel">매칭 취소</button>
@@ -75,6 +83,6 @@
 <script src="/game-test/js/ws-client.js?v=1"></script>
 <script src="/game-test/js/game-role.js?v=1"></script>
 <script src="/game-test/js/game-ws.js?v=2"></script>
-<script src="/game-test/js/home.js?v=6"></script>
+<script src="/game-test/js/home.js?v=7"></script>
 </body>
 </html>

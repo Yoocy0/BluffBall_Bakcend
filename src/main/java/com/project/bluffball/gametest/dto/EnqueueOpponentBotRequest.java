@@ -1,7 +1,6 @@
 package com.project.bluffball.gametest.dto;
 
 import com.project.bluffball.domain.league.enums.LeagueTier;
-import jakarta.validation.constraints.NotNull;
 
 /**
  * 상대 Compact 봇 팀을 만들고 매칭 큐에 넣는 요청.

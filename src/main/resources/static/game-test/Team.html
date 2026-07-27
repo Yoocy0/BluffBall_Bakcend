@@ -1,0 +1,56 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>팀 · BluffBall</title>
+    <link rel="stylesheet" href="/game-test/css/game-test.css">
+</head>
+<body class="loadout-body">
+<div class="loadout-page">
+    <header class="loadout-header">
+        <a class="loadout-back" href="/game-test/Home.html">← 홈</a>
+        <h1 class="loadout-title">팀 라인업</h1>
+        <p id="teamMeta" class="loadout-meta">팀 불러오는 중...</p>
+    </header>
+
+    <div class="loadout-toolbar">
+        <label class="loadout-select-label">
+            포맷
+            <select id="formatSelect" class="loadout-select">
+                <option value="COMPACT">컴팩트</option>
+                <option value="FULL">풀</option>
+            </select>
+        </label>
+        <button type="button" id="btnSaveLineup" class="home-mode-btn loadout-save-btn">저장</button>
+    </div>
+
+    <section class="loadout-panel">
+        <h2 class="loadout-section-title">출전 슬롯</h2>
+        <p id="slotHint" class="loadout-hint">멤버를 아래로 드래그해 슬롯에 배치하세요</p>
+        <div id="lineupSlots" class="slot-row"></div>
+    </section>
+
+    <section class="loadout-panel">
+        <h2 class="loadout-section-title">팀 멤버</h2>
+        <div id="memberPool" class="drag-pool"></div>
+    </section>
+
+    <div id="createTeamBox" class="loadout-panel" hidden>
+        <h2 class="loadout-section-title">팀 만들기</h2>
+        <div class="row">
+            <input id="teamNameInput" type="text" maxlength="16" placeholder="팀 이름">
+            <button type="button" id="btnCreateTeam" class="primary">창단</button>
+        </div>
+    </div>
+
+    <p id="pageError" class="home-error" hidden></p>
+    <p id="pageOk" class="loadout-ok" hidden></p>
+</div>
+
+<script src="/game-test/js/auth.js?v=1"></script>
+<script src="/game-test/js/ws-client.js?v=1"></script>
+<script src="/game-test/js/team-api.js?v=1"></script>
+<script src="/game-test/js/team.js?v=1"></script>
+</body>
+</html>
