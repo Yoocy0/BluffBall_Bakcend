@@ -85,4 +85,16 @@ public class League {
         this.firstPlacePrize = firstPlacePrize;
         this.minTeamMembers = minTeamMembers;
     }
+
+    /**
+     * 최소 팀원 수를 갱신한다.
+     *
+     * @param minTeamMembers 최소 팀원
+     */
+    public void updateMinTeamMembers(int minTeamMembers) {
+        if (minTeamMembers < 1) {
+            throw new IllegalArgumentException("최소 팀원 수는 1 이상이어야 합니다.");
+        }
+        this.minTeamMembers = minTeamMembers;
+    }
 }

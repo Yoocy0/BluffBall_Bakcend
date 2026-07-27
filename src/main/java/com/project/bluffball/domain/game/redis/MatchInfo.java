@@ -70,11 +70,17 @@ public class MatchInfo {
     @Enumerated(EnumType.ORDINAL)
     private LeagueTier leagueTier;
 
-    /** 홈 출전 로스터 — 리그 매치 */
+    /** 홈 출전 전원(타순 + Compact 전담 투수) — 리그 매치 */
     private List<Long> homeRosterUserIds;
 
-    /** 어웨이 출전 로스터 — 리그 매치 */
+    /** 어웨이 출전 전원 — 리그 매치 */
     private List<Long> awayRosterUserIds;
+
+    /** 홈 타순 — Compact는 로스터와 다를 수 있음 */
+    private List<Long> homeBattingOrderUserIds;
+
+    /** 어웨이 타순 */
+    private List<Long> awayBattingOrderUserIds;
 
     /** 홈 선발 투수 — 리그 매치 (공수 교대 시 기준) */
     private Long homeStartingPitcherUserId;
@@ -105,7 +111,7 @@ public class MatchInfo {
 
     /**
      * 타순 라인업 — 순서가 보장된 타자 userId 목록.
-     * 싱글: 1명 / 클랜 미니: 3명 / 클랜 정규: 9명
+     * 싱글: 1명 / Compact: 3명 / Full: 9명
      */
     private List<Long> batterLineup;
 
@@ -311,6 +317,12 @@ public class MatchInfo {
         }
         if (awayRosterUserIds == null) {
             awayRosterUserIds = new ArrayList<>();
+        }
+        if (homeBattingOrderUserIds == null) {
+            homeBattingOrderUserIds = new ArrayList<>();
+        }
+        if (awayBattingOrderUserIds == null) {
+            awayBattingOrderUserIds = new ArrayList<>();
         }
         if (playerDropCards == null) {
             playerDropCards = new ArrayList<>();
@@ -566,12 +578,12 @@ public class MatchInfo {
             // 어웨이가 공격 중이었음 → 인덱스 저장 후 홈이 공격
             this.awayNextBatterIndex = currentBatterIndex;
             this.pitcherUserId = awayActivePitcherUserId;
-            this.batterLineup = new ArrayList<>(homeRosterUserIds);
+            this.batterLineup = new ArrayList<>(resolveHomeBattingOrder());
             this.currentBatterIndex = normalizeBatterIndex(homeNextBatterIndex, batterLineup.size());
         } else {
             this.homeNextBatterIndex = currentBatterIndex;
             this.pitcherUserId = homeActivePitcherUserId;
-            this.batterLineup = new ArrayList<>(awayRosterUserIds);
+            this.batterLineup = new ArrayList<>(resolveAwayBattingOrder());
             this.currentBatterIndex = normalizeBatterIndex(awayNextBatterIndex, batterLineup.size());
         }
 
@@ -597,7 +609,59 @@ public class MatchInfo {
             return 0;
         }
         int normalized = index % size;
-        return normalized < 0 ? 0 : normalized;
+        return normalized < 0 ? normalized + size : normalized;
+    }
+
+    /**
+     * 홈 타순을 반환한다. 레거시 데이터는 로스터로 폴백한다.
+     *
+     * @return 홈 타순
+     */
+    public List<Long> resolveHomeBattingOrder() {
+        ensureCollectionsInitialized();
+        if (!homeBattingOrderUserIds.isEmpty()) {
+            return homeBattingOrderUserIds;
+        }
+        return homeRosterUserIds;
+    }
+
+    /**
+     * 어웨이 타순을 반환한다. 레거시 데이터는 로스터로 폴백한다.
+     *
+     * @return 어웨이 타순
+     */
+    public List<Long> resolveAwayBattingOrder() {
+        ensureCollectionsInitialized();
+        if (!awayBattingOrderUserIds.isEmpty()) {
+            return awayBattingOrderUserIds;
+        }
+        return awayRosterUserIds;
+    }
+
+    /**
+     * 유저가 타순(타자) 멤버인지.
+     *
+     * @param userId 유저 ID
+     * @return 타순이면 true
+     */
+    public boolean isBattingOrderMember(Long userId) {
+        return resolveHomeBattingOrder().contains(userId)
+                || resolveAwayBattingOrder().contains(userId);
+    }
+
+    /**
+     * 타순 + 선발 투수를 출전 전원으로 합친다.
+     *
+     * @param battingOrder 타순
+     * @param startingPitcherUserId 선발 투수
+     * @return 출전 전원
+     */
+    private static List<Long> mergeRoster(List<Long> battingOrder, Long startingPitcherUserId) {
+        List<Long> roster = new ArrayList<>(battingOrder);
+        if (startingPitcherUserId != null && !roster.contains(startingPitcherUserId)) {
+            roster.add(startingPitcherUserId);
+        }
+        return roster;
     }
 
     /**
@@ -676,6 +740,8 @@ public class MatchInfo {
         this.playerSetupNumbers = new ArrayList<>();
         this.homeRosterUserIds = new ArrayList<>();
         this.awayRosterUserIds = new ArrayList<>();
+        this.homeBattingOrderUserIds = new ArrayList<>();
+        this.awayBattingOrderUserIds = new ArrayList<>();
         this.playerDropCards = new ArrayList<>();
         this.homeActivePitcherUserId = null;
         this.awayActivePitcherUserId = null;
@@ -731,8 +797,10 @@ public class MatchInfo {
         matchInfo.awayActivePitcherUserId = awayStartingPitcherUserId;
         matchInfo.pitcherUserId = homeStartingPitcherUserId;
         matchInfo.batterLineup = new ArrayList<>(awayBattingOrder);
-        matchInfo.homeRosterUserIds = new ArrayList<>(homeBattingOrder);
-        matchInfo.awayRosterUserIds = new ArrayList<>(awayBattingOrder);
+        matchInfo.homeBattingOrderUserIds = new ArrayList<>(homeBattingOrder);
+        matchInfo.awayBattingOrderUserIds = new ArrayList<>(awayBattingOrder);
+        matchInfo.homeRosterUserIds = mergeRoster(homeBattingOrder, homeStartingPitcherUserId);
+        matchInfo.awayRosterUserIds = mergeRoster(awayBattingOrder, awayStartingPitcherUserId);
         matchInfo.currentBatterIndex = 0;
         matchInfo.homeNextBatterIndex = 0;
         matchInfo.awayNextBatterIndex = 0;

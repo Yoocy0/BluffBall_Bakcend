@@ -15,10 +15,10 @@ import java.util.Set;
 public class TeamLineupValidator {
 
     /**
-     * 로스터 인원 수가 모드 요구와 일치하는지 검증한다.
+     * 타순 인원 수가 모드 요구와 일치하는지 검증한다.
      *
-     * @param actualSize 요청 인원 수
-     * @param requiredSize 모드별 필요 인원
+     * @param actualSize 요청 타순 인원 수
+     * @param requiredSize 모드별 필요 타순 인원
      * @throws BadRequestException 인원 수 불일치 시
      */
     public void validateSize(int actualSize, int requiredSize) {
@@ -30,9 +30,9 @@ public class TeamLineupValidator {
     }
 
     /**
-     * 로스터에 중복 유저가 없는지 검증한다.
+     * 타순에 중복 유저가 없는지 검증한다.
      *
-     * @param userIds 출전 유저 ID 목록
+     * @param userIds 타순 유저 ID 목록
      * @throws BadRequestException 중복이 있으면
      */
     public void validateNoDuplicates(List<Long> userIds) {
@@ -55,7 +55,7 @@ public class TeamLineupValidator {
     }
 
     /**
-     * 선발 투수가 타순(로스터)에 포함되는지 검증한다.
+     * Full — 선발 투수가 타순에 포함되는지 검증한다.
      *
      * @param userIds 타순
      * @param startingPitcherUserId 선발 투수
@@ -66,6 +66,29 @@ public class TeamLineupValidator {
             throw new BadRequestException(
                     ErrorCode.TEAM_LINEUP_STARTING_PITCHER_INVALID,
                     "startingPitcherUserId=" + startingPitcherUserId);
+        }
+    }
+
+    /**
+     * Compact — 선발 투수가 타순과 별도 인원인지 검증한다.
+     *
+     * @param battingOrderUserIds 타순
+     * @param startingPitcherUserId 전담 선발 투수
+     * @throws BadRequestException 없거나 타순에 포함되면
+     */
+    public void validateDedicatedStartingPitcher(
+            List<Long> battingOrderUserIds,
+            Long startingPitcherUserId) {
+        if (startingPitcherUserId == null) {
+            throw new BadRequestException(
+                    ErrorCode.TEAM_LINEUP_STARTING_PITCHER_INVALID,
+                    "startingPitcherUserId=null");
+        }
+        if (battingOrderUserIds.contains(startingPitcherUserId)) {
+            throw new BadRequestException(
+                    ErrorCode.TEAM_LINEUP_STARTING_PITCHER_INVALID,
+                    "Compact starting pitcher must be outside batting order. startingPitcherUserId="
+                            + startingPitcherUserId);
         }
     }
 

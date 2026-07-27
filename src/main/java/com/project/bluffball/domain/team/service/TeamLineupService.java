@@ -48,6 +48,8 @@ public class TeamLineupService {
     /**
      * 출전 로스터(타순·선발 투수)를 저장한다. 리더만 가능하다.
      *
+     * <p>Compact: 타순 3명 + 전담 투수 1명(타순 밖). Full: 타순 9명에 선발 투수 포함.</p>
+     *
      * @param userId 요청 유저 ID
      * @param teamId 팀 ID
      * @param format 리그 구분
@@ -64,15 +66,26 @@ public class TeamLineupService {
         teamReader.getTeamResponse(teamId);
         teamMembershipValidator.validateLeader(teamMemberReader.isLeader(teamId, userId));
 
-        List<Long> userIds = request.userIds();
-        int requiredSize = gameModeRule.getRosterSize(toGameMode(format));
-        teamLineupValidator.validateSize(userIds.size(), requiredSize);
-        teamLineupValidator.validateNoDuplicates(userIds);
-        teamLineupValidator.validateAllMembers(teamMemberReader.areAllMembers(teamId, userIds));
-        teamLineupValidator.validateStartingPitcherInRoster(userIds, request.startingPitcherUserId());
+        List<Long> battingOrder = request.userIds();
+        Long startingPitcherUserId = request.startingPitcherUserId();
+        GameMode gameMode = toGameMode(format);
+
+        teamLineupValidator.validateSize(
+                battingOrder.size(), gameModeRule.getBattingOrderSize(gameMode));
+        teamLineupValidator.validateNoDuplicates(battingOrder);
+
+        if (gameModeRule.hasDedicatedPitcher(gameMode)) {
+            teamLineupValidator.validateDedicatedStartingPitcher(battingOrder, startingPitcherUserId);
+        } else {
+            teamLineupValidator.validateStartingPitcherInRoster(battingOrder, startingPitcherUserId);
+        }
+
+        List<Long> matchRoster = TeamLineupReader.mergeMatchRoster(battingOrder, startingPitcherUserId);
+        teamLineupValidator.validateNoDuplicates(matchRoster);
+        teamLineupValidator.validateAllMembers(teamMemberReader.areAllMembers(teamId, matchRoster));
 
         Long savedTeamId = teamLineupExecutor.upsert(
-                teamId, format, userIds, request.startingPitcherUserId());
+                teamId, format, battingOrder, startingPitcherUserId);
         return teamLineupReader.getLineupResponse(savedTeamId, format);
     }
 
@@ -106,12 +119,12 @@ public class TeamLineupService {
         teamReader.getTeamResponse(teamId);
         teamMembershipValidator.validateLeader(teamMemberReader.isLeader(teamId, userId));
 
-        // 로스터가 먼저 있어야 함
-        List<Long> lineupUserIds = teamLineupReader.getUserIds(teamId, format);
+        // 로스터(타순 + Compact 전담 투수)가 먼저 있어야 함
+        List<Long> matchRosterUserIds = teamLineupReader.getMatchRosterUserIds(teamId, format);
         List<Long> selectionUserIds = request.selections().stream()
                 .map(UpsertTeamPitchCardsRequest.MemberPitchCardSelection::userId)
                 .toList();
-        teamPitchCardsValidator.validateMembersMatchLineup(selectionUserIds, lineupUserIds);
+        teamPitchCardsValidator.validateMembersMatchLineup(selectionUserIds, matchRosterUserIds);
 
         int requiredHandSize = gameModeRule.getHandSize(toGameMode(format));
         for (UpsertTeamPitchCardsRequest.MemberPitchCardSelection selection : request.selections()) {

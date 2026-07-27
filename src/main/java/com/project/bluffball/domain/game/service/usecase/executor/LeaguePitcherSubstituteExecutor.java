@@ -47,9 +47,12 @@ public class LeaguePitcherSubstituteExecutor {
         }
         matchInfo.setPlayerCardHand(newPitcherUserId, hand);
 
-        // 신임 투수 → 투수 셋업 재제출, 강판 투수 → 타자 셋업 재제출
+        // 신임 투수 → 투수 셋업 재제출
         matchInfo.clearPitcherSetupNumbers(newPitcherUserId);
-        matchInfo.clearBatterSetupNumbers(oldPitcherUserId);
+        // 강판 투수가 타순 멤버면 타자 셋업 재제출 (Compact 전담 투수는 스킵)
+        if (matchInfo.isBattingOrderMember(oldPitcherUserId)) {
+            matchInfo.clearBatterSetupNumbers(oldPitcherUserId);
+        }
 
         matchInfo.substitutePitcher(newPitcherUserId);
         matchInfoRepository.save(matchInfo);

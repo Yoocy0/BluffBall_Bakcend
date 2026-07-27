@@ -36,16 +36,22 @@ public class LeagueCatalogInitializer implements ApplicationRunner {
      * @param format 리그 구분
      */
     private void seedLeagues(LeagueFormat format) {
+        int minMembers = format == LeagueFormat.COMPACT ? 4 : 9;
         for (LeagueTier tier : LeagueTier.values()) {
-            if (leagueRepository.findByFormatAndTier(format, tier).isPresent()) {
-                continue;
-            }
-            int tierIndex = tier.ordinal() + 1;
-            long entryFee = 1_000L * tierIndex;
-            long firstPrize = 0L;
-            int minMembers = format == LeagueFormat.COMPACT ? 3 : 9;
-            String name = formatLabel(format) + " " + tierLabel(tier);
-            leagueRepository.save(new League(format, tier, name, entryFee, firstPrize, minMembers));
+            leagueRepository.findByFormatAndTier(format, tier).ifPresentOrElse(
+                    league -> {
+                        if (league.getMinTeamMembers() != minMembers) {
+                            league.updateMinTeamMembers(minMembers);
+                            leagueRepository.save(league);
+                        }
+                    },
+                    () -> {
+                        int tierIndex = tier.ordinal() + 1;
+                        long entryFee = 1_000L * tierIndex;
+                        String name = formatLabel(format) + " " + tierLabel(tier);
+                        leagueRepository.save(
+                                new League(format, tier, name, entryFee, 0L, minMembers));
+                    });
         }
     }
 

@@ -82,8 +82,8 @@ class LeagueProgressServiceTest {
             when(teamLeagueProgressReader.exists(TEAM_ID, LeagueFormat.COMPACT)).thenReturn(false);
             when(leagueReader.getByFormatAndTier(LeagueFormat.COMPACT, LeagueTier.AMATEUR_4))
                     .thenReturn(AMATEUR4_LEAGUE);
-            when(leagueReader.getMinTeamMembers(LEAGUE_ID)).thenReturn(3);
-            when(teamMemberReader.countMembers(TEAM_ID)).thenReturn(3L);
+            when(leagueReader.getMinTeamMembers(LEAGUE_ID)).thenReturn(4);
+            when(teamMemberReader.countMembers(TEAM_ID)).thenReturn(4L);
             when(leagueReader.getEntryFee(LEAGUE_ID)).thenReturn(1000L);
             when(teamReader.getTreasury(TEAM_ID)).thenReturn(1000L);
             when(teamLeagueProgressReader.getProgressResponse(TEAM_ID, LeagueFormat.COMPACT))
@@ -155,8 +155,8 @@ class LeagueProgressServiceTest {
                     .thenReturn(ready, after);
             when(leagueReader.getByFormatAndTier(LeagueFormat.COMPACT, LeagueTier.AMATEUR_3))
                     .thenReturn(amateur3);
-            when(leagueReader.getMinTeamMembers(101L)).thenReturn(3);
-            when(teamMemberReader.countMembers(TEAM_ID)).thenReturn(3L);
+            when(leagueReader.getMinTeamMembers(101L)).thenReturn(4);
+            when(teamMemberReader.countMembers(TEAM_ID)).thenReturn(4L);
             when(leagueReader.getEntryFee(101L)).thenReturn(2000L);
             when(teamReader.getTreasury(TEAM_ID)).thenReturn(5000L);
 

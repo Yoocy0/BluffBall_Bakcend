@@ -14,7 +14,7 @@ public record LeagueStartingLineupRequest(
         @NotNull
         Long startingPitcherUserId,
 
-        /** 타순 (출전 로스터 유저 ID, Compact 3 / Full 9) */
+        /** 타순 (Compact 3 / Full 9) */
         @NotEmpty
         List<@NotNull Long> battingOrder
 ) {

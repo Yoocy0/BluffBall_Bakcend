@@ -61,4 +61,28 @@ public class TurnResultSessionReader {
                 .map(session -> session.getTurnResult() != null)
                 .orElse(false);
     }
+
+    /**
+     * 현재 턴 투수의 시작 좌표 (Service ✅).
+     *
+     * @param matchSessionId 매치 세션 ID
+     * @return 시작 좌표, 없으면 empty
+     */
+    public Optional<Integer> findCurrentStartCoordinateNumber(String matchSessionId) {
+        return findCurrentSession(matchSessionId)
+                .filter(session -> session.getSelectedPitchCardId() != null)
+                .map(TurnResultSession::getStartCoordinateNumber);
+    }
+
+    /**
+     * 현재 턴 투수가 선택한 구종 카드 ID (Service ✅).
+     *
+     * @param matchSessionId 매치 세션 ID
+     * @return 구종 카드 ID, 없으면 empty
+     */
+    public Optional<Long> findCurrentSelectedPitchCardId(String matchSessionId) {
+        return findCurrentSession(matchSessionId)
+                .map(TurnResultSession::getSelectedPitchCardId)
+                .filter(id -> id != null);
+    }
 }

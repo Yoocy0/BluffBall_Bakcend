@@ -14,9 +14,8 @@ import java.util.List;
 /**
  * 리그 포맷별 팀 출전 로스터.
  *
- * <p>Compact 3명 / Full 9명.
- * {@code userIds} 순서 = 타순, {@code startingPitcherUserId} = 선발 투수.
- * 매칭 전 구성한다.</p>
+ * <p>Compact: 타순 3명 + 전담 투수 1명(타순 밖). Full: 타순 9명(선발 투수는 타순에 포함).
+ * {@code userIds} 순서 = 타순. 매칭 전 구성한다.</p>
  */
 @Entity
 @Table(

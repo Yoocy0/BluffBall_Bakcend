@@ -49,8 +49,8 @@ public class TeamLineupController {
      */
     @Operation(
             summary = "출전 로스터·선발 투수 저장",
-            description = "Compact 3명 / Full 9명의 타순(userIds 순서)과 선발 투수(startingPitcherUserId)를 "
-                    + "매칭 전에 저장한다. 선발 투수는 userIds에 포함되어야 한다. 리더만 가능하다.",
+            description = "Compact는 타순 3명 + 전담 투수 1명(startingPitcherUserId는 userIds 밖). "
+                    + "Full은 타순 9명에 선발 투수가 포함된다. 리더만 가능하다.",
             security = @SecurityRequirement(name = "bearerAuth")
     )
     @ApiResponses({
