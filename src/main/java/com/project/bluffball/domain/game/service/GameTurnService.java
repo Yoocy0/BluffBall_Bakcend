@@ -60,16 +60,11 @@ public class GameTurnService {
     public void pitcherSelectCard(String matchSessionId, Long userId, PitcherCardSelectRequest request) {
         // 현재 게임의 상태가 유효한지 검증
         gameProgressValidator.validateGameActive(
-                // 게임이 시작되었는지
                 gameProgressReader.isInitialized(matchSessionId),
-                // 게임이 이미 종료되었는지
                 gameProgressReader.isGameOver(matchSessionId));
+        gameProgressValidator.validateSetupComplete(
+                matchInfoReader.isSetupNumbersComplete(matchSessionId));
 
-        /*
-            3. 투수의 카드 선택 행위 유효성 검증
-            - 요청한 유저가 실제 투수가 맞는지, 해당 카드를 실제로 소유하고 있는지
-            - 멀리건 단계가 정상적으로 종료되었는지, 이미 선택을 완료한 턴은 아닌지 검증
-        */
         List<Long> hand = matchInfoReader.getPitcherCardHand(matchSessionId);
         Long pitcherUserId = matchInfoReader.getPitcherUserId(matchSessionId);
         pitcherCardSelectValidator.validate(

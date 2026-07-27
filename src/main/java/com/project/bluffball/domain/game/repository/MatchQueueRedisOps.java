@@ -1,163 +1,108 @@
 package com.project.bluffball.domain.game.repository;
 
-
-
+import com.project.bluffball.domain.league.enums.LeagueTier;
 import com.project.bluffball.domain.user.record.enums.GameMode;
-
 import lombok.RequiredArgsConstructor;
-
 import org.springframework.data.redis.core.StringRedisTemplate;
-
 import org.springframework.data.redis.core.script.DefaultRedisScript;
-
 import org.springframework.stereotype.Component;
 
-
-
 import java.util.List;
-
 import java.util.Optional;
 
-
-
 /**
-
- * 싱글 모드 FIFO 매칭 큐 Redis List 연산.
-
+ * FIFO 매칭 큐 Redis List 연산.
  *
-
- * <p>게임 모드별로 별도 List 키({@code match:queue:{GameMode}})를 사용한다.
-
- * {@link com.project.bluffball.domain.game.service.usecase.executor.MatchQueueExecutor}에서만 호출한다.</p>
-
+ * <p>쇼다운: {@code match:queue:{GameMode}}
+ * 리그: {@code match:queue:{GameMode}:{LeagueTier}}</p>
  */
-
 @Component
-
 @RequiredArgsConstructor
-
 public class MatchQueueRedisOps {
 
-
-
-    /** Redis List 키 prefix — 뒤에 {@link GameMode#name()}을 붙인다 */
-
+    /** Redis List 키 prefix */
     private static final String QUEUE_KEY_PREFIX = "match:queue:";
 
-
-
     /**
-
      * LPOP(상대 pop) → 없으면 RPUSH(본인 enqueue)를 원자적으로 수행하는 Lua 스크립트.
-
-     * 동시 join race condition 방지용.
-
      */
-
     private static final DefaultRedisScript<String> POP_OR_ENQUEUE_SCRIPT = new DefaultRedisScript<>(
-
             """
-
                     local opponent = redis.call('LPOP', KEYS[1])
-
                     if opponent then
-
                       return opponent
-
                     end
-
                     redis.call('RPUSH', KEYS[1], ARGV[1])
-
                     return ''
-
                     """,
-
             String.class);
-
-
-
-    /** Redis String·List 연산 템플릿 */
 
     private final StringRedisTemplate stringRedisTemplate;
 
-
+    /**
+     * 쇼다운 큐에서 상대를 pop하거나 본인을 enqueue한다.
+     *
+     * @param gameMode 게임 모드
+     * @param userId 진입 유저 ID
+     * @return 상대 userId — 없으면 empty
+     */
+    public Optional<Long> pollOpponentOrEnqueue(GameMode gameMode, Long userId) {
+        return pollOpponentOrEnqueue(gameMode, null, userId);
+    }
 
     /**
-
-     * 큐에서 상대를 pop하거나, 상대가 없으면 본인을 enqueue한다.
-
+     * 모드·티어 큐에서 상대를 pop하거나 본인을 enqueue한다.
      *
-
-     * @param gameMode 큐를 구분하는 게임 모드
-
-     * @param userId   큐에 진입하는 유저 ID
-
-     * @return pop된 상대 userId — enqueue만 한 경우 empty
-
+     * @param gameMode 게임 모드
+     * @param leagueTier 리그 티어 (쇼다운은 null)
+     * @param userId 진입 유저 ID
+     * @return 상대 userId — 없으면 empty
      */
-
-    public Optional<Long> pollOpponentOrEnqueue(GameMode gameMode, Long userId) {
-
+    public Optional<Long> pollOpponentOrEnqueue(GameMode gameMode, LeagueTier leagueTier, Long userId) {
         String result = stringRedisTemplate.execute(
-
                 POP_OR_ENQUEUE_SCRIPT,
-
-                List.of(queueKey(gameMode)),
-
+                List.of(queueKey(gameMode, leagueTier)),
                 String.valueOf(userId));
 
-
-
         if (result == null || result.isEmpty()) {
-
             return Optional.empty();
-
         }
-
         return Optional.of(Long.parseLong(result));
-
     }
 
-
-
     /**
-
-     * 큐에서 특정 userId를 제거한다.
-
+     * 쇼다운 큐에서 유저를 제거한다.
      *
-
-     * @param gameMode 큐를 구분하는 게임 모드
-
-     * @param userId   제거할 유저 ID (취소 시)
-
+     * @param gameMode 게임 모드
+     * @param userId 유저 ID
      */
-
     public void removeFromQueue(GameMode gameMode, Long userId) {
-
-        stringRedisTemplate.opsForList().remove(queueKey(gameMode), 1, String.valueOf(userId));
-
+        removeFromQueue(gameMode, null, userId);
     }
-
-
 
     /**
-
-     * 게임 모드별 Redis List 키를 생성한다.
-
+     * 모드·티어 큐에서 유저를 제거한다.
      *
-
-     * @param gameMode 큐를 구분하는 게임 모드
-
-     * @return 예: {@code match:queue:SHOWDOWN}
-
+     * @param gameMode 게임 모드
+     * @param leagueTier 리그 티어 (쇼다운은 null)
+     * @param userId 유저 ID
      */
-
-    private String queueKey(GameMode gameMode) {
-
-        return QUEUE_KEY_PREFIX + gameMode.name();
-
+    public void removeFromQueue(GameMode gameMode, LeagueTier leagueTier, Long userId) {
+        stringRedisTemplate.opsForList().remove(
+                queueKey(gameMode, leagueTier), 1, String.valueOf(userId));
     }
 
+    /**
+     * Redis List 키를 생성한다.
+     *
+     * @param gameMode 게임 모드
+     * @param leagueTier 리그 티어 (null이면 모드만)
+     * @return 큐 키
+     */
+    private String queueKey(GameMode gameMode, LeagueTier leagueTier) {
+        if (leagueTier == null) {
+            return QUEUE_KEY_PREFIX + gameMode.name();
+        }
+        return QUEUE_KEY_PREFIX + gameMode.name() + ":" + leagueTier.name();
+    }
 }
-
-

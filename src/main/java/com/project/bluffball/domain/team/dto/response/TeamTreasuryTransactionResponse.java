@@ -12,7 +12,6 @@ public record TeamTreasuryTransactionResponse(
         TeamTreasuryTransactionType transactionType,
         long amount,
         Long sourceUserId,
-        Long leagueSeasonId,
         LocalDateTime createdAt
 ) {
 }

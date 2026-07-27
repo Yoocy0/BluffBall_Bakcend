@@ -1,10 +1,8 @@
 package com.project.bluffball.domain.team.service.usecase.reader;
 
-import com.project.bluffball.domain.league.entity.LeagueSeason;
-import com.project.bluffball.domain.league.entity.LeagueTeam;
-import com.project.bluffball.domain.league.enums.LeagueSeasonStatus;
-import com.project.bluffball.domain.league.repository.LeagueSeasonRepository;
-import com.project.bluffball.domain.league.repository.LeagueTeamRepository;
+import com.project.bluffball.domain.league.entity.TeamLeagueProgress;
+import com.project.bluffball.domain.league.repository.TeamLeagueProgressRepository;
+import com.project.bluffball.domain.league.service.usecase.reader.LeagueReader;
 import com.project.bluffball.domain.team.dto.response.TeamResponse;
 import com.project.bluffball.domain.team.entity.Team;
 import com.project.bluffball.domain.team.repository.TeamRepository;
@@ -13,10 +11,8 @@ import com.project.bluffball.global.exception.NotFoundException;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Component;
 
-import java.util.EnumSet;
 import java.util.List;
 import java.util.Optional;
-import java.util.Set;
 
 /**
  * 팀 읽기 전담 Reader (usecase/reader 계층).
@@ -25,13 +21,9 @@ import java.util.Set;
 @RequiredArgsConstructor
 public class TeamReader {
 
-    /** 현재 소속 리그로 인정하는 시즌 상태 */
-    private static final Set<LeagueSeasonStatus> ACTIVE_SEASON_STATUSES =
-            EnumSet.of(LeagueSeasonStatus.RECRUITING, LeagueSeasonStatus.IN_PROGRESS);
-
     private final TeamRepository teamRepository;
-    private final LeagueTeamRepository leagueTeamRepository;
-    private final LeagueSeasonRepository leagueSeasonRepository;
+    private final TeamLeagueProgressRepository teamLeagueProgressRepository;
+    private final LeagueReader leagueReader;
 
     /**
      * 팀 Entity를 조회한다. Executor·Reader 내부 전용 (Service에서 호출 금지).
@@ -72,8 +64,7 @@ public class TeamReader {
      * @return 팀 응답 DTO
      */
     public TeamResponse getTeamResponse(Long teamId) {
-        Team team = getById(teamId);
-        return toResponse(team);
+        return toResponse(getById(teamId));
     }
 
     /**
@@ -106,39 +97,29 @@ public class TeamReader {
      * @return 응답 DTO
      */
     private TeamResponse toResponse(Team team) {
-        Optional<CurrentLeagueIds> current = findCurrentLeagueIds(team.getId());
+        Optional<Long> currentLeagueId = findPrimaryLeagueId(team.getId());
         return new TeamResponse(
                 team.getId(),
                 team.getName(),
                 team.getLogoUrl(),
                 team.getLeaderUserId(),
                 team.getTreasury(),
-                current.map(CurrentLeagueIds::seasonId).orElse(null),
-                current.map(CurrentLeagueIds::leagueId).orElse(null));
+                currentLeagueId.orElse(null));
     }
 
     /**
-     * 진행·모집 중인 시즌 소속 정보를 조회한다.
+     * 대표 소속 리그 ID (첫 번째 진행 상태 기준).
      *
      * @param teamId 팀 ID
-     * @return 현재 시즌·리그 ID
+     * @return 리그 ID
      */
-    private Optional<CurrentLeagueIds> findCurrentLeagueIds(Long teamId) {
-        List<LeagueTeam> leagueTeams = leagueTeamRepository.findByTeamId(teamId);
-        for (LeagueTeam leagueTeam : leagueTeams) {
-            Optional<LeagueSeason> seasonOpt = leagueSeasonRepository.findById(leagueTeam.getLeagueSeasonId());
-            if (seasonOpt.isEmpty()) {
-                continue;
-            }
-            LeagueSeason season = seasonOpt.get();
-            if (ACTIVE_SEASON_STATUSES.contains(season.getStatus())) {
-                return Optional.of(new CurrentLeagueIds(season.getId(), season.getLeagueId()));
-            }
+    private Optional<Long> findPrimaryLeagueId(Long teamId) {
+        List<TeamLeagueProgress> progresses = teamLeagueProgressRepository.findByTeamId(teamId);
+        if (progresses.isEmpty()) {
+            return Optional.empty();
         }
-        return Optional.empty();
-    }
-
-    /** 현재 소속 리그 식별값 묶음 */
-    private record CurrentLeagueIds(Long seasonId, Long leagueId) {
+        TeamLeagueProgress first = progresses.get(0);
+        return Optional.of(
+                leagueReader.getByFormatAndTier(first.getFormat(), first.getCurrentTier()).leagueId());
     }
 }

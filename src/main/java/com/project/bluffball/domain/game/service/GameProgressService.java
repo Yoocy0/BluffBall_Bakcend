@@ -11,8 +11,10 @@ import com.project.bluffball.domain.game.event.HalfInningChangedEvent;
 import com.project.bluffball.domain.game.redis.TurnResultSession;
 import com.project.bluffball.domain.game.repository.TurnResultSessionRepository;
 import com.project.bluffball.domain.game.service.MatchService;
+import com.project.bluffball.domain.game.service.usecase.executor.BatterAdvanceExecutor;
 import com.project.bluffball.domain.game.service.usecase.executor.GameEndExecutor;
 import com.project.bluffball.domain.game.service.usecase.executor.GameProgressExecutor;
+import com.project.bluffball.domain.game.service.usecase.executor.LeagueMatchResultMarkExecutor;
 import com.project.bluffball.domain.game.service.usecase.judgment.GameProgressCalculator;
 import com.project.bluffball.domain.game.service.usecase.reader.GameEndReader;
 import com.project.bluffball.domain.game.service.usecase.reader.GameProgressReader;
@@ -21,6 +23,8 @@ import com.project.bluffball.domain.game.service.usecase.reader.MatchInfoReader;
 import com.project.bluffball.domain.game.service.usecase.reader.PitchCardReader;
 import com.project.bluffball.domain.game.service.usecase.reader.TurnResultSessionReader;
 import com.project.bluffball.domain.game.service.usecase.validator.GameEndValidator;
+import com.project.bluffball.domain.league.enums.LeagueFormat;
+import com.project.bluffball.domain.league.service.LeagueMatchResultService;
 import com.project.bluffball.domain.user.record.enums.GameMode;
 import com.project.bluffball.global.exception.BadRequestException;
 import com.project.bluffball.global.exception.ErrorCode;
@@ -63,6 +67,7 @@ public class GameProgressService {
     private final ApplicationEventPublisher eventPublisher;
 
     private final GameProgressExecutor gameProgressExecutor;
+    private final BatterAdvanceExecutor batterAdvanceExecutor;
     private final GameEndExecutor gameEndExecutor;
     private final GameProgressReader gameProgressReader;
     private final GameEndReader gameEndReader;
@@ -75,6 +80,8 @@ public class GameProgressService {
     private final MatchInfoReader matchInfoReader;
     private final PitchCardReader pitchCardReader;
     private final MatchService matchService;
+    private final LeagueMatchResultService leagueMatchResultService;
+    private final LeagueMatchResultMarkExecutor leagueMatchResultMarkExecutor;
     private final SimpMessagingTemplate messagingTemplate;
 
     private static final String GAME_TOPIC = "/topic/game/";
@@ -135,6 +142,9 @@ public class GameProgressService {
                 matchSessionId,
                 new GameTurnOutcome(effectiveResult, outcome.turnNumber()));
 
+        // 타석 종료 시 타순 전진 (공수 교대 전 — 다음 공격 이닝 이어가기에 사용)
+        batterAdvanceExecutor.advanceIfPlateAppearanceEnded(matchSessionId, effectiveResult);
+
         var snapshot = gameStateReader.getSnapshot(matchSessionId);
 
         // 판정 부가 정보(좌표·타이밍·주사위)는 Redis TurnResultSession에서 조회
@@ -188,6 +198,9 @@ public class GameProgressService {
         GameStateSnapshot snapshot = gameStateReader.getSnapshot(matchSessionId);
         publishGameEndEvent(matchSessionId, snapshot, winnerUserId);
 
+        // 리그 순위 반영 (멱등)
+        applyLeagueStandingsIfNeeded(matchSessionId, snapshot);
+
         if (gameEndReader.isAlreadyArchived(matchSessionId)) {
             return;
         }
@@ -205,6 +218,52 @@ public class GameProgressService {
         gameEndValidator.validateCompletedTurnSessions(completedSessions);
         gameEndExecutor.archive(completedSessions);
         matchService.clearQueueEntriesForMatch(matchSessionId);
+    }
+
+    /**
+     * 리그 매치면 티어 점수·매치 보상을 반영한다.
+     *
+     * @param matchSessionId 매치 세션 ID
+     * @param snapshot 최종 스코어
+     */
+    private void applyLeagueStandingsIfNeeded(String matchSessionId, GameStateSnapshot snapshot) {
+        if (!matchInfoReader.isLeagueMatch(matchSessionId)) {
+            return;
+        }
+        if (matchInfoReader.isLeagueResultApplied(matchSessionId)) {
+            return;
+        }
+        Long homeTeamId = matchInfoReader.getHomeTeamId(matchSessionId);
+        Long awayTeamId = matchInfoReader.getAwayTeamId(matchSessionId);
+        LeagueFormat format = toLeagueFormat(matchInfoReader.getGameMode(matchSessionId));
+        if (format == null || homeTeamId == null || awayTeamId == null) {
+            log.warn("리그 결과 반영 스킵 — format/team 누락 matchSessionId={}", matchSessionId);
+            return;
+        }
+        leagueMatchResultService.applyMatchResult(
+                format,
+                homeTeamId,
+                awayTeamId,
+                snapshot.homeScore(),
+                snapshot.awayScore());
+        leagueMatchResultMarkExecutor.markApplied(matchSessionId);
+    }
+
+    /**
+     * GameMode → LeagueFormat 매핑.
+     *
+     * @param gameMode 게임 모드
+     * @return 리그 포맷, 리그가 아니면 null
+     */
+    private LeagueFormat toLeagueFormat(GameMode gameMode) {
+        if (gameMode == null) {
+            return null;
+        }
+        return switch (gameMode) {
+            case COMPACT_LEAGUE -> LeagueFormat.COMPACT;
+            case FULL_LEAGUE -> LeagueFormat.FULL;
+            default -> null;
+        };
     }
 
     /**

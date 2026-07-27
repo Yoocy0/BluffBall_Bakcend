@@ -28,9 +28,10 @@ public class GamePhaseListener {
     /**
      * 블러핑 숫자 제출 이벤트 수신.
      *
-     * <p>양측 제출이 완료되고, 인게임 드로우·멀리건을 사용하는 모드(SHOWDOWN/CUSTOM)인
-     * 경우에만 초기 카드 드로우를 시작한다.
-     * 리그 모드는 매치 전 구종 사전 선택을 사용하므로 여기서 드로우하지 않는다.</p>
+     * <p>쇼다운: 양측 완료 시 카드 드로우.
+     * 리그: 역할별 셋업 완료 시 바로 경기 시작(드로우·멀리건 없음).</p>
+     *
+     * @param event 셋업 제출 이벤트
      */
     @EventListener
     public void onSetupNumbersSubmitted(SetupNumbersSubmittedEvent event) {
@@ -39,14 +40,17 @@ public class GamePhaseListener {
             return;
         }
         GameMode gameMode = matchInfoReader.getGameMode(matchSessionId);
-        if (!gameModeRule.usesInGameCardDrawAndMulligan(gameMode)) {
+        if (gameModeRule.usesInGameCardDrawAndMulligan(gameMode)) {
+            gamePrepService.drawCardHand(matchSessionId);
             return;
         }
-        gamePrepService.drawCardHand(matchSessionId);
+        gamePrepService.beginLeaguePlayIfReady(matchSessionId);
     }
 
     /**
      * 공수 교대 이벤트 수신 — 역할 교환만 수행(멀리건·드로우 없음).
+     *
+     * @param event 공수 교대 이벤트
      */
     @EventListener
     public void onHalfInningChanged(HalfInningChangedEvent event) {

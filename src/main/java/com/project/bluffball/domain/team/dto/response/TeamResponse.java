@@ -9,7 +9,6 @@ public record TeamResponse(
         String logoUrl,
         Long leaderUserId,
         long treasury,
-        Long currentLeagueSeasonId,
         Long currentLeagueId
 ) {
 }

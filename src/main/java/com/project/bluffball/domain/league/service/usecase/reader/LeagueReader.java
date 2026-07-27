@@ -67,6 +67,20 @@ public class LeagueReader {
     }
 
     /**
+     * 포맷·티어로 리그 응답을 반환한다.
+     *
+     * @param format 포맷
+     * @param tier 티어
+     * @return 리그 응답
+     */
+    public LeagueResponse getByFormatAndTier(LeagueFormat format, LeagueTier tier) {
+        return leagueRepository.findByFormatAndTier(format, tier)
+                .map(this::toResponse)
+                .orElseThrow(() -> new NotFoundException(
+                        ErrorCode.LEAGUE_NOT_FOUND, "format=" + format + ", tier=" + tier));
+    }
+
+    /**
      * 참여권 가격을 반환한다.
      *
      * @param leagueId 리그 ID
@@ -84,16 +98,6 @@ public class LeagueReader {
      */
     public int getMinTeamMembers(Long leagueId) {
         return getById(leagueId).getMinTeamMembers();
-    }
-
-    /**
-     * 1등 상금을 반환한다.
-     *
-     * @param leagueId 리그 ID
-     * @return 1등 상금
-     */
-    public long getFirstPlacePrize(Long leagueId) {
-        return getById(leagueId).getFirstPlacePrize();
     }
 
     /**

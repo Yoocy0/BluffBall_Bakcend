@@ -2,6 +2,8 @@ package com.project.bluffball.domain.game.redis;
 
 import com.project.bluffball.domain.game.dto.request.SetupNumberRequest;
 import com.project.bluffball.domain.game.enums.GameStatus;
+import com.project.bluffball.domain.game.enums.SetupKind;
+import com.project.bluffball.domain.league.enums.LeagueTier;
 import com.project.bluffball.domain.user.record.enums.GameMode;
 import jakarta.persistence.EnumType;
 import jakarta.persistence.Enumerated;
@@ -55,6 +57,49 @@ public class MatchInfo {
     /** 어웨이팀 유저 ID — 매치 생성 시 초기 타자로 고정 (공수 교대와 무관) */
     private Long awayUserId;
 
+    /** 홈 팀 ID — 리그 매치에서 사용 */
+    private Long homeTeamId;
+
+    /** 어웨이 팀 ID — 리그 매치에서 사용 */
+    private Long awayTeamId;
+
+    /** 리그 경기 결과(점수·보상) 반영 완료 여부 */
+    private boolean leagueResultApplied;
+
+    /** 리그 티어 — 리그 매치에서 사용 */
+    @Enumerated(EnumType.ORDINAL)
+    private LeagueTier leagueTier;
+
+    /** 홈 출전 로스터 — 리그 매치 */
+    private List<Long> homeRosterUserIds;
+
+    /** 어웨이 출전 로스터 — 리그 매치 */
+    private List<Long> awayRosterUserIds;
+
+    /** 홈 선발 투수 — 리그 매치 (공수 교대 시 기준) */
+    private Long homeStartingPitcherUserId;
+
+    /** 어웨이 선발 투수 — 리그 매치 (공수 교대 시 기준) */
+    private Long awayStartingPitcherUserId;
+
+    /** 홈 현재 등판 투수 — 교체 반영 (다음 수비 이닝에도 유지) */
+    private Long homeActivePitcherUserId;
+
+    /** 어웨이 현재 등판 투수 — 교체 반영 */
+    private Long awayActivePitcherUserId;
+
+    /** 홈 팀 다음 타석 인덱스 (공수 교대 후에도 이어감) */
+    private int homeNextBatterIndex;
+
+    /** 어웨이 팀 다음 타석 인덱스 */
+    private int awayNextBatterIndex;
+
+    /** 홈 팀 투수 교체 사용 횟수 */
+    private int homePitcherSubstitutionCount;
+
+    /** 어웨이 팀 투수 교체 사용 횟수 */
+    private int awayPitcherSubstitutionCount;
+
     /** 현재 등판 중인 투수 유저 ID */
     private Long pitcherUserId;
 
@@ -69,7 +114,7 @@ public class MatchInfo {
 
     /**
      * 투수의 현재 카드 패 — 카드 ID 목록.
-     * 싱글: 3장 / 팀전: 5장 / 투수 교체 등판: 4장
+     * 쇼다운: 3장 / Compact: 4장(교체 후 3) / Full: 5장(교체 후 4)
      */
     private List<Long> pitcherCardHand;
 
@@ -90,6 +135,9 @@ public class MatchInfo {
 
     /** 플레이어별 블러핑 숫자 — Redis에 List로 저장 */
     private List<PlayerSetupNumbers> playerSetupNumbers;
+
+    /** 플레이어별 투수 교체 시 제외 카드 — 리그 사전 선택 dropCardId */
+    private List<PlayerDropCard> playerDropCards;
 
     /**
      * 2루타 판정용 목표 주사위 눈금 (1~6).
@@ -154,6 +202,13 @@ public class MatchInfo {
     public List<Long> getParticipantUserIds() {
         ensureCollectionsInitialized();
         Set<Long> ids = new LinkedHashSet<>();
+        // 리그: 양 팀 로스터 전원
+        if (!homeRosterUserIds.isEmpty() || !awayRosterUserIds.isEmpty()) {
+            ids.addAll(homeRosterUserIds);
+            ids.addAll(awayRosterUserIds);
+            return new ArrayList<>(ids);
+        }
+        // 쇼다운: 투수 + 타순
         if (pitcherUserId != null) {
             ids.add(pitcherUserId);
         }
@@ -251,6 +306,15 @@ public class MatchInfo {
         if (mulliganDoneUserIds == null) {
             mulliganDoneUserIds = new ArrayList<>();
         }
+        if (homeRosterUserIds == null) {
+            homeRosterUserIds = new ArrayList<>();
+        }
+        if (awayRosterUserIds == null) {
+            awayRosterUserIds = new ArrayList<>();
+        }
+        if (playerDropCards == null) {
+            playerDropCards = new ArrayList<>();
+        }
         for (PlayerSetupNumbers entry : playerSetupNumbers) {
             entry.ensureListsInitialized();
         }
@@ -259,16 +323,303 @@ public class MatchInfo {
         }
     }
 
-    /** SetupNumberExecutor 전용 — 플레이어 제출 upsert */
-    public void upsertPlayerSetupNumbers(Long userId, SetupNumberRequest request) {
+    /**
+     * SetupNumberExecutor 전용 — 종류별 병합 upsert.
+     *
+     * <p>{@link SetupKind#FULL}은 4종을 통째로 교체한다.
+     * {@link SetupKind#PITCHER}/{@link SetupKind#BATTER}는 해당 필드만 갱신한다.</p>
+     *
+     * @param userId 유저 ID
+     * @param setupKind 제출 종류
+     * @param request 블러핑 숫자
+     */
+    public void upsertPlayerSetupNumbers(Long userId, SetupKind setupKind, SetupNumberRequest request) {
         ensureCollectionsInitialized();
-        playerSetupNumbers.removeIf(entry -> userId.equals(entry.getUserId()));
-        playerSetupNumbers.add(new PlayerSetupNumbers(
-                userId,
-                request.outNumList(),
-                request.dpNumList(),
-                request.tripleNumList(),
-                request.hrNumList()));
+        PlayerSetupNumbers existing = findPlayerSetupNumbers(userId);
+        if (existing == null) {
+            existing = new PlayerSetupNumbers(userId, List.of(), List.of(), List.of(), List.of());
+            playerSetupNumbers.add(existing);
+        }
+        switch (setupKind) {
+            case FULL -> {
+                existing.setOutNumList(nullToEmpty(request.outNumList()));
+                existing.setDpNumList(nullToEmpty(request.dpNumList()));
+                existing.setTripleNumList(nullToEmpty(request.tripleNumList()));
+                existing.setHrNumList(nullToEmpty(request.hrNumList()));
+            }
+            case PITCHER -> {
+                existing.setOutNumList(nullToEmpty(request.outNumList()));
+                existing.setDpNumList(nullToEmpty(request.dpNumList()));
+            }
+            case BATTER -> {
+                existing.setTripleNumList(nullToEmpty(request.tripleNumList()));
+                existing.setHrNumList(nullToEmpty(request.hrNumList()));
+            }
+        }
+    }
+
+    /**
+     * null 리스트를 빈 리스트로 치환한다.
+     *
+     * @param list 입력
+     * @return non-null 리스트
+     */
+    private static List<Integer> nullToEmpty(List<Integer> list) {
+        return list != null ? list : List.of();
+    }
+
+    /**
+     * 투수 셋업(OUT·병살)을 비운다 — 교체 등판 후 재제출용.
+     *
+     * @param userId 유저 ID
+     */
+    public void clearPitcherSetupNumbers(Long userId) {
+        ensureCollectionsInitialized();
+        PlayerSetupNumbers existing = findPlayerSetupNumbers(userId);
+        if (existing != null) {
+            existing.setOutNumList(List.of());
+            existing.setDpNumList(List.of());
+        }
+    }
+
+    /**
+     * 타자 셋업(3루타·홈런)을 비운다 — 투수→타자 전환 후 재제출용.
+     *
+     * @param userId 유저 ID
+     */
+    public void clearBatterSetupNumbers(Long userId) {
+        ensureCollectionsInitialized();
+        PlayerSetupNumbers existing = findPlayerSetupNumbers(userId);
+        if (existing != null) {
+            existing.setTripleNumList(List.of());
+            existing.setHrNumList(List.of());
+        }
+    }
+
+    /**
+     * 투수 셋업이 채워졌는지 반환한다.
+     *
+     * @param userId 유저 ID
+     * @return OUT 5개·병살 1개이면 true
+     */
+    public boolean hasPitcherSetup(Long userId) {
+        PlayerSetupNumbers existing = findPlayerSetupNumbers(userId);
+        if (existing == null) {
+            return false;
+        }
+        existing.ensureListsInitialized();
+        return existing.getOutNumList().size() == 5 && existing.getDpNumList().size() == 1;
+    }
+
+    /**
+     * 타자 셋업이 채워졌는지 반환한다.
+     *
+     * @param userId 유저 ID
+     * @return 3루타 1개·홈런 1개이면 true
+     */
+    public boolean hasBatterSetup(Long userId) {
+        PlayerSetupNumbers existing = findPlayerSetupNumbers(userId);
+        if (existing == null) {
+            return false;
+        }
+        existing.ensureListsInitialized();
+        return existing.getTripleNumList().size() == 1 && existing.getHrNumList().size() == 1;
+    }
+
+    /**
+     * 쇼다운 일괄 셋업이 채워졌는지 반환한다.
+     *
+     * @param userId 유저 ID
+     * @return 4종 모두 채워졌으면 true
+     */
+    public boolean hasFullSetup(Long userId) {
+        return hasPitcherSetup(userId) && hasBatterSetup(userId);
+    }
+
+    /**
+     * dropCardId를 저장한다.
+     *
+     * @param userId 유저 ID
+     * @param dropCardId 교체 시 제외 카드
+     */
+    public void setPlayerDropCard(Long userId, Long dropCardId) {
+        ensureCollectionsInitialized();
+        playerDropCards.removeIf(entry -> userId.equals(entry.getUserId()));
+        if (dropCardId != null) {
+            playerDropCards.add(new PlayerDropCard(userId, dropCardId));
+        }
+    }
+
+    /**
+     * 유저의 dropCardId를 반환한다.
+     *
+     * @param userId 유저 ID
+     * @return dropCardId, 없으면 null
+     */
+    public Long getPlayerDropCard(Long userId) {
+        ensureCollectionsInitialized();
+        for (PlayerDropCard entry : playerDropCards) {
+            if (userId.equals(entry.getUserId())) {
+                return entry.getDropCardId();
+            }
+        }
+        return null;
+    }
+
+    /**
+     * 투수 교체 횟수를 수비 팀에 맞게 1 증가시킨다.
+     *
+     * @deprecated 팀별 카운터로 대체 — {@link #incrementDefendingPitcherSubstitutionCount()} 사용
+     */
+    @Deprecated
+    public void incrementPitcherSubstitutionCount() {
+        incrementDefendingPitcherSubstitutionCount();
+    }
+
+    /**
+     * 현재 수비 팀의 투수 교체 횟수를 1 증가시킨다.
+     */
+    public void incrementDefendingPitcherSubstitutionCount() {
+        if (isHomeDefending()) {
+            this.homePitcherSubstitutionCount++;
+        } else {
+            this.awayPitcherSubstitutionCount++;
+        }
+    }
+
+    /**
+     * 현재 수비 팀의 투수 교체 횟수를 반환한다.
+     *
+     * @return 교체 횟수
+     */
+    public int getDefendingPitcherSubstitutionCount() {
+        return isHomeDefending() ? homePitcherSubstitutionCount : awayPitcherSubstitutionCount;
+    }
+
+    /**
+     * 홈이 수비(투수) 중인지 반환한다.
+     *
+     * @return 홈 수비면 true
+     */
+    public boolean isHomeDefending() {
+        ensureCollectionsInitialized();
+        if (pitcherUserId == null) {
+            return true;
+        }
+        if (homeRosterUserIds.contains(pitcherUserId)) {
+            return true;
+        }
+        if (awayRosterUserIds.contains(pitcherUserId)) {
+            return false;
+        }
+        // 로스터 판별 불가 시 active 투수 기준
+        return pitcherUserId.equals(homeActivePitcherUserId);
+    }
+
+    /**
+     * 현재 등판 투수를 교체한다. 수비 팀 active 투수도 갱신한다.
+     *
+     * @param newPitcherUserId 신임 투수
+     */
+    public void substitutePitcher(Long newPitcherUserId) {
+        ensureCollectionsInitialized();
+        if (pitcherUserId != null && !usedAsPitcherIds.contains(pitcherUserId)) {
+            usedAsPitcherIds.add(pitcherUserId);
+        }
+        boolean homeDefending = isHomeDefending();
+        this.pitcherUserId = newPitcherUserId;
+        if (homeDefending) {
+            this.homeActivePitcherUserId = newPitcherUserId;
+        } else {
+            this.awayActivePitcherUserId = newPitcherUserId;
+        }
+        syncPitcherCardHandFromPlayer();
+        incrementDefendingPitcherSubstitutionCount();
+    }
+
+    /**
+     * 타석이 종료되면 타순을 한 칸 전진한다.
+     *
+     * @return 전진 후 타자 userId
+     */
+    public Long advanceBatterAfterPlateAppearance() {
+        ensureCollectionsInitialized();
+        if (batterLineup.isEmpty()) {
+            throw new BadRequestException(ErrorCode.GAME_LINEUP_EMPTY);
+        }
+        currentBatterIndex = (currentBatterIndex + 1) % batterLineup.size();
+        return batterLineup.get(currentBatterIndex);
+    }
+
+    /**
+     * 리그 공수 교대 — 상대 팀 active 투수·타순으로 전환한다.
+     *
+     * <p>셋업·카드 핸드는 유지한다. 타순 인덱스는 팀별로 이어간다.</p>
+     *
+     * @return 새 등판 투수 userId
+     */
+    public Long swapRolesForLeague() {
+        ensureCollectionsInitialized();
+        boolean homeWasDefending = isHomeDefending();
+
+        if (homeWasDefending) {
+            // 어웨이가 공격 중이었음 → 인덱스 저장 후 홈이 공격
+            this.awayNextBatterIndex = currentBatterIndex;
+            this.pitcherUserId = awayActivePitcherUserId;
+            this.batterLineup = new ArrayList<>(homeRosterUserIds);
+            this.currentBatterIndex = normalizeBatterIndex(homeNextBatterIndex, batterLineup.size());
+        } else {
+            this.homeNextBatterIndex = currentBatterIndex;
+            this.pitcherUserId = homeActivePitcherUserId;
+            this.batterLineup = new ArrayList<>(awayRosterUserIds);
+            this.currentBatterIndex = normalizeBatterIndex(awayNextBatterIndex, batterLineup.size());
+        }
+
+        if (pitcherUserId == null) {
+            throw new BadRequestException(ErrorCode.GAME_ROLE_SWAP_UNSUPPORTED, "active pitcher missing");
+        }
+        if (batterLineup.isEmpty()) {
+            throw new BadRequestException(ErrorCode.GAME_LINEUP_EMPTY);
+        }
+        syncPitcherCardHandFromPlayer();
+        return pitcherUserId;
+    }
+
+    /**
+     * 타순 인덱스를 로스터 크기에 맞게 정규화한다.
+     *
+     * @param index 저장 인덱스
+     * @param size 타순 크기
+     * @return 0 ~ size-1
+     */
+    private int normalizeBatterIndex(int index, int size) {
+        if (size <= 0) {
+            return 0;
+        }
+        int normalized = index % size;
+        return normalized < 0 ? 0 : normalized;
+    }
+
+    /**
+     * 리그 결과 반영 완료로 표시한다.
+     */
+    public void markLeagueResultApplied() {
+        this.leagueResultApplied = true;
+    }
+
+    /**
+     * 유저의 셋업 엔트리를 찾는다.
+     *
+     * @param userId 유저 ID
+     * @return 엔트리 또는 null
+     */
+    private PlayerSetupNumbers findPlayerSetupNumbers(Long userId) {
+        for (PlayerSetupNumbers entry : ensurePlayerSetupNumbers()) {
+            if (userId.equals(entry.getUserId())) {
+                return entry;
+            }
+        }
+        return null;
     }
 
     /** 투수별 아웃 유발 번호 — userId → outNumList */
@@ -323,6 +674,78 @@ public class MatchInfo {
         this.mulliganDoneUserIds = new ArrayList<>();
         this.usedAsPitcherIds = new ArrayList<>();
         this.playerSetupNumbers = new ArrayList<>();
+        this.homeRosterUserIds = new ArrayList<>();
+        this.awayRosterUserIds = new ArrayList<>();
+        this.playerDropCards = new ArrayList<>();
+        this.homeActivePitcherUserId = null;
+        this.awayActivePitcherUserId = null;
+        this.homeNextBatterIndex = 0;
+        this.awayNextBatterIndex = 0;
+        this.homePitcherSubstitutionCount = 0;
+        this.awayPitcherSubstitutionCount = 0;
+    }
+
+    /**
+     * 리그 매치를 생성한다. 홈 선발 투수로 시작하며, 어웨이 타순이 초기 타순이다.
+     *
+     * @param id 매치 세션 ID
+     * @param gameMode COMPACT_LEAGUE / FULL_LEAGUE
+     * @param leagueTier 리그 단계
+     * @param homeTeamId 홈 팀 ID (선진입)
+     * @param awayTeamId 어웨이 팀 ID (후진입)
+     * @param homeLeaderUserId 홈 팀 리더
+     * @param awayLeaderUserId 어웨이 팀 리더
+     * @param homeStartingPitcherUserId 홈 선발 투수
+     * @param awayStartingPitcherUserId 어웨이 선발 투수
+     * @param homeBattingOrder 홈 타순
+     * @param awayBattingOrder 어웨이 타순
+     * @return 리그 MatchInfo
+     */
+    public static MatchInfo createLeague(
+            String id,
+            GameMode gameMode,
+            LeagueTier leagueTier,
+            Long homeTeamId,
+            Long awayTeamId,
+            Long homeLeaderUserId,
+            Long awayLeaderUserId,
+            Long homeStartingPitcherUserId,
+            Long awayStartingPitcherUserId,
+            List<Long> homeBattingOrder,
+            List<Long> awayBattingOrder) {
+
+        MatchInfo matchInfo = new MatchInfo();
+        matchInfo.id = id;
+        matchInfo.gameMode = gameMode;
+        matchInfo.matchStatus = GameStatus.WAITING;
+        matchInfo.leagueTier = leagueTier;
+        matchInfo.homeTeamId = homeTeamId;
+        matchInfo.awayTeamId = awayTeamId;
+        matchInfo.leagueResultApplied = false;
+        matchInfo.homeUserId = homeLeaderUserId;
+        matchInfo.awayUserId = awayLeaderUserId;
+        // 홈이 먼저 수비(투수), 어웨이가 공격(타순)
+        matchInfo.homeStartingPitcherUserId = homeStartingPitcherUserId;
+        matchInfo.awayStartingPitcherUserId = awayStartingPitcherUserId;
+        matchInfo.homeActivePitcherUserId = homeStartingPitcherUserId;
+        matchInfo.awayActivePitcherUserId = awayStartingPitcherUserId;
+        matchInfo.pitcherUserId = homeStartingPitcherUserId;
+        matchInfo.batterLineup = new ArrayList<>(awayBattingOrder);
+        matchInfo.homeRosterUserIds = new ArrayList<>(homeBattingOrder);
+        matchInfo.awayRosterUserIds = new ArrayList<>(awayBattingOrder);
+        matchInfo.currentBatterIndex = 0;
+        matchInfo.homeNextBatterIndex = 0;
+        matchInfo.awayNextBatterIndex = 0;
+        matchInfo.homePitcherSubstitutionCount = 0;
+        matchInfo.awayPitcherSubstitutionCount = 0;
+        matchInfo.pitcherCardHand = new ArrayList<>();
+        matchInfo.mulliganDone = false;
+        matchInfo.playerCardHands = new ArrayList<>();
+        matchInfo.mulliganDoneUserIds = new ArrayList<>();
+        matchInfo.usedAsPitcherIds = new ArrayList<>();
+        matchInfo.playerSetupNumbers = new ArrayList<>();
+        matchInfo.playerDropCards = new ArrayList<>();
+        return matchInfo;
     }
 
     /**
@@ -416,6 +839,30 @@ public class MatchInfo {
 
         void setCardIds(List<Long> cardIds) {
             this.cardIds = cardIds != null ? new ArrayList<>(cardIds) : new ArrayList<>();
+        }
+    }
+
+    /**
+     * 플레이어별 투수 교체 시 제외 카드.
+     */
+    @Getter
+    @NoArgsConstructor(access = AccessLevel.PROTECTED)
+    public static class PlayerDropCard {
+
+        private Long userId;
+        private Long dropCardId;
+
+        PlayerDropCard(Long userId, Long dropCardId) {
+            this.userId = userId;
+            this.dropCardId = dropCardId;
+        }
+
+        void setUserId(Long userId) {
+            this.userId = userId;
+        }
+
+        void setDropCardId(Long dropCardId) {
+            this.dropCardId = dropCardId;
         }
     }
 }

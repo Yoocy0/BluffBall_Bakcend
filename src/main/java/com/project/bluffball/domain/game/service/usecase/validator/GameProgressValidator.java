@@ -34,6 +34,20 @@ public class GameProgressValidator {
         }
     }
 
+    /**
+     * 셋업 숫자 제출이 완료됐는지 검증한다.
+     *
+     * <p>투수 교체 후 재제출 대기 중에도 false가 된다.</p>
+     *
+     * @param setupComplete 셋업 완료 여부
+     * @throws BadRequestException 미완료 시
+     */
+    public void validateSetupComplete(boolean setupComplete) {
+        if (!setupComplete) {
+            throw new BadRequestException(ErrorCode.GAME_SETUP_NUMBERS_MISSING);
+        }
+    }
+
     public void validateApplicableTurnResult(TurnResult turnResult) {
         // enum 전체를 허용 — 추후 모드별 제한 시 여기서 확장
     }
