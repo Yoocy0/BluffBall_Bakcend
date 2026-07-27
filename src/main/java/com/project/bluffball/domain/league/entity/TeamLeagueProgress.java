@@ -84,18 +84,38 @@ public class TeamLeagueProgress {
     /**
      * 경기 결과를 점수·전적에 반영한다.
      *
+     * <p>이미 티어 상한({@code ceil})에 있으면 승리해도 rating은 오르지 않는다(+0).
+     * 전적·득실은 반영한다. 패배는 상한에서도 점수가 내려갈 수 있다.</p>
+     *
      * @param won 승리 여부
      * @param matchRunDiff 우리 득점 − 상대 득점
      */
     public void applyMatchResult(boolean won, int matchRunDiff) {
+        LeagueTierRule rule = LeagueTierRule.of(currentTier);
         if (won) {
             this.wins++;
-            this.rating += LeagueScoreConstants.MATCH_POINTS + matchRunDiff;
+            this.runDiff += matchRunDiff;
+            if (this.rating < rule.ceil()) {
+                this.rating += LeagueScoreConstants.MATCH_POINTS + matchRunDiff;
+                this.rating = rule.clamp(this.rating);
+            }
         } else {
             this.loses++;
+            this.runDiff += matchRunDiff;
             this.rating += matchRunDiff - LeagueScoreConstants.MATCH_POINTS;
+            this.rating = rule.clamp(this.rating);
         }
-        this.runDiff += matchRunDiff;
+        touch();
+    }
+
+    /**
+     * 주기 배치용 점수 감쇠를 적용한다.
+     *
+     * <p>{@link LeagueScoreConstants#PERIODIC_RATING_DECAY}만큼 차감한 뒤 상한·0으로 클램프한다.
+     * 감쇠 후 {@link #shouldDemote()}가 true면 강등 대상이다.</p>
+     */
+    public void applyPeriodicDecay() {
+        this.rating -= LeagueScoreConstants.PERIODIC_RATING_DECAY;
         this.rating = LeagueTierRule.of(currentTier).clamp(this.rating);
         touch();
     }

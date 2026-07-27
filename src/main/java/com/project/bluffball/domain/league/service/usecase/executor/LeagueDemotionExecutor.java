@@ -13,7 +13,10 @@ import org.springframework.transaction.annotation.Transactional;
 import java.util.List;
 
 /**
- * 주기 강등 배치 Executor.
+ * 주기 점수 감쇠·강등 배치 Executor.
+ *
+ * <p>모든 진행 팀에 {@code PERIODIC_RATING_DECAY}를 적용한 뒤,
+ * {@code rating < demoteBelow}이면 한 단계 강등한다.</p>
  */
 @Component
 @RequiredArgsConstructor
@@ -23,7 +26,7 @@ public class LeagueDemotionExecutor {
     private final TeamLeagueProgressRepository teamLeagueProgressRepository;
 
     /**
-     * 해당 포맷에서 강등 기준 미달 팀을 한 단계 내린다.
+     * 해당 포맷에 점수 감쇠를 적용하고, 기준 미달 팀을 강등한다.
      *
      * @param format 포맷
      * @return 강등된 팀 수
@@ -32,24 +35,23 @@ public class LeagueDemotionExecutor {
     public int demoteIfNeeded(LeagueFormat format) {
         int demoted = 0;
         for (LeagueTier tier : LeagueTierRule.LADDER) {
-            if (LeagueTierRule.previousTier(tier) == null) {
-                continue;
-            }
             List<TeamLeagueProgress> rows =
                     teamLeagueProgressRepository.findByFormatAndCurrentTier(format, tier);
             for (TeamLeagueProgress progress : rows) {
-                if (!progress.shouldDemote()) {
-                    continue;
-                }
+                LeagueTier beforeTier = progress.getCurrentTier();
+                progress.applyPeriodicDecay();
+
                 LeagueTier previous = LeagueTierRule.previousTier(progress.getCurrentTier());
-                if (previous == null) {
-                    continue;
+                if (previous != null && progress.shouldDemote()) {
+                    progress.demoteTo(previous);
+                    demoted++;
+                    log.info("리그 강등 teamId={} format={} from={} to={} rating={}",
+                            progress.getTeamId(), format, beforeTier, previous, progress.getRating());
+                } else {
+                    log.debug("리그 감쇠 teamId={} format={} tier={} rating={}",
+                            progress.getTeamId(), format, progress.getCurrentTier(), progress.getRating());
                 }
-                progress.demoteTo(previous);
                 teamLeagueProgressRepository.save(progress);
-                demoted++;
-                log.info("리그 강등 teamId={} format={} from={} to={} rating={}",
-                        progress.getTeamId(), format, tier, previous, progress.getRating());
             }
         }
         return demoted;
