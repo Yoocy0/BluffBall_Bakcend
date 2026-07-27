@@ -1,6 +1,7 @@
 package com.project.bluffball.domain.user.entity;
 
 import com.project.bluffball.domain.user.enums.UserRole;
+import com.project.bluffball.global.util.DisplayWidth;
 import jakarta.persistence.*;
 import lombok.AccessLevel;
 import lombok.Getter;
@@ -23,7 +24,8 @@ public class User {
     @Column(name = "user_id")
     private Long id;
 
-    @Column(name = "nickname", nullable = false, unique = true, length = 20)
+    /** 닉네임 — 표시 폭 ≤ 16(한글 8자), 컬럼은 영문 16자 상한 */
+    @Column(name = "nickname", nullable = false, unique = true, length = 16)
     private String nickname;
 
     /** 유저 권한 — DB에 ordinal(0=USER, 1=ADMIN) 정수로 저장 */
@@ -59,6 +61,7 @@ public class User {
     }
 
     public User(String nickname) {
+        requireValidNickname(nickname);
         this.nickname = nickname;
     }
 
@@ -69,6 +72,7 @@ public class User {
         if (!this.isNicknameChangeFree) {
             throw new IllegalStateException("이미 무료 닉네임 변경 기회를 사용했습니다.");
         }
+        requireValidNickname(newNickname);
         this.nickname = newNickname;
         this.isNicknameChangeFree = false;
     }
@@ -80,8 +84,24 @@ public class User {
         if (this.currency < cost) {
             throw new IllegalArgumentException("보유 재화가 부족하여 닉네임을 변경할 수 없습니다.");
         }
+        requireValidNickname(newNickname);
         this.currency -= cost;
         this.nickname = newNickname;
+    }
+
+    /**
+     * 닉네임 표시 폭·공백 규칙을 검증한다.
+     *
+     * @param nickname 닉네임
+     */
+    private static void requireValidNickname(String nickname) {
+        if (nickname == null || nickname.isBlank()) {
+            throw new IllegalArgumentException("닉네임은 비어 있을 수 없습니다.");
+        }
+        if (!DisplayWidth.isWithin(nickname, DisplayWidth.MAX_DISPLAY_NAME_WIDTH)) {
+            throw new IllegalArgumentException(
+                    "닉네임 표시 폭이 초과되었습니다. max=" + DisplayWidth.MAX_DISPLAY_NAME_WIDTH);
+        }
     }
 
     /**

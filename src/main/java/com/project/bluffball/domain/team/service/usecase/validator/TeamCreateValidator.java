@@ -3,32 +3,33 @@ package com.project.bluffball.domain.team.service.usecase.validator;
 import com.project.bluffball.global.exception.BadRequestException;
 import com.project.bluffball.global.exception.ConflictException;
 import com.project.bluffball.global.exception.ErrorCode;
+import com.project.bluffball.global.util.DisplayWidth;
 import org.springframework.stereotype.Component;
 
 /**
  * 팀 창단 요청 값 검증 (usecase/validator 계층).
  *
- * <p>Repository·Entity에 접근하지 않고, 인자로 받은 원시 값만 검증한다.</p>
+ * <p>Repository·Entity에 접근하지 않고, 인자로 받은 원시 값만 검증한다.
+ * 팀 이름 표시 폭 상한은 한글 8자({@link DisplayWidth#MAX_DISPLAY_NAME_WIDTH}).</p>
  */
 @Component
 public class TeamCreateValidator {
-
-    private static final int MAX_NAME_LENGTH = 30;
 
     /**
      * 팀 이름 규칙을 검증한다.
      *
      * @param name 팀 이름
-     * @throws BadRequestException 이름이 비어 있거나 길이 초과 시
+     * @throws BadRequestException 이름이 비어 있거나 표시 폭 초과 시
      */
     public void validateName(String name) {
         if (name == null || name.isBlank()) {
             throw new BadRequestException(ErrorCode.TEAM_NAME_INVALID, "name is blank");
         }
-        if (name.length() > MAX_NAME_LENGTH) {
+        int width = DisplayWidth.of(name);
+        if (width > DisplayWidth.MAX_DISPLAY_NAME_WIDTH) {
             throw new BadRequestException(
                     ErrorCode.TEAM_NAME_INVALID,
-                    "name length=" + name.length() + ", max=" + MAX_NAME_LENGTH);
+                    "displayWidth=" + width + ", max=" + DisplayWidth.MAX_DISPLAY_NAME_WIDTH);
         }
     }
 

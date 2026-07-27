@@ -42,6 +42,7 @@ public enum ErrorCode {
     // User
     USER_NOT_FOUND(HttpStatus.NOT_FOUND, "유저를 찾을 수 없습니다."),
     SOCIAL_ACCOUNT_NOT_FOUND(HttpStatus.NOT_FOUND, "소셜 계정을 찾을 수 없습니다."),
+    NICKNAME_INVALID(HttpStatus.BAD_REQUEST, "닉네임이 올바르지 않습니다. (한글 최대 8자)"),
 
     // Card
     PITCH_CARD_NOT_FOUND(HttpStatus.NOT_FOUND, "구종 카드를 찾을 수 없습니다."),
@@ -101,7 +102,7 @@ public enum ErrorCode {
     TEAM_CURRENCY_INSUFFICIENT(HttpStatus.BAD_REQUEST, "보유 재화가 부족합니다."),
     TEAM_DONATE_AMOUNT_INVALID(HttpStatus.BAD_REQUEST, "기부 금액이 올바르지 않습니다."),
     TEAM_RECORD_NOT_FOUND(HttpStatus.NOT_FOUND, "해당 시즌의 팀 기록을 찾을 수 없습니다."),
-    TEAM_NAME_INVALID(HttpStatus.BAD_REQUEST, "팀 이름이 올바르지 않습니다."),
+    TEAM_NAME_INVALID(HttpStatus.BAD_REQUEST, "팀 이름이 올바르지 않습니다. (한글 최대 8자)"),
     TEAM_MEMBER_LIMIT_EXCEEDED(HttpStatus.CONFLICT, "팀 최대 인원(50명)을 초과할 수 없습니다."),
     TEAM_LINEUP_NOT_FOUND(HttpStatus.NOT_FOUND, "출전 로스터를 찾을 수 없습니다."),
     TEAM_LINEUP_SIZE_INVALID(HttpStatus.BAD_REQUEST, "출전 로스터 인원 수가 올바르지 않습니다."),
