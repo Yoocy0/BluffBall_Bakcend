@@ -92,6 +92,20 @@ public class TeamLeagueProgressExecutor {
     }
 
     /**
+     * 테스트용 — 티어를 강제로 맞춘다.
+     *
+     * @param teamId 팀 ID
+     * @param format 포맷
+     * @param tier 목표 티어
+     */
+    @Transactional
+    public void forceSetTier(Long teamId, LeagueFormat format, LeagueTier tier) {
+        TeamLeagueProgress progress = teamLeagueProgressReader.getByTeamIdAndFormat(teamId, format);
+        progress.forceSetTier(tier);
+        teamLeagueProgressRepository.save(progress);
+    }
+
+    /**
      * 참가비를 팀 금고에서 차감한다.
      *
      * @param teamId 팀 ID

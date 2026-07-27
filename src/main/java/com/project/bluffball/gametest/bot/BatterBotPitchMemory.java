@@ -19,7 +19,7 @@ public final class BatterBotPitchMemory {
     /**
      * 턴 결과로 구종 후보를 갱신한다.
      *
-     * <p>{@link TurnResult#STRIKE}·{@link TurnResult#STRIKE_OUT}이 아니면 해당 구종을 제거한다.</p>
+     * <p>스트라이크·삼진이 아니면 해당 구종을 후보에서 제거한다.</p>
      *
      * @param pitchCardName 이번 투구 구종명
      * @param turnResult 턴 판정
@@ -28,7 +28,7 @@ public final class BatterBotPitchMemory {
         if (pitchCardName == null || pitchCardName.isBlank() || turnResult == null) {
             return;
         }
-        if (!wasStrike(turnResult)) {
+        if (turnResult != TurnResult.STRIKE && turnResult != TurnResult.STRIKE_OUT) {
             eliminatedPitchNames.add(pitchCardName);
         }
     }
@@ -53,19 +53,9 @@ public final class BatterBotPitchMemory {
     }
 
     /**
-     * 기억을 초기화한다. (투수 교체·새 타석 상대 변경 시)
+     * 기억을 초기화한다. (새 매치 시)
      */
     public void clear() {
         eliminatedPitchNames.clear();
-    }
-
-    /**
-     * 스트라이크 판정인지.
-     *
-     * @param turnResult 턴 결과
-     * @return 스트라이크·삼진이면 true
-     */
-    private static boolean wasStrike(TurnResult turnResult) {
-        return turnResult == TurnResult.STRIKE || turnResult == TurnResult.STRIKE_OUT;
     }
 }

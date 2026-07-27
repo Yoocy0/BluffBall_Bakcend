@@ -23,6 +23,16 @@ public class GameTestPageController {
         return "redirect:/game-test/Home.html";
     }
 
+    @GetMapping("/team")
+    public String team() {
+        return "redirect:/game-test/Team.html";
+    }
+
+    @GetMapping("/pitch-cards")
+    public String pitchCards() {
+        return "redirect:/game-test/PitchCards.html";
+    }
+
     @GetMapping("/setup-number")
     public String setupNumber() {
         return "redirect:/game-test/SetupNumber.html";

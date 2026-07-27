@@ -1,0 +1,53 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>구종 카드 · BluffBall</title>
+    <link rel="stylesheet" href="/game-test/css/game-test.css">
+</head>
+<body class="loadout-body">
+<div class="loadout-page">
+    <header class="loadout-header">
+        <a class="loadout-back" href="/game-test/Home.html">← 홈</a>
+        <h1 class="loadout-title">구종 카드</h1>
+        <p id="teamMeta" class="loadout-meta">팀 불러오는 중...</p>
+    </header>
+
+    <div class="loadout-toolbar">
+        <label class="loadout-select-label">
+            포맷
+            <select id="formatSelect" class="loadout-select">
+                <option value="COMPACT">컴팩트 (3+1)</option>
+                <option value="FULL">풀 (4+1)</option>
+            </select>
+        </label>
+        <label class="loadout-select-label">
+            멤버
+            <select id="memberSelect" class="loadout-select"></select>
+        </label>
+        <button type="button" id="btnSaveCards" class="home-mode-btn loadout-save-btn">저장</button>
+    </div>
+
+    <section class="loadout-panel">
+        <h2 class="loadout-section-title">핸드 슬롯</h2>
+        <p class="loadout-hint">아래 구종을 드래그해 채우세요. 마지막(+1) 칸은 교체 시 제외 카드입니다.</p>
+        <div id="cardSlots" class="slot-row"></div>
+    </section>
+
+    <section class="loadout-panel">
+        <h2 class="loadout-section-title">구종 카탈로그</h2>
+        <div id="cardPool" class="drag-pool drag-pool-cards"></div>
+    </section>
+
+    <p id="pageError" class="home-error" hidden></p>
+    <p id="pageOk" class="loadout-ok" hidden></p>
+</div>
+
+<script src="/game-test/js/auth.js?v=1"></script>
+<script src="/game-test/js/ws-client.js?v=1"></script>
+<script src="/game-test/js/card-catalog.js?v=1"></script>
+<script src="/game-test/js/team-api.js?v=1"></script>
+<script src="/game-test/js/pitch-cards.js?v=1"></script>
+</body>
+</html>

@@ -2,6 +2,7 @@
     const MATCH_COMPLETE_DELAY_SEC = 3;
 
     const loginScreen = document.getElementById('loginScreen');
+    const hubScreen = document.getElementById('hubScreen');
     const homeScreen = document.getElementById('homeScreen');
     const matchingScreen = document.getElementById('matchingScreen');
     const matchCompleteModal = document.getElementById('matchCompleteModal');
@@ -11,10 +12,19 @@
     const btnGoogleLogin = document.getElementById('btnGoogleLogin');
     const loginError = document.getElementById('loginError');
     const userInfo = document.getElementById('userInfo');
+    const hubError = document.getElementById('hubError');
     const homeError = document.getElementById('homeError');
     const btnLogout = document.getElementById('btnLogout');
 
-    const btnModeSingle = document.getElementById('btnModeSingle');
+    const btnOpenGameStart = document.getElementById('btnOpenGameStart');
+    const btnOpenTeam = document.getElementById('btnOpenTeam');
+    const btnOpenPitchCards = document.getElementById('btnOpenPitchCards');
+    const btnBackToHub = document.getElementById('btnBackToHub');
+
+    const btnModeShowdown = document.getElementById('btnModeShowdown');
+    const btnModeLeagueCompact = document.getElementById('btnModeLeagueCompact');
+    const btnModeLeagueFull = document.getElementById('btnModeLeagueFull');
+    const matchingModeLabel = document.getElementById('matchingModeLabel');
     const matchingTimer = document.getElementById('matchingTimer');
     const matchingError = document.getElementById('matchingError');
     const btnCancelMatch = document.getElementById('btnCancelMatch');
@@ -24,19 +34,22 @@
         timerInterval: null,
         matchingStartedAt: null,
         matchHandled: false,
-        /** 큐 WAITING 상태 — 매칭 성사 전에만 true */
         waitingInQueue: false,
+        /** 'SHOWDOWN' | 'LEAGUE' */
+        queueKind: 'SHOWDOWN',
+        leagueFormat: null,
     };
 
     function showScreen(screen) {
         loginScreen.hidden = screen !== 'login';
-        homeScreen.hidden = screen !== 'home';
+        hubScreen.hidden = screen !== 'hub';
+        homeScreen.hidden = screen !== 'modes';
         matchingScreen.hidden = screen !== 'matching';
     }
 
     function renderLoginState() {
         if (BluffBallAuth.isLoggedIn()) {
-            showScreen('home');
+            showScreen('hub');
             const userId = BluffBallAuth.getUserIdFromToken();
             userInfo.textContent = userId ? `로그인됨 · userId ${userId}` : '로그인됨';
         } else {
@@ -82,10 +95,16 @@
         state.stompClient = null;
     }
 
+    function cancelQueueUrl() {
+        return state.queueKind === 'LEAGUE'
+            ? '/api/v1/league-match/queue/cancel'
+            : '/api/v1/match/queue/cancel';
+    }
+
     /** REST — 매칭 큐 취소 요청 */
     async function cancelMatchQueueRequest(keepalive = false) {
         const token = BluffBallWs.requireLoginToken();
-        const res = await fetch('/api/v1/match/queue/cancel', {
+        const res = await fetch(cancelQueueUrl(), {
             method: 'DELETE',
             headers: {
                 Authorization: `Bearer ${token}`,
@@ -116,7 +135,7 @@
         }
     }
 
-    /** 페이지 이탈 시 keepalive로 큐 취소 (비동기 완료 대기 불가) */
+    /** 페이지 이탈 시 keepalive로 큐 취소 */
     function releaseQueueOnPageHide() {
         if (!state.waitingInQueue) {
             return;
@@ -126,7 +145,7 @@
             return;
         }
         state.waitingInQueue = false;
-        fetch('/api/v1/match/queue/cancel', {
+        fetch(cancelQueueUrl(), {
             method: 'DELETE',
             headers: {
                 Authorization: `Bearer ${token}`,
@@ -182,7 +201,7 @@
         }, 1000);
     }
 
-    async function requestJoinMatchQueue() {
+    async function requestJoinShowdownQueue() {
         const token = BluffBallWs.requireLoginToken();
         const res = await fetch('/api/v1/match/queue/join', {
             method: 'POST',
@@ -194,12 +213,64 @@
         return { res, body };
     }
 
+    async function ensureLeagueTier(format) {
+        const token = BluffBallWs.requireLoginToken();
+        let res = await fetch(`/api/v1/leagues/progress?format=${encodeURIComponent(format)}`, {
+            headers: { Authorization: `Bearer ${token}` },
+        });
+
+        if (res.status === 404) {
+            res = await fetch(`/api/v1/leagues/enter?format=${encodeURIComponent(format)}`, {
+                method: 'POST',
+                headers: { Authorization: `Bearer ${token}` },
+            });
+            if (!res.ok) {
+                const body = await res.json().catch(() => ({}));
+                throw new Error(body.message || `리그 진입 실패 (HTTP ${res.status})`);
+            }
+            return res.json();
+        }
+
+        if (!res.ok) {
+            const body = await res.json().catch(() => ({}));
+            throw new Error(body.message || `리그 진행 조회 실패 (HTTP ${res.status})`);
+        }
+        return res.json();
+    }
+
+    async function requestJoinLeagueQueue(format, tier) {
+        const token = BluffBallWs.requireLoginToken();
+        const res = await fetch('/api/v1/league-match/queue/join', {
+            method: 'POST',
+            headers: {
+                Authorization: `Bearer ${token}`,
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({ format, tier }),
+        });
+        const body = await res.json().catch(() => ({}));
+        return { res, body };
+    }
+
     async function joinMatchQueue() {
-        let { res, body } = await requestJoinMatchQueue();
+        let result;
+        if (state.queueKind === 'LEAGUE') {
+            const progress = await ensureLeagueTier(state.leagueFormat);
+            result = await requestJoinLeagueQueue(state.leagueFormat, progress.currentTier);
+        } else {
+            result = await requestJoinShowdownQueue();
+        }
+
+        let { res, body } = result;
 
         if (res.status === 409) {
             await cancelMatchQueueRequest();
-            ({ res, body } = await requestJoinMatchQueue());
+            if (state.queueKind === 'LEAGUE') {
+                const progress = await ensureLeagueTier(state.leagueFormat);
+                ({ res, body } = await requestJoinLeagueQueue(state.leagueFormat, progress.currentTier));
+            } else {
+                ({ res, body } = await requestJoinShowdownQueue());
+            }
         }
 
         if (res.status === 409) {
@@ -228,7 +299,7 @@
 
         releaseQueueIfWaiting({ silent: true }).finally(() => {
             state.matchHandled = false;
-            showScreen('home');
+            showScreen('modes');
             showError(matchingError, '');
             showError(homeError, message);
         });
@@ -270,11 +341,14 @@
         state.stompClient = client;
     }
 
-    async function startSingleModeMatching() {
+    async function startMatching(queueKind, leagueFormat, label) {
         showError(homeError, '');
         showError(matchingError, '');
         state.matchHandled = false;
         state.waitingInQueue = false;
+        state.queueKind = queueKind;
+        state.leagueFormat = leagueFormat || null;
+        matchingModeLabel.textContent = `${label} 매칭 중...`;
 
         showScreen('matching');
         startMatchingTimer();
@@ -289,7 +363,7 @@
             stopMatchingTimer();
             disconnectMatchWs();
             state.waitingInQueue = false;
-            showScreen('home');
+            showScreen('modes');
             showError(homeError, e.message || String(e));
         }
     }
@@ -306,7 +380,7 @@
         stopMatchingTimer();
         disconnectMatchWs();
         state.matchHandled = false;
-        showScreen('home');
+        showScreen('modes');
     }
 
     async function handleOAuthLogin(provider) {
@@ -346,12 +420,27 @@
             renderLoginState();
         });
     });
-    btnModeSingle?.addEventListener('click', () => startSingleModeMatching());
+
+    btnOpenGameStart?.addEventListener('click', () => {
+        showError(hubError, '');
+        showError(homeError, '');
+        showScreen('modes');
+    });
+    btnBackToHub?.addEventListener('click', () => showScreen('hub'));
+    btnOpenTeam?.addEventListener('click', () => {
+        window.location.href = '/game-test/Team.html';
+    });
+    btnOpenPitchCards?.addEventListener('click', () => {
+        window.location.href = '/game-test/PitchCards.html';
+    });
+
+    btnModeShowdown?.addEventListener('click', () => startMatching('SHOWDOWN', null, '쇼다운'));
+    btnModeLeagueCompact?.addEventListener('click', () => startMatching('LEAGUE', 'COMPACT', '리그 컴팩트'));
+    btnModeLeagueFull?.addEventListener('click', () => startMatching('LEAGUE', 'FULL', '리그 풀'));
     btnCancelMatch?.addEventListener('click', () => cancelMatching());
 
     window.addEventListener('pagehide', releaseQueueOnPageHide);
 
-    // ngrok 백엔드 콜백 후 토큰이 쿼리 파라미터로 전달된 경우 localStorage에 저장
     const urlParams = new URLSearchParams(window.location.search);
     const cbAccessToken = urlParams.get('accessToken');
     const cbRefreshToken = urlParams.get('refreshToken');

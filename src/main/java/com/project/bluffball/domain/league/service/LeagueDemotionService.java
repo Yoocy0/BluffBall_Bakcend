@@ -3,6 +3,7 @@ package com.project.bluffball.domain.league.service;
 import com.project.bluffball.domain.league.enums.LeagueFormat;
 import com.project.bluffball.domain.league.service.usecase.executor.LeagueDemotionExecutor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
 import java.time.Clock;
@@ -37,6 +38,7 @@ public class LeagueDemotionService {
      *
      * @param leagueDemotionExecutor 강등 Executor
      */
+    @Autowired
     public LeagueDemotionService(LeagueDemotionExecutor leagueDemotionExecutor) {
         this(leagueDemotionExecutor, Clock.system(KST));
     }

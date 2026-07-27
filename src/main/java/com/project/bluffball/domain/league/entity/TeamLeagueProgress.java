@@ -145,6 +145,17 @@ public class TeamLeagueProgress {
     }
 
     /**
+     * 테스트용 — 티어를 강제로 맞춘다. 점수는 해당 티어 floor.
+     *
+     * @param tier 목표 티어
+     */
+    public void forceSetTier(LeagueTier tier) {
+        this.currentTier = tier;
+        this.rating = LeagueTierRule.of(tier).floor();
+        touch();
+    }
+
+    /**
      * 상위 진출 자격이 있는지.
      *
      * @return 자격 있으면 true

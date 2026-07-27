@@ -7,6 +7,7 @@ import com.project.bluffball.domain.game.dto.request.SetupNumberRequest;
 import com.project.bluffball.domain.game.dto.response.CardInfo;
 import com.project.bluffball.domain.game.dto.response.GameStateSnapshot;
 import com.project.bluffball.domain.game.enums.SetupKind;
+import com.project.bluffball.domain.game.enums.Timing;
 import com.project.bluffball.domain.game.service.GamePrepService;
 import com.project.bluffball.domain.game.service.GameTurnService;
 import com.project.bluffball.domain.game.service.usecase.reader.CoordinateCardReader;
@@ -235,10 +236,12 @@ public class GameTestBotAutoPlayService {
         BatterBotSwingDecision decision =
                 batterBotDecisionPolicy.decide(startCoord, catalog, memory);
 
-        BatterCardSelectRequest request = new BatterCardSelectRequest(
-                1.5,
-                decision.batterCoordinateNumber(),
-                decision.timing());
+        BatterCardSelectRequest request = decision.swing()
+                ? new BatterCardSelectRequest(
+                        1.5,
+                        decision.batterCoordinateNumber(),
+                        decision.timing())
+                : new BatterCardSelectRequest(1.5, 0, Timing.NORMAL);
 
         GameProgressApplyResult result =
                 gameTurnService.batterSelectCard(matchSessionId, batterUserId, request);

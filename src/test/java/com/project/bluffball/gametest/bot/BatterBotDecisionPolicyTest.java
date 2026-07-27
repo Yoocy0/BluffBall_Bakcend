@@ -31,12 +31,14 @@ class BatterBotDecisionPolicyTest {
     class Memory {
 
         @Test
-        @DisplayName("스트라이크가 아닌 구종은 후보에서 뺀다")
+        @DisplayName("스트라이크가 아니면 후보에서 뺀다")
         void eliminateNonStrike() {
             BatterBotPitchMemory memory = new BatterBotPitchMemory();
             memory.remember("커브", TurnResult.BALL);
+            memory.remember("포크", TurnResult.SINGLE);
 
             assertThat(memory.isEliminated("커브")).isTrue();
+            assertThat(memory.isEliminated("포크")).isTrue();
             assertThat(memory.isEliminated("포심 패스트볼")).isFalse();
         }
 
@@ -73,7 +75,6 @@ class BatterBotDecisionPolicyTest {
         @DisplayName("존에 안 들어오는 구종만 남으면 지켜보기")
         void takeWhenNoStrikeCandidate() {
             BatterBotPitchMemory memory = new BatterBotPitchMemory();
-            // 포심·슬라이더 제거 → 커브만 남음. 시작 23에서 커브(DOWN+3)는 격자 이탈(0)
             memory.remember("포심 패스트볼", TurnResult.BALL);
             memory.remember("슬라이더", TurnResult.BALL);
 
@@ -89,7 +90,7 @@ class BatterBotDecisionPolicyTest {
         @DisplayName("제외된 구종은 가정에 쓰이지 않는다")
         void ignoredEliminatedPitch() {
             BatterBotPitchMemory memory = new BatterBotPitchMemory();
-            memory.remember("포심 패스트볼", TurnResult.OUT); // 스트라이크 아님 → 제외
+            memory.remember("포심 패스트볼", TurnResult.BALL);
 
             BatterBotSwingDecision decision = policy.decide(13, CATALOG, memory);
 
