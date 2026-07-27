@@ -79,23 +79,25 @@ class TeamLineupServiceTest {
     class UpsertLineup {
 
         @Test
-        @DisplayName("Compact 로스터 저장 성공")
+        @DisplayName("Compact 타순 3 + 전담 투수 저장 성공")
         void success() {
-            List<Long> roster = List.of(1L, 2L, 3L);
+            List<Long> batting = List.of(1L, 2L, 3L);
+            Long pitcher = 4L;
+            List<Long> matchRoster = List.of(1L, 2L, 3L, 4L);
             TeamLineupResponse response =
-                    new TeamLineupResponse(TEAM_ID, LeagueFormat.COMPACT, roster, 1L);
+                    new TeamLineupResponse(TEAM_ID, LeagueFormat.COMPACT, batting, pitcher);
             when(teamReader.getTeamResponse(TEAM_ID)).thenReturn(TEAM);
             when(teamMemberReader.isLeader(TEAM_ID, USER_ID)).thenReturn(true);
-            when(teamMemberReader.areAllMembers(TEAM_ID, roster)).thenReturn(true);
-            when(teamLineupExecutor.upsert(TEAM_ID, LeagueFormat.COMPACT, roster, 1L))
+            when(teamMemberReader.areAllMembers(TEAM_ID, matchRoster)).thenReturn(true);
+            when(teamLineupExecutor.upsert(TEAM_ID, LeagueFormat.COMPACT, batting, pitcher))
                     .thenReturn(TEAM_ID);
             when(teamLineupReader.getLineupResponse(TEAM_ID, LeagueFormat.COMPACT)).thenReturn(response);
 
             TeamLineupResponse result = teamLineupService.upsertLineup(
-                    USER_ID, TEAM_ID, LeagueFormat.COMPACT, new UpsertTeamLineupRequest(roster, 1L));
+                    USER_ID, TEAM_ID, LeagueFormat.COMPACT, new UpsertTeamLineupRequest(batting, pitcher));
 
             assertThat(result).isEqualTo(response);
-            verify(teamLineupExecutor).upsert(TEAM_ID, LeagueFormat.COMPACT, roster, 1L);
+            verify(teamLineupExecutor).upsert(TEAM_ID, LeagueFormat.COMPACT, batting, pitcher);
         }
 
         @Test
@@ -106,37 +108,36 @@ class TeamLineupServiceTest {
 
             assertThatThrownBy(() -> teamLineupService.upsertLineup(
                     USER_ID, TEAM_ID, LeagueFormat.COMPACT,
-                    new UpsertTeamLineupRequest(List.of(1L, 2L, 3L), 1L)))
+                    new UpsertTeamLineupRequest(List.of(1L, 2L, 3L), 4L)))
                     .isInstanceOf(ForbiddenException.class)
                     .extracting(ex -> ((ForbiddenException) ex).getErrorCode())
                     .isEqualTo(ErrorCode.TEAM_FORBIDDEN);
-            verify(teamLineupExecutor, never()).upsert(eq(TEAM_ID), eq(LeagueFormat.COMPACT), anyList(), eq(1L));
+            verify(teamLineupExecutor, never()).upsert(eq(TEAM_ID), eq(LeagueFormat.COMPACT), anyList(), eq(4L));
         }
 
         @Test
-        @DisplayName("인원 수 불일치면 BadRequest")
+        @DisplayName("타순 인원 수 불일치면 BadRequest")
         void invalidSize() {
             when(teamReader.getTeamResponse(TEAM_ID)).thenReturn(TEAM);
             when(teamMemberReader.isLeader(TEAM_ID, USER_ID)).thenReturn(true);
 
             assertThatThrownBy(() -> teamLineupService.upsertLineup(
                     USER_ID, TEAM_ID, LeagueFormat.COMPACT,
-                    new UpsertTeamLineupRequest(List.of(1L, 2L), 1L)))
+                    new UpsertTeamLineupRequest(List.of(1L, 2L), 4L)))
                     .isInstanceOf(BadRequestException.class)
                     .extracting(ex -> ((BadRequestException) ex).getErrorCode())
                     .isEqualTo(ErrorCode.TEAM_LINEUP_SIZE_INVALID);
         }
 
         @Test
-        @DisplayName("선발이 로스터에 없으면 BadRequest")
-        void pitcherNotInRoster() {
+        @DisplayName("Compact에서 선발이 타순에 있으면 BadRequest")
+        void pitcherInBattingOrder() {
             when(teamReader.getTeamResponse(TEAM_ID)).thenReturn(TEAM);
             when(teamMemberReader.isLeader(TEAM_ID, USER_ID)).thenReturn(true);
-            when(teamMemberReader.areAllMembers(TEAM_ID, List.of(1L, 2L, 3L))).thenReturn(true);
 
             assertThatThrownBy(() -> teamLineupService.upsertLineup(
                     USER_ID, TEAM_ID, LeagueFormat.COMPACT,
-                    new UpsertTeamLineupRequest(List.of(1L, 2L, 3L), 9L)))
+                    new UpsertTeamLineupRequest(List.of(1L, 2L, 3L), 1L)))
                     .isInstanceOf(BadRequestException.class)
                     .extracting(ex -> ((BadRequestException) ex).getErrorCode())
                     .isEqualTo(ErrorCode.TEAM_LINEUP_STARTING_PITCHER_INVALID);
@@ -148,20 +149,21 @@ class TeamLineupServiceTest {
     class UpsertPitchCards {
 
         @Test
-        @DisplayName("Compact 구종 사전 선택 저장 성공")
+        @DisplayName("Compact 구종 사전 선택 저장 성공(4명)")
         void success() {
-            List<Long> lineup = List.of(1L, 2L, 3L);
+            List<Long> matchRoster = List.of(1L, 2L, 3L, 4L);
             List<Long> cards = List.of(10L, 20L, 30L, 40L);
             var selections = List.of(
                     new UpsertTeamPitchCardsRequest.MemberPitchCardSelection(1L, cards, 40L),
                     new UpsertTeamPitchCardsRequest.MemberPitchCardSelection(2L, cards, 40L),
-                    new UpsertTeamPitchCardsRequest.MemberPitchCardSelection(3L, cards, 40L)
+                    new UpsertTeamPitchCardsRequest.MemberPitchCardSelection(3L, cards, 40L),
+                    new UpsertTeamPitchCardsRequest.MemberPitchCardSelection(4L, cards, 40L)
             );
             TeamPitchCardsResponse response = new TeamPitchCardsResponse(TEAM_ID, LeagueFormat.COMPACT, List.of());
 
             when(teamReader.getTeamResponse(TEAM_ID)).thenReturn(TEAM);
             when(teamMemberReader.isLeader(TEAM_ID, USER_ID)).thenReturn(true);
-            when(teamLineupReader.getUserIds(TEAM_ID, LeagueFormat.COMPACT)).thenReturn(lineup);
+            when(teamLineupReader.getMatchRosterUserIds(TEAM_ID, LeagueFormat.COMPACT)).thenReturn(matchRoster);
             when(cardReader.areValidPitcherHandCards(cards)).thenReturn(true);
             when(teamPitchCardsExecutor.replaceAll(TEAM_ID, LeagueFormat.COMPACT, selections))
                     .thenReturn(TEAM_ID);
@@ -176,11 +178,12 @@ class TeamLineupServiceTest {
         }
 
         @Test
-        @DisplayName("로스터와 멤버 불일치면 BadRequest")
+        @DisplayName("출전 전원과 멤버 불일치면 BadRequest")
         void memberMismatch() {
             when(teamReader.getTeamResponse(TEAM_ID)).thenReturn(TEAM);
             when(teamMemberReader.isLeader(TEAM_ID, USER_ID)).thenReturn(true);
-            when(teamLineupReader.getUserIds(TEAM_ID, LeagueFormat.COMPACT)).thenReturn(List.of(1L, 2L, 3L));
+            when(teamLineupReader.getMatchRosterUserIds(TEAM_ID, LeagueFormat.COMPACT))
+                    .thenReturn(List.of(1L, 2L, 3L, 4L));
 
             var selections = List.of(
                     new UpsertTeamPitchCardsRequest.MemberPitchCardSelection(
@@ -203,7 +206,7 @@ class TeamLineupServiceTest {
         @DisplayName("로스터·구종 조회")
         void get() {
             TeamLineupResponse lineup =
-                    new TeamLineupResponse(TEAM_ID, LeagueFormat.COMPACT, List.of(1L, 2L, 3L), 1L);
+                    new TeamLineupResponse(TEAM_ID, LeagueFormat.COMPACT, List.of(1L, 2L, 3L), 4L);
             TeamPitchCardsResponse pitch =
                     new TeamPitchCardsResponse(TEAM_ID, LeagueFormat.COMPACT, List.of());
             when(teamReader.getTeamResponse(TEAM_ID)).thenReturn(TEAM);

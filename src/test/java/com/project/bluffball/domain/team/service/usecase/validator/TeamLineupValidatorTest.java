@@ -79,7 +79,7 @@ class TeamLineupValidatorTest {
 
     @Nested
     @DisplayName("validateStartingPitcherInRoster")
-    class StartingPitcher {
+    class StartingPitcherInRoster {
 
         @Test
         @DisplayName("선발이 타순에 있으면 통과")
@@ -101,6 +101,36 @@ class TeamLineupValidatorTest {
         @DisplayName("선발 null이면 BadRequest")
         void nullPitcher() {
             assertThatThrownBy(() -> validator.validateStartingPitcherInRoster(List.of(1L, 2L, 3L), null))
+                    .isInstanceOf(BadRequestException.class)
+                    .extracting(ex -> ((BadRequestException) ex).getErrorCode())
+                    .isEqualTo(ErrorCode.TEAM_LINEUP_STARTING_PITCHER_INVALID);
+        }
+    }
+
+    @Nested
+    @DisplayName("validateDedicatedStartingPitcher")
+    class DedicatedStartingPitcher {
+
+        @Test
+        @DisplayName("선발이 타순 밖이면 통과")
+        void ok() {
+            assertThatCode(() -> validator.validateDedicatedStartingPitcher(List.of(1L, 2L, 3L), 4L))
+                    .doesNotThrowAnyException();
+        }
+
+        @Test
+        @DisplayName("선발이 타순에 있으면 BadRequest")
+        void inBattingOrder() {
+            assertThatThrownBy(() -> validator.validateDedicatedStartingPitcher(List.of(1L, 2L, 3L), 2L))
+                    .isInstanceOf(BadRequestException.class)
+                    .extracting(ex -> ((BadRequestException) ex).getErrorCode())
+                    .isEqualTo(ErrorCode.TEAM_LINEUP_STARTING_PITCHER_INVALID);
+        }
+
+        @Test
+        @DisplayName("선발 null이면 BadRequest")
+        void nullPitcher() {
+            assertThatThrownBy(() -> validator.validateDedicatedStartingPitcher(List.of(1L, 2L, 3L), null))
                     .isInstanceOf(BadRequestException.class)
                     .extracting(ex -> ((BadRequestException) ex).getErrorCode())
                     .isEqualTo(ErrorCode.TEAM_LINEUP_STARTING_PITCHER_INVALID);

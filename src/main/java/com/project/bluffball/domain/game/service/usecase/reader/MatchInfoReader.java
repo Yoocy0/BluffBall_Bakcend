@@ -187,7 +187,7 @@ public class MatchInfoReader {
         if (needsLeaguePitcherSetup(matchInfo, userId) && !matchInfo.hasPitcherSetup(userId)) {
             return SetupKind.PITCHER;
         }
-        if (isLeagueRosterMember(matchInfo, userId) && !matchInfo.hasBatterSetup(userId)) {
+        if (matchInfo.isBattingOrderMember(userId) && !matchInfo.hasBatterSetup(userId)) {
             return SetupKind.BATTER;
         }
         return null;
@@ -222,7 +222,12 @@ public class MatchInfoReader {
         if (reservePitcher != null && !matchInfo.hasPitcherSetup(reservePitcher)) {
             return false;
         }
-        for (Long userId : matchInfo.getParticipantUserIds()) {
+        for (Long userId : matchInfo.resolveHomeBattingOrder()) {
+            if (!matchInfo.hasBatterSetup(userId)) {
+                return false;
+            }
+        }
+        for (Long userId : matchInfo.resolveAwayBattingOrder()) {
             if (!matchInfo.hasBatterSetup(userId)) {
                 return false;
             }
@@ -265,18 +270,6 @@ public class MatchInfoReader {
             return awayActive != null && !awayActive.equals(pitcherUserId) ? awayActive : null;
         }
         return homeActive != null && !homeActive.equals(pitcherUserId) ? homeActive : null;
-    }
-
-    /**
-     * 리그 로스터 멤버 여부.
-     *
-     * @param matchInfo 매치 정보
-     * @param userId 유저 ID
-     * @return 로스터면 true
-     */
-    private boolean isLeagueRosterMember(MatchInfo matchInfo, Long userId) {
-        return matchInfo.getHomeRosterUserIds().contains(userId)
-                || matchInfo.getAwayRosterUserIds().contains(userId);
     }
 
     /**

@@ -28,15 +28,15 @@ import org.springframework.stereotype.Component;
  *
  * <h3>출전 로스터 / 투수 교체 한도</h3>
  * <ul>
- *   <li>COMPACT_LEAGUE — 로스터 3명, 투수 교체 1회</li>
- *   <li>FULL_LEAGUE — 로스터 9명, 투수 교체 3회</li>
+ *   <li>COMPACT_LEAGUE — 타순 3명 + 전담 투수 1명(총 4명), 투수 교체 1회</li>
+ *   <li>FULL_LEAGUE — 타순 9명(선발 투수는 타순에 포함), 투수 교체 3회</li>
  * </ul>
  *
  * <h3>블러핑 숫자 제출</h3>
  * <ul>
  *   <li>SHOWDOWN — 참가 2명 FULL(OUT·병살·3루타·홈런)</li>
- *   <li>리그 — 매치 초 로스터 전원 타자 셋업 + 양 선발/현재 투수 셋업.
- *       투수 교체 시에만 역할별 재제출</li>
+ *   <li>리그 — 타순 멤버 타자 셋업 + 양 선발/현재 투수 셋업.
+ *       Compact 전담 투수는 타자 셋업 불필요. 투수 교체 시에만 역할별 재제출</li>
  * </ul>
  */
 @Component
@@ -111,17 +111,45 @@ public class GameModeRule {
     }
 
     /**
-     * 리그 매칭에 필요한 출전 로스터 인원 수.
+     * 타순(타자) 인원 수.
+     *
+     * <p>Compact는 타자 3명, Full은 9명이다. 선발 투수는 Compact에서 별도 인원이다.</p>
      *
      * @param gameMode 게임 모드
-     * @return 로스터 인원 (쇼다운은 1)
+     * @return 타순 인원
      */
-    public int getRosterSize(GameMode gameMode) {
+    public int getBattingOrderSize(GameMode gameMode) {
         return switch (gameMode) {
             case SHOWDOWN, CUSTOM -> 1;
             case COMPACT_LEAGUE -> 3;
             case FULL_LEAGUE -> 9;
         };
+    }
+
+    /**
+     * 출전 전원 인원 수(구종 사전선택·팀 최소 인원 기준).
+     *
+     * <p>Compact = 타자 3 + 전담 투수 1. Full = 타순 9(투수 겸임).</p>
+     *
+     * @param gameMode 게임 모드
+     * @return 출전 전원 인원
+     */
+    public int getRosterSize(GameMode gameMode) {
+        return switch (gameMode) {
+            case SHOWDOWN, CUSTOM -> 1;
+            case COMPACT_LEAGUE -> 4;
+            case FULL_LEAGUE -> 9;
+        };
+    }
+
+    /**
+     * 선발 투수가 타순과 별도 인원인지(Compact).
+     *
+     * @param gameMode 게임 모드
+     * @return Compact면 true
+     */
+    public boolean hasDedicatedPitcher(GameMode gameMode) {
+        return gameMode == GameMode.COMPACT_LEAGUE;
     }
 
     /**

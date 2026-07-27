@@ -166,8 +166,8 @@ public class LeagueMatchService {
         leagueProgressValidator.validateMatchingTier(
                 teamLeagueProgressReader.isCurrentTier(awayTeamId, format, tier));
 
-        List<Long> homeRoster = teamLineupReader.getUserIds(homeTeamId, format);
-        List<Long> awayRoster = teamLineupReader.getUserIds(awayTeamId, format);
+        List<Long> homeBattingOrder = teamLineupReader.getUserIds(homeTeamId, format);
+        List<Long> awayBattingOrder = teamLineupReader.getUserIds(awayTeamId, format);
         Long homeStartingPitcher = teamLineupReader.getStartingPitcherUserId(homeTeamId, format);
         Long awayStartingPitcher = teamLineupReader.getStartingPitcherUserId(awayTeamId, format);
         TeamPitchCardsResponse homePitchCards = teamPitchCardsReader.getPitchCardsResponse(homeTeamId, format);
@@ -182,8 +182,8 @@ public class LeagueMatchService {
                 awayLeaderUserId,
                 homeStartingPitcher,
                 awayStartingPitcher,
-                homeRoster,
-                awayRoster,
+                homeBattingOrder,
+                awayBattingOrder,
                 homePitchCards,
                 awayPitchCards);
 

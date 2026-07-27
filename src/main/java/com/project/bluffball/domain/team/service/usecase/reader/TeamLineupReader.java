@@ -9,6 +9,7 @@ import com.project.bluffball.global.exception.NotFoundException;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Component;
 
+import java.util.ArrayList;
 import java.util.List;
 
 /**
@@ -19,6 +20,23 @@ import java.util.List;
 public class TeamLineupReader {
 
     private final TeamLineupRepository teamLineupRepository;
+
+    /**
+     * 타순 + 선발 투수를 출전 전원 목록으로 합친다.
+     *
+     * <p>Compact처럼 투수가 타순 밖이면 맨 뒤에 추가한다.</p>
+     *
+     * @param battingOrder 타순
+     * @param startingPitcherUserId 선발 투수
+     * @return 출전 전원
+     */
+    public static List<Long> mergeMatchRoster(List<Long> battingOrder, Long startingPitcherUserId) {
+        List<Long> roster = new ArrayList<>(battingOrder);
+        if (startingPitcherUserId != null && !roster.contains(startingPitcherUserId)) {
+            roster.add(startingPitcherUserId);
+        }
+        return roster;
+    }
 
     /**
      * 로스터 Entity를 조회한다. Executor·Reader 내부 전용 (Service에서 호출 금지).
@@ -47,7 +65,7 @@ public class TeamLineupReader {
     }
 
     /**
-     * 타순(출전 유저 ID)을 반환한다.
+     * 타순(타자 유저 ID)을 반환한다.
      *
      * @param teamId 팀 ID
      * @param format 리그 구분
@@ -55,6 +73,18 @@ public class TeamLineupReader {
      */
     public List<Long> getUserIds(Long teamId, LeagueFormat format) {
         return List.copyOf(getByTeamIdAndFormat(teamId, format).getUserIds());
+    }
+
+    /**
+     * 출전 전원(타순 + Compact 전담 투수)을 반환한다.
+     *
+     * @param teamId 팀 ID
+     * @param format 리그 구분
+     * @return 출전 전원
+     */
+    public List<Long> getMatchRosterUserIds(Long teamId, LeagueFormat format) {
+        TeamLineup lineup = getByTeamIdAndFormat(teamId, format);
+        return List.copyOf(mergeMatchRoster(lineup.getUserIds(), lineup.getStartingPitcherUserId()));
     }
 
     /**
