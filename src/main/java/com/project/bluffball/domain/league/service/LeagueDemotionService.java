@@ -2,10 +2,10 @@ package com.project.bluffball.domain.league.service;
 
 import com.project.bluffball.domain.league.enums.LeagueFormat;
 import com.project.bluffball.domain.league.service.usecase.executor.LeagueDemotionExecutor;
-import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 
+import java.time.Clock;
 import java.time.DayOfWeek;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
@@ -13,18 +13,19 @@ import java.time.ZoneId;
 import java.util.concurrent.atomic.AtomicReference;
 
 /**
- * 리그 강등 주기 서비스.
+ * 리그 점수 감쇠·강등 주기 서비스.
  *
- * <p>Compact=매주 월요일, Full=매월 1일에 한 번씩 강등 판정을 수행한다.</p>
+ * <p>Compact=매주 월요일, Full=매월 1일에 한 번씩 {@code PERIODIC_RATING_DECAY} 차감 후
+ * 기준 미달 팀을 강등한다.</p>
  */
 @Service
-@RequiredArgsConstructor
 @Slf4j
 public class LeagueDemotionService {
 
     private static final ZoneId KST = ZoneId.of("Asia/Seoul");
 
     private final LeagueDemotionExecutor leagueDemotionExecutor;
+    private final Clock clock;
 
     /** Compact 마지막 강등 일자 (KST) */
     private final AtomicReference<LocalDate> lastCompactDemotionDate = new AtomicReference<>();
@@ -32,12 +33,32 @@ public class LeagueDemotionService {
     private final AtomicReference<LocalDate> lastFullDemotionDate = new AtomicReference<>();
 
     /**
+     * 운영용 생성자 (KST 시스템 시계).
+     *
+     * @param leagueDemotionExecutor 강등 Executor
+     */
+    public LeagueDemotionService(LeagueDemotionExecutor leagueDemotionExecutor) {
+        this(leagueDemotionExecutor, Clock.system(KST));
+    }
+
+    /**
+     * 테스트용 생성자.
+     *
+     * @param leagueDemotionExecutor 강등 Executor
+     * @param clock 시계
+     */
+    LeagueDemotionService(LeagueDemotionExecutor leagueDemotionExecutor, Clock clock) {
+        this.leagueDemotionExecutor = leagueDemotionExecutor;
+        this.clock = clock;
+    }
+
+    /**
      * 강등 주기가 도래했으면 포맷별로 실행한다.
      *
      * @return 강등된 총 팀 수
      */
     public int tick() {
-        LocalDateTime now = LocalDateTime.now(KST);
+        LocalDateTime now = LocalDateTime.now(clock);
         LocalDate today = now.toLocalDate();
         int total = 0;
 

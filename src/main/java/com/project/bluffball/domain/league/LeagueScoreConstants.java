@@ -10,6 +10,12 @@ public final class LeagueScoreConstants {
     /** 경기 승패 가감점 (승 +MATCH_POINTS, 패 -MATCH_POINTS) + 득실 */
     public static final int MATCH_POINTS = 5;
 
+    /**
+     * 주기 배치(Compact 주간 / Full 월간) 시 차감하는 점수.
+     * 약 2~5경기 분량의 승점 스케일.
+     */
+    public static final int PERIODIC_RATING_DECAY = 30;
+
     /** 티어 인덱스(1~7)당 승리 재화 */
     public static final long MATCH_WIN_REWARD_PER_TIER = 100L;
 

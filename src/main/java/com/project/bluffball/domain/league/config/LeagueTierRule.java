@@ -8,7 +8,8 @@ import java.util.List;
  * 티어별 점수 밴드·승급/강등 기준.
  *
  * <p>사다리(낮→높): 아마4 → 아마3 → 아마2 → 아마1 → 독립 → 프로1 → 프로2.
- * 티어 내 점수는 {@code [floor, ceil]}로 클램프되며, {@code ceil} 도달 시 상위 진출 자격이 생긴다.</p>
+ * 티어 내 점수는 상한({@code ceil})에서 클램프되며, {@code ceil} 도달 시 상위 진출 자격(참가비 지불)이 생긴다.
+ * 주기 배치에서 {@code PERIODIC_RATING_DECAY} 차감 후 {@code rating < demoteBelow}이면 강등한다.</p>
  */
 public final class LeagueTierRule {
 
