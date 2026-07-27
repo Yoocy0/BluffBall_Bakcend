@@ -98,6 +98,7 @@ public class LeagueMatchCreateExecutor {
         }
         for (TeamPitchCardsResponse.MemberPitchCards selection : pitchCards.selections()) {
             matchInfo.setPlayerCardHand(selection.userId(), selection.cardIds());
+            matchInfo.setPlayerDropCard(selection.userId(), selection.dropCardId());
         }
     }
 }

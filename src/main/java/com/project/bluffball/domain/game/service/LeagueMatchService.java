@@ -13,6 +13,8 @@ import com.project.bluffball.domain.game.service.usecase.validator.MatchQueueVal
 import com.project.bluffball.domain.game.config.GameModeRule;
 import com.project.bluffball.domain.league.enums.LeagueFormat;
 import com.project.bluffball.domain.league.enums.LeagueTier;
+import com.project.bluffball.domain.league.service.usecase.reader.TeamLeagueProgressReader;
+import com.project.bluffball.domain.league.service.usecase.validator.LeagueProgressValidator;
 import com.project.bluffball.domain.team.dto.response.TeamPitchCardsResponse;
 import com.project.bluffball.domain.team.service.usecase.reader.TeamLineupReader;
 import com.project.bluffball.domain.team.service.usecase.reader.TeamMemberReader;
@@ -44,12 +46,14 @@ public class LeagueMatchService {
 
     private final MatchQueueValidator matchQueueValidator;
     private final LeagueMatchValidator leagueMatchValidator;
+    private final LeagueProgressValidator leagueProgressValidator;
     private final TeamMembershipValidator teamMembershipValidator;
 
     private final MatchQueueReader matchQueueReader;
     private final TeamMemberReader teamMemberReader;
     private final TeamLineupReader teamLineupReader;
     private final TeamPitchCardsReader teamPitchCardsReader;
+    private final TeamLeagueProgressReader teamLeagueProgressReader;
     private final GameModeRule gameModeRule;
 
     private final MatchQueueExecutor matchQueueExecutor;
@@ -70,6 +74,10 @@ public class LeagueMatchService {
 
         Long teamId = requireTeamId(userId);
         teamMembershipValidator.validateLeader(teamMemberReader.isLeader(teamId, userId));
+
+        // 현재 소속 티어와 동일한 큐만 허용
+        leagueProgressValidator.validateMatchingTier(
+                teamLeagueProgressReader.isCurrentTier(teamId, format, tier));
 
         int rosterSize = gameModeRule.getRosterSize(gameMode);
         leagueMatchValidator.validateReady(
@@ -153,6 +161,10 @@ public class LeagueMatchService {
 
         Long homeTeamId = matchQueueReader.getTeamId(homeLeaderUserId);
         leagueMatchValidator.validateDifferentTeams(homeTeamId, awayTeamId);
+        leagueProgressValidator.validateMatchingTier(
+                teamLeagueProgressReader.isCurrentTier(homeTeamId, format, tier));
+        leagueProgressValidator.validateMatchingTier(
+                teamLeagueProgressReader.isCurrentTier(awayTeamId, format, tier));
 
         List<Long> homeRoster = teamLineupReader.getUserIds(homeTeamId, format);
         List<Long> awayRoster = teamLineupReader.getUserIds(awayTeamId, format);

@@ -7,7 +7,6 @@ import com.project.bluffball.domain.team.dto.request.DonateTeamRequest;
 import com.project.bluffball.domain.team.dto.request.UpdateMemberRoleRequest;
 import com.project.bluffball.domain.team.dto.request.UpdateTeamLogoRequest;
 import com.project.bluffball.domain.team.dto.response.TeamMemberResponse;
-import com.project.bluffball.domain.team.dto.response.TeamRecordItemResponse;
 import com.project.bluffball.domain.team.dto.response.TeamRecordsResponse;
 import com.project.bluffball.domain.team.dto.response.TeamResponse;
 import com.project.bluffball.domain.team.dto.response.TeamTreasuryResponse;
@@ -254,7 +253,6 @@ public class TeamService {
      * 팀 리그 기록을 조회한다.
      *
      * @param teamId 팀 ID
-     * @param seasonId 시즌 필터
      * @param format 포맷 필터
      * @param tier 티어 필터
      * @param aggregate 합산 여부
@@ -262,26 +260,12 @@ public class TeamService {
      */
     public TeamRecordsResponse getRecords(
             Long teamId,
-            Long seasonId,
             LeagueFormat format,
             LeagueTier tier,
             boolean aggregate) {
         // 팀 존재 확인
         teamReader.getTeamResponse(teamId);
-        return teamRecordReader.getRecords(teamId, seasonId, format, tier, aggregate);
-    }
-
-    /**
-     * 특정 시즌 팀 기록을 조회한다.
-     *
-     * @param teamId 팀 ID
-     * @param seasonId 시즌 ID
-     * @return 시즌 기록
-     */
-    public TeamRecordItemResponse getSeasonRecord(Long teamId, Long seasonId) {
-        // 팀 존재 확인
-        teamReader.getTeamResponse(teamId);
-        return teamRecordReader.getSeasonRecord(teamId, seasonId);
+        return teamRecordReader.getRecords(teamId, format, tier, aggregate);
     }
 
     /**

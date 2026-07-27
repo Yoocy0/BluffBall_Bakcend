@@ -84,6 +84,10 @@ public enum ErrorCode {
     GAME_CARD_POOL_INSUFFICIENT(HttpStatus.BAD_REQUEST, "구종 카드 수가 핸드 장수보다 적습니다."),
     GAME_CARD_REDRAW_INSUFFICIENT(HttpStatus.BAD_REQUEST, "재뽑기 풀의 카드가 부족합니다."),
     GAME_ROLE_SWAP_UNSUPPORTED(HttpStatus.BAD_REQUEST, "현재 매치에서는 공수 교대 역할 교환이 지원되지 않습니다."),
+    GAME_PITCHER_SUBSTITUTE_UNSUPPORTED(HttpStatus.BAD_REQUEST, "현재 매치에서는 투수 교체가 지원되지 않습니다."),
+    GAME_PITCHER_SUBSTITUTE_LIMIT(HttpStatus.BAD_REQUEST, "투수 교체 한도를 초과했습니다."),
+    GAME_PITCHER_SUBSTITUTE_INVALID(HttpStatus.BAD_REQUEST, "투수 교체 대상이 올바르지 않습니다."),
+    GAME_PITCHER_SUBSTITUTE_DROP_CARD_MISSING(HttpStatus.BAD_REQUEST, "교체 투수의 dropCardId가 없습니다."),
 
     // Team
     TEAM_NOT_FOUND(HttpStatus.NOT_FOUND, "팀을 찾을 수 없습니다."),
@@ -112,17 +116,15 @@ public enum ErrorCode {
 
     // League
     LEAGUE_NOT_FOUND(HttpStatus.NOT_FOUND, "리그를 찾을 수 없습니다."),
-    LEAGUE_SEASON_NOT_FOUND(HttpStatus.NOT_FOUND, "리그 시즌을 찾을 수 없습니다."),
-    LEAGUE_NOT_RECRUITING(HttpStatus.BAD_REQUEST, "모집 중인 시즌이 아닙니다."),
-    LEAGUE_TICKET_ALREADY_OWNED(HttpStatus.CONFLICT, "이미 해당 시즌 참여권을 보유하고 있습니다."),
-    LEAGUE_TICKET_NOT_FOUND(HttpStatus.BAD_REQUEST, "리그 참여권이 없습니다."),
-    LEAGUE_TREASURY_INSUFFICIENT(HttpStatus.BAD_REQUEST, "팀 재정이 부족하여 참여권을 구매할 수 없습니다."),
+    LEAGUE_TREASURY_INSUFFICIENT(HttpStatus.BAD_REQUEST, "팀 재정이 부족하여 참여비를 지불할 수 없습니다."),
     LEAGUE_MEMBERS_INSUFFICIENT(HttpStatus.BAD_REQUEST, "리그 참가에 필요한 최소 팀원 수가 부족합니다."),
-    LEAGUE_ALREADY_JOINED(HttpStatus.CONFLICT, "이미 해당 시즌에 참가 중입니다."),
-    LEAGUE_SEASON_FULL(HttpStatus.CONFLICT, "시즌 참가 정원이 초과되었습니다."),
+    LEAGUE_ALREADY_JOINED(HttpStatus.CONFLICT, "이미 해당 포맷 리그에 진입했습니다."),
     LEAGUE_AFFILIATION_NOT_FOUND(HttpStatus.NOT_FOUND, "현재 소속된 리그가 없습니다."),
     LEAGUE_MATCH_NOT_READY(HttpStatus.BAD_REQUEST, "출전 로스터 또는 구종 사전 선택이 완료되지 않았습니다."),
     LEAGUE_MATCH_SAME_TEAM(HttpStatus.CONFLICT, "같은 팀과는 매칭할 수 없습니다."),
+    LEAGUE_MATCH_TIER_MISMATCH(HttpStatus.BAD_REQUEST, "현재 소속 티어와 다른 리그에는 매칭할 수 없습니다."),
+    LEAGUE_TIER_ENTRY_INVALID(HttpStatus.BAD_REQUEST, "해당 티어로 진입할 수 없습니다."),
+    LEAGUE_PROMOTE_NOT_READY(HttpStatus.BAD_REQUEST, "상위 리그 진출에 필요한 점수가 부족합니다."),
 
     // External
     OAUTH_API_FAILED(HttpStatus.SERVICE_UNAVAILABLE, "소셜 로그인 서비스에 연결할 수 없습니다."),

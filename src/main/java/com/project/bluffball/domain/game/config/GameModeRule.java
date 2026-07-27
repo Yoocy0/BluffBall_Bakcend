@@ -32,9 +32,11 @@ import org.springframework.stereotype.Component;
  *   <li>FULL_LEAGUE — 로스터 9명, 투수 교체 3회</li>
  * </ul>
  *
- * <h3>블러핑 숫자 제출 인원 수</h3>
+ * <h3>블러핑 숫자 제출</h3>
  * <ul>
- *   <li>전 모드 — 2명 (추후 모드별 확장 가능)</li>
+ *   <li>SHOWDOWN — 참가 2명 FULL(OUT·병살·3루타·홈런)</li>
+ *   <li>리그 — 매치 초 로스터 전원 타자 셋업 + 양 선발/현재 투수 셋업.
+ *       투수 교체 시에만 역할별 재제출</li>
  * </ul>
  */
 @Component

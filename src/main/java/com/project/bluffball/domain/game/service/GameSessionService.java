@@ -9,6 +9,7 @@ import com.project.bluffball.domain.game.dto.response.ParticipantPresenceRespons
 import com.project.bluffball.domain.game.dto.response.CardInfo;
 import com.project.bluffball.domain.game.enums.GameSessionPhase;
 import com.project.bluffball.domain.game.enums.ParticipantRole;
+import com.project.bluffball.domain.game.enums.SetupKind;
 import com.project.bluffball.domain.game.redis.TurnResultSession;
 import com.project.bluffball.domain.game.service.usecase.reader.GameProgressReader;
 import com.project.bluffball.domain.game.service.usecase.reader.GameStateReader;
@@ -46,6 +47,8 @@ public class GameSessionService {
         Long batterUserId = matchInfoReader.getCurrentBatterUserId(matchSessionId);
 
         boolean setupComplete = matchInfoReader.isSetupNumbersComplete(matchSessionId);
+        SetupKind requiredSetupKind = matchInfoReader.getRequiredSetupKind(matchSessionId, userId);
+        boolean mySetupComplete = requiredSetupKind == null;
         boolean allMulliganDone = matchInfoReader.isMulliganDone(matchSessionId);
         boolean myMulliganDone = matchInfoReader.isMulliganDoneForUser(matchSessionId, userId);
         boolean gameOver = gameProgressReader.isGameOver(matchSessionId);
@@ -70,6 +73,8 @@ public class GameSessionService {
                 resolveOpponentUserId(userId, participantUserIds),
                 participantUserIds,
                 setupComplete,
+                requiredSetupKind,
+                mySetupComplete,
                 myMulliganDone,
                 allMulliganDone,
                 myCardHand,

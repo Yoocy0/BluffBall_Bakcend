@@ -7,7 +7,6 @@ import com.project.bluffball.domain.team.dto.request.DonateTeamRequest;
 import com.project.bluffball.domain.team.dto.request.UpdateMemberRoleRequest;
 import com.project.bluffball.domain.team.dto.request.UpdateTeamLogoRequest;
 import com.project.bluffball.domain.team.dto.response.TeamMemberResponse;
-import com.project.bluffball.domain.team.dto.response.TeamRecordItemResponse;
 import com.project.bluffball.domain.team.dto.response.TeamRecordsResponse;
 import com.project.bluffball.domain.team.dto.response.TeamResponse;
 import com.project.bluffball.domain.team.dto.response.TeamTreasuryResponse;
@@ -358,7 +357,6 @@ public class TeamController {
      * 팀 리그 기록을 조회한다.
      *
      * @param teamId 팀 ID
-     * @param seasonId 시즌 필터
      * @param format 포맷 필터
      * @param tier 티어 필터
      * @param aggregate 합산 여부
@@ -366,7 +364,7 @@ public class TeamController {
      */
     @Operation(
             summary = "팀 리그 기록 조회",
-            description = "시즌/포맷/티어 필터로 이력을 조회하거나, aggregate=true로 승·패·득실 합산을 반환한다.",
+            description = "포맷/티어 필터로 상시 리그 전적을 조회하거나, aggregate=true로 승·패·득실 합산을 반환한다.",
             security = @SecurityRequirement(name = "bearerAuth")
     )
     @ApiResponses({
@@ -377,8 +375,6 @@ public class TeamController {
     @GetMapping("/{teamId}/records")
     public ResponseEntity<TeamRecordsResponse> getRecords(
             @PathVariable Long teamId,
-            @Parameter(description = "특정 시즌 ID")
-            @RequestParam(required = false) Long seasonId,
             @Parameter(description = "리그 구분 (FULL / COMPACT)")
             @RequestParam(required = false) LeagueFormat format,
             @Parameter(description = "리그 단계 (AMATEUR_1 ~ PRO_2)")
@@ -386,32 +382,7 @@ public class TeamController {
             @Parameter(description = "true면 필터 범위 승/패/득실 합산")
             @RequestParam(required = false, defaultValue = "false") boolean aggregate) {
         authenticatedUserResolver.requireUserId();
-        return ResponseEntity.ok(teamService.getRecords(teamId, seasonId, format, tier, aggregate));
-    }
-
-    /**
-     * 특정 시즌 팀 기록을 조회한다.
-     *
-     * @param teamId 팀 ID
-     * @param seasonId 시즌 ID
-     * @return 시즌 기록
-     */
-    @Operation(
-            summary = "특정 시즌 팀 기록 조회",
-            description = "특정 시즌의 승/패/득실 기록을 반환한다.",
-            security = @SecurityRequirement(name = "bearerAuth")
-    )
-    @ApiResponses({
-            @ApiResponse(responseCode = "200", description = "조회 성공"),
-            @ApiResponse(responseCode = "401", description = "인증 토큰 없음 또는 만료"),
-            @ApiResponse(responseCode = "404", description = "기록 없음")
-    })
-    @GetMapping("/{teamId}/records/{seasonId}")
-    public ResponseEntity<TeamRecordItemResponse> getSeasonRecord(
-            @PathVariable Long teamId,
-            @PathVariable Long seasonId) {
-        authenticatedUserResolver.requireUserId();
-        return ResponseEntity.ok(teamService.getSeasonRecord(teamId, seasonId));
+        return ResponseEntity.ok(teamService.getRecords(teamId, format, tier, aggregate));
     }
 
     /**

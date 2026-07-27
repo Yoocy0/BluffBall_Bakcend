@@ -46,7 +46,6 @@ public class TeamTreasuryReader {
                 transaction.getTransactionType(),
                 transaction.getAmount(),
                 transaction.getSourceUserId(),
-                transaction.getLeagueSeasonId(),
                 transaction.getCreatedAt());
     }
 }

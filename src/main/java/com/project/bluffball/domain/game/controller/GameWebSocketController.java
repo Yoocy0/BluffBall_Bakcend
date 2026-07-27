@@ -176,6 +176,6 @@ public class GameWebSocketController {
             @Payload LeagueSubstitutePitcherRequest request,
             Principal principal) {
         Long userId = authenticatedUserResolver.requireUserId(principal);
-        // TODO: leagueGameTurnService.substitutePitcher(matchSessionId, userId, request);
+        gamePrepService.substituteLeaguePitcher(matchSessionId, userId, request);
     }
 }

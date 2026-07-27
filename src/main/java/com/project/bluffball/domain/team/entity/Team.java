@@ -92,11 +92,13 @@ public class Team {
     }
 
     /**
-     * 시즌 성적 상금으로 재정을 충당한다.
+     * 리그 경기 보상으로 재정을 충당한다.
+     *
+     * @param amount 지급액
      */
-    public void addSeasonPrize(long amount) {
+    public void addMatchReward(long amount) {
         if (amount <= 0) {
-            throw new IllegalArgumentException("상금은 0보다 커야 합니다.");
+            throw new IllegalArgumentException("입금액은 0보다 커야 합니다.");
         }
         this.treasury += amount;
     }

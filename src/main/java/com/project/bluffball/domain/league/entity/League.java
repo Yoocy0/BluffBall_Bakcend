@@ -11,8 +11,7 @@ import lombok.NoArgsConstructor;
  * 리그 등급 카탈로그 엔터티.
  *
  * <p>풀/컴팩트 × 7티어 = 최대 14개 행이 존재한다.
- * 유저 성적({@code user_record.league_id})은 이 등급을 참조한다.
- * 실제 진행 단위는 {@link LeagueSeason}이다.</p>
+ * 상시 진행 상태는 {@link TeamLeagueProgress}가 담당한다.</p>
  */
 @Entity
 @Table(
@@ -45,13 +44,14 @@ public class League {
     @Column(name = "name", nullable = false, length = 40)
     private String name;
 
-    /** 리그 참여권 가격 (팀 재정으로 지불) */
+    /** 티어 진입/승급 참가비 (팀 재정으로 지불) */
     @Column(name = "entry_fee", nullable = false)
     private long entryFee;
 
     /**
-     * 시즌 1등 상금.
-     * 2등 이후 상금은 {@link LeaguePrizeRule}의 1등 대비 퍼센트로 산정한다.
+     * 레거시 1등 상금 컬럼.
+     *
+     * <p>상시 리그에서는 사용하지 않으며 스키마 호환을 위해 0으로 유지한다.</p>
      */
     @Column(name = "first_place_prize", nullable = false)
     private long firstPlacePrize;
@@ -60,6 +60,16 @@ public class League {
     @Column(name = "min_team_members", nullable = false)
     private int minTeamMembers;
 
+    /**
+     * 카탈로그 리그를 생성한다.
+     *
+     * @param format 포맷
+     * @param tier 티어
+     * @param name 표시명
+     * @param entryFee 참가비
+     * @param firstPlacePrize 레거시 상금(미사용, 보통 0)
+     * @param minTeamMembers 최소 팀원
+     */
     public League(LeagueFormat format, LeagueTier tier, String name, long entryFee,
                   long firstPlacePrize, int minTeamMembers) {
         if (firstPlacePrize < 0) {
@@ -74,17 +84,5 @@ public class League {
         this.entryFee = entryFee;
         this.firstPlacePrize = firstPlacePrize;
         this.minTeamMembers = minTeamMembers;
-    }
-
-    /**
-     * 순위별 상금액을 계산한다.
-     *
-     * @param percentOfFirst 1등 상금 대비 퍼센트 (1등=100)
-     */
-    public long calculatePrizeAmount(int percentOfFirst) {
-        if (percentOfFirst < 0) {
-            throw new IllegalArgumentException("상금 비율은 0 이상이어야 합니다.");
-        }
-        return this.firstPlacePrize * percentOfFirst / 100L;
     }
 }
