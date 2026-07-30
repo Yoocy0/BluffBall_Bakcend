@@ -53,12 +53,24 @@ class GameProgressCalculatorTest {
     }
 
     @Test
-    @DisplayName("삼진 적용 시 아웃이 늘고 카운트가 리셋된다")
-    void applyPromotedStrikeOut() {
-        var before = situation(1, 2, 1);
-        var transition = calculator.apply(before, TurnResult.STRIKE);
-        assertThat(transition.after().outs()).isEqualTo(2);
-        assertThat(transition.after().strikes()).isEqualTo(0);
-        assertThat(transition.after().balls()).isEqualTo(0);
+    @DisplayName("파울은 2S에서 카운트를 유지한다")
+    void foulDoesNotPromoteAtTwoStrikes() {
+        assertThat(calculator.resolveEffectiveTurnResult(TurnResult.FOUL, situation(0, 2, 0)))
+                .isEqualTo(TurnResult.FOUL);
+
+        var transition = calculator.apply(situation(1, 2, 0), TurnResult.FOUL);
+        assertThat(transition.after().strikes()).isEqualTo(2);
+        assertThat(transition.after().balls()).isEqualTo(1);
+        assertThat(transition.after().outs()).isEqualTo(0);
+    }
+
+    @Test
+    @DisplayName("0~1S에서 파울은 스트라이크를 1 올린다")
+    void foulAddsStrikeBeforeTwo() {
+        var fromZero = calculator.apply(situation(0, 0, 0), TurnResult.FOUL);
+        assertThat(fromZero.after().strikes()).isEqualTo(1);
+
+        var fromOne = calculator.apply(situation(0, 1, 0), TurnResult.FOUL);
+        assertThat(fromOne.after().strikes()).isEqualTo(2);
     }
 }

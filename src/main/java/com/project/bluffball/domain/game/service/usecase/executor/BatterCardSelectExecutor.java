@@ -81,7 +81,7 @@ public class BatterCardSelectExecutor {
             return preliminary.turnResult();
         }
 
-        // 주사위 눈금 합 ↔ setup-numbers로 등록한 블러핑 숫자 대조
+        // 주사위 눈금 합(−페널티) ↔ setup-numbers로 등록한 블러핑 숫자 대조
         return bluffingJudgmentCalculator.judge(
                 preliminary.diceResults(),
                 matchInfoReader.getOutNumbers(matchSessionId, session.getCurrentPitcherUserId()),
@@ -90,7 +90,8 @@ public class BatterCardSelectExecutor {
                 matchInfoReader.getHrNumbers(matchSessionId, session.getCurrentBatterUserId()),
                 gameStateReader.hasRunnersOnBase(matchSessionId),
                 matchInfoReader.getDoubleJudgmentTargetFace(matchSessionId),
-                matchInfoReader.isDoubleJudgmentUseFrontDice(matchSessionId));
+                matchInfoReader.isDoubleJudgmentUseFrontDice(matchSessionId),
+                preliminary.sumPenalty());
     }
 }
 

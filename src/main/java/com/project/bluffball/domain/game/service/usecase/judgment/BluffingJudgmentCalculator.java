@@ -41,6 +41,7 @@ public class BluffingJudgmentCalculator {
      * @param hasRunnersOnBase      루상 주자 존재 여부 (병살 판정용)
      * @param doubleTargetFace      2루타 판정 목표 주사위 눈금 (1~6)
      * @param doubleUseFrontDice    {@code true}면 앞 주사위, {@code false}면 뒷 주사위와 비교
+     * @param sumPenalty            약한 접촉·볼존 타격 등으로 합에서 뺄 페널티 (0 이상)
      */
     public TurnResult judge(List<Integer> diceResults,
                             List<Integer> outNumbers,
@@ -49,8 +50,13 @@ public class BluffingJudgmentCalculator {
                             List<Integer> hrNumbers,
                             boolean hasRunnersOnBase,
                             int doubleTargetFace,
-                            boolean doubleUseFrontDice) {
-        int sum = diceResults.stream().mapToInt(Integer::intValue).sum();
+                            boolean doubleUseFrontDice,
+                            int sumPenalty) {
+        int rawSum = diceResults.stream().mapToInt(Integer::intValue).sum();
+        int sum = rawSum - Math.max(0, sumPenalty);
+        if (sum < 1) {
+            return TurnResult.FOUL;
+        }
 
         boolean matchOut = contains(outNumbers, sum);
         boolean rawMatchDp = contains(dpNumbers, sum);
