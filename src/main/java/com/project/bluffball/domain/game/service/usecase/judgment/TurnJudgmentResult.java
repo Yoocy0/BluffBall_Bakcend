@@ -14,6 +14,7 @@ import java.util.List;
  * @param finalCoordinateNumber 투수 구종으로 확정된 최종 착구 좌표
  * @param pitchTiming           투수 구종 타이밍
  * @param timedOut              5초 초과로 스윙 미발동 처리됐는지
+ * @param sumPenalty            2차 판정 시 주사위 합에서 뺄 페널티 (0, 3, 6 …). 즉시 확정 시 0.
  */
 public record TurnJudgmentResult(
         TurnResult turnResult,
@@ -21,6 +22,7 @@ public record TurnJudgmentResult(
         Timing selectedTiming,
         int finalCoordinateNumber,
         Timing pitchTiming,
-        boolean timedOut
+        boolean timedOut,
+        int sumPenalty
 ) {
 }

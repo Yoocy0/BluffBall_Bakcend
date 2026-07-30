@@ -31,6 +31,7 @@
             WILD_PITCH: '폭투',
             WALK: '볼넷',
             STRIKE_OUT: '삼진',
+            FOUL: '파울',
         };
         return map[name] || name;
     }

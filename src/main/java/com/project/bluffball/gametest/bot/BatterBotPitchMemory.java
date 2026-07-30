@@ -19,7 +19,7 @@ public final class BatterBotPitchMemory {
     /**
      * 턴 결과로 구종 후보를 갱신한다.
      *
-     * <p>스트라이크·삼진이 아니면 해당 구종을 후보에서 제거한다.</p>
+     * <p>스트라이크·삼진·파울이 아니면 해당 구종을 후보에서 제거한다.</p>
      *
      * @param pitchCardName 이번 투구 구종명
      * @param turnResult 턴 판정
@@ -28,7 +28,9 @@ public final class BatterBotPitchMemory {
         if (pitchCardName == null || pitchCardName.isBlank() || turnResult == null) {
             return;
         }
-        if (turnResult != TurnResult.STRIKE && turnResult != TurnResult.STRIKE_OUT) {
+        if (turnResult != TurnResult.STRIKE
+                && turnResult != TurnResult.STRIKE_OUT
+                && turnResult != TurnResult.FOUL) {
             eliminatedPitchNames.add(pitchCardName);
         }
     }

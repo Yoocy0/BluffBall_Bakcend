@@ -9,6 +9,7 @@ import java.util.List;
  * 블러핑 고유 숫자 제출 WebSocket 수신 DTO.
  *
  * <p>인게임 시작 직후 각 플레이어가 1~12 중에서 예측 숫자를 제출한다.
+ * 홈런 번호만 7~12로 제한한다 (주사위 2개 합 구간).
  * 주사위 눈금 합이 이 숫자들과 일치하면 특수 판정이 발동된다.</p>
  *
  * <p>모드별 제출:
@@ -27,7 +28,7 @@ public record SetupNumberRequest(
         List<@Min(1) @Max(12) Integer> dpNumList,
         /** 타자의 3루타 유발 번호 목록 */
         List<@Min(1) @Max(12) Integer> tripleNumList,
-        /** 타자의 홈런 유발 번호 목록 */
-        List<@Min(1) @Max(12) Integer> hrNumList
+        /** 타자의 홈런 유발 번호 목록 (7~12) */
+        List<@Min(7) @Max(12) Integer> hrNumList
 ) {
 }

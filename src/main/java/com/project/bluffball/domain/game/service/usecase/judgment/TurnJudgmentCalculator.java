@@ -12,16 +12,25 @@ import java.util.concurrent.ThreadLocalRandom;
 /**
  * 타격 판정 순수 계산 컴포넌트 (DB·Redis 접근 없음).
  *
- * <p>판정 순서: 시간 초과(존 기준 S/B) → 폭투 → 좌표 0(스윙 미발동 S/B) → 좌표 일치 → 타이밍 → 주사위</p>
+ * <p>판정 순서: 시간 초과(존 기준 S/B) → 폭투 → 좌표 0(스윙 미발동 S/B)
+ * → 좌표(정확/상하좌우 1칸/미스) → 타이밍 → 주사위(+합 페널티)</p>
  *
- * <p>주사위는 정육면체(1~6)만 사용한다. 타이밍 완벽 일치 시 2개를 굴려
- * 합산 범위는 2~12, 1칸 어긋남 시 1개(합 1~6)이다.</p>
+ * <p>주사위는 정육면체(1~6)만 사용한다.</p>
+ * <ul>
+ *   <li>좌표 정확 + 타이밍 정확 → 주사위 2개</li>
+ *   <li>좌표 정확 + 타이밍 ±1 → 주사위 1개</li>
+ *   <li>좌표 상하좌우 ±1 + 타이밍 정확 → 주사위 1개</li>
+ *   <li>좌표 상하좌우 ±1 + 타이밍 ±1 → 주사위 1개, 합 −3</li>
+ *   <li>볼존 접촉 → 합 −3 (위와 중첩 가능)</li>
+ * </ul>
  */
 @Component
 public class TurnJudgmentCalculator {
 
     private static final double MAX_RESPONSE_TIME_SEC = 5.0;
     private static final int DICE_SIDES = 6;
+    private static final int GRID_SIZE = 5;
+    private static final int SOFT_CONTACT_PENALTY = 3;
 
     // 타자의 좌표/타이밍 선택에 대한 결과 판단 메서드(외부 호출용)
     public TurnJudgmentResult judge(int finalCoordinateNumber,
@@ -43,7 +52,8 @@ public class TurnJudgmentCalculator {
                     batterTiming,
                     finalCoordinateNumber,
                     pitchTiming,
-                    false);
+                    false,
+                    0);
         }
 
         // 타자가 좌표 0을 선택한 경우 -> 스윙 미발동, 최종 좌표 존 기준 S/B
@@ -51,22 +61,30 @@ public class TurnJudgmentCalculator {
             return countByStrikeZone(finalCoordinateIsStrike, finalCoordinateNumber, pitchTiming, batterTiming, false);
         }
 
-        // 타자 선택 좌표와 최종 좌표가 다른 경우 -> 헛스윙으로 판정(스트라이크로 판정)
-        if (batterCoordinateNumber != finalCoordinateNumber) {
+        int coordDiff = orthogonalDistance(batterCoordinateNumber, finalCoordinateNumber);
+        // 좌표가 2칸 이상 떨어지거나 격자 밖이면 헛스윙
+        if (coordDiff < 0 || coordDiff >= 2) {
             return strike(finalCoordinateNumber, pitchTiming, batterTiming, false);
         }
 
         int timingDiff = Math.abs(pitchTiming.ordinal() - batterTiming.ordinal());
-        // 좌표가 맞지만 타이밍이 맞지 않은 경우 -> 헛스윙(스트라이크로 판정)
+        // 타이밍이 2칸 이상 어긋나면 헛스윙
         if (timingDiff >= 2) {
             return strike(finalCoordinateNumber, pitchTiming, batterTiming, false);
         }
-        // 좌표가 맞으면서 타이밍이 어긋난 경우 -> 타격 이벤트 발생(주사위 1개 부여)
-        if (timingDiff == 1) {
-            return withDice(finalCoordinateNumber, pitchTiming, batterTiming, 1);
+
+        int diceCount = (coordDiff == 0 && timingDiff == 0) ? 2 : 1;
+        int sumPenalty = 0;
+        // 좌표·타이밍이 모두 1칸씩 어긋난 약한 접촉
+        if (coordDiff == 1 && timingDiff == 1) {
+            sumPenalty += SOFT_CONTACT_PENALTY;
         }
-        // 좌표가 맞으면서 타이밍도 맞는 경우 -> 타격 이벤트 발생(주사위 2개 부여)
-        return withDice(finalCoordinateNumber, pitchTiming, batterTiming, 2);
+        // 볼존 타격 페널티 (중첩 가능)
+        if (!finalCoordinateIsStrike) {
+            sumPenalty += SOFT_CONTACT_PENALTY;
+        }
+
+        return withDice(finalCoordinateNumber, pitchTiming, batterTiming, diceCount, sumPenalty);
     }
 
     // 시간 초과 시 호출되는 메서드
@@ -99,7 +117,8 @@ public class TurnJudgmentCalculator {
                 batterTiming,
                 finalCoordinateNumber,
                 pitchTiming,
-                timedOut);
+                timedOut,
+                0);
     }
 
     // 볼 시에 호출하는 메서드
@@ -113,14 +132,16 @@ public class TurnJudgmentCalculator {
                 batterTiming,
                 finalCoordinateNumber,
                 pitchTiming,
-                timedOut);
+                timedOut,
+                0);
     }
 
     // 타격 이벤트 시 호출되는 주사위 메서드
     private TurnJudgmentResult withDice(int finalCoordinateNumber,
                                         Timing pitchTiming,
                                         Timing batterTiming,
-                                        int diceCount) {
+                                        int diceCount,
+                                        int sumPenalty) {
         List<Integer> dice = rollDice(diceCount);
         return new TurnJudgmentResult(
                 null,
@@ -128,7 +149,27 @@ public class TurnJudgmentCalculator {
                 batterTiming,
                 finalCoordinateNumber,
                 pitchTiming,
-                false);
+                false,
+                sumPenalty);
+    }
+
+    /**
+     * 5×5 격자에서 상하좌우(맨해튼) 거리.
+     * 유효하지 않은 좌표(0 또는 1~25 밖)면 -1.
+     */
+    private int orthogonalDistance(int a, int b) {
+        if (!isValidGridCoordinate(a) || !isValidGridCoordinate(b)) {
+            return -1;
+        }
+        int ay = (a - 1) / GRID_SIZE;
+        int ax = (a - 1) % GRID_SIZE;
+        int by = (b - 1) / GRID_SIZE;
+        int bx = (b - 1) % GRID_SIZE;
+        return Math.abs(ay - by) + Math.abs(ax - bx);
+    }
+
+    private boolean isValidGridCoordinate(int coordinateNumber) {
+        return coordinateNumber >= 1 && coordinateNumber <= GRID_SIZE * GRID_SIZE;
     }
 
     /** 정육면체 주사위를 {@code count}번 굴려 각 눈금(1~6) 목록을 반환한다. */

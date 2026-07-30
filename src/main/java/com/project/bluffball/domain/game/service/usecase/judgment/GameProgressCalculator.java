@@ -59,6 +59,7 @@ public class GameProgressCalculator {
 
         switch (effective) {
             case STRIKE -> applyStrike(state);           // strike++, 3이면 삼진
+            case FOUL -> applyFoul(state);               // strike++ (2S에서는 유지)
             case BALL -> applyBall(state);               // ball++, 4이면 볼넷
             case WALK -> applyWalk(state);               // 타자·주자 1베이스 진루
             case STRIKE_OUT -> recordOut(state, 1);      // 삼진 아웃
@@ -79,6 +80,13 @@ public class GameProgressCalculator {
         state.strikes++;
         if (state.strikes >= MAX_STRIKES_BEFORE_OUT) {
             recordOut(state, 1);
+        }
+    }
+
+    /** 파울 — strike++이지만 이미 2S면 카운트 유지(커트) */
+    private void applyFoul(MutableState state) {
+        if (state.strikes < MAX_STRIKES_BEFORE_OUT - 1) {
+            state.strikes++;
         }
     }
 

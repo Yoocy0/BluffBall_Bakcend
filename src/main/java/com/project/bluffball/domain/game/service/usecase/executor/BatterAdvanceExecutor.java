@@ -44,7 +44,7 @@ public class BatterAdvanceExecutor {
     private boolean isPlateAppearanceEnded(TurnResult turnResult) {
         return switch (turnResult) {
             case SINGLE, DOUBLE, TRIPLE, HOMERUN, WALK, STRIKE_OUT, OUT, DOUBLE_PLAY -> true;
-            case STRIKE, BALL, WILD_PITCH -> false;
+            case STRIKE, BALL, WILD_PITCH, FOUL -> false;
         };
     }
 }
