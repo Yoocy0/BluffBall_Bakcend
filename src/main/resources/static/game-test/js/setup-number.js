@@ -3,7 +3,7 @@
         out: { key: 'out', label: '아웃 번호', desc: '5개 선택 (1~12)', max: 5 },
         dp: { key: 'dp', label: '병살 번호', desc: '1개 선택 — 아웃 번호와 중복 불가', max: 1 },
         triple: { key: 'triple', label: '3루타 번호', desc: '1개 선택', max: 1 },
-        hr: { key: 'hr', label: '홈런 번호', desc: '1개 선택 — 3루타 번호와 중복 불가', max: 1 },
+        hr: { key: 'hr', label: '홈런 번호', desc: '1개 선택 (7~12) — 3루타 번호와 중복 불가', max: 1 },
     };
 
     const state = {
@@ -146,6 +146,9 @@
             return false;
         }
         if (list.length >= phase.max) {
+            return true;
+        }
+        if (phase.key === 'hr' && (num < 7 || num > 12)) {
             return true;
         }
         if (phase.key === 'dp' && state.outNumList.includes(num)) {

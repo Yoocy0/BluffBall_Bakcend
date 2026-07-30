@@ -20,6 +20,9 @@ public class SetupNumberValidator {
 
     private static final int MIN_NUM = 1;
     private static final int MAX_NUM = 12;
+    /** 홈런은 주사위 2개 합 구간만 허용 */
+    private static final int HR_MIN_NUM = 7;
+    private static final int HR_MAX_NUM = 12;
 
     /** 투수 아웃 번호 개수 */
     public static final int OUT_COUNT = 5;
@@ -68,7 +71,7 @@ public class SetupNumberValidator {
         validateRange(request.outNumList(), "아웃 번호");
         validateRange(request.dpNumList(), "병살 번호");
         validateRange(request.tripleNumList(), "3루타 번호");
-        validateRange(request.hrNumList(), "홈런 번호");
+        validateRange(request.hrNumList(), "홈런 번호", HR_MIN_NUM, HR_MAX_NUM);
 
         validateNoDuplicatesInList(request.outNumList(), "아웃 번호");
         validateNoDuplicatesInList(request.dpNumList(), "병살 번호");
@@ -103,7 +106,7 @@ public class SetupNumberValidator {
         validateRequired(request.tripleNumList(), "3루타 번호", TRIPLE_COUNT);
         validateRequired(request.hrNumList(), "홈런 번호", HR_COUNT);
         validateRange(request.tripleNumList(), "3루타 번호");
-        validateRange(request.hrNumList(), "홈런 번호");
+        validateRange(request.hrNumList(), "홈런 번호", HR_MIN_NUM, HR_MAX_NUM);
         validateNoDuplicatesInList(request.tripleNumList(), "3루타 번호");
         validateNoDuplicatesInList(request.hrNumList(), "홈런 번호");
         validateNoOverlap(request.tripleNumList(), request.hrNumList(), "3루타 번호", "홈런 번호");
@@ -134,14 +137,26 @@ public class SetupNumberValidator {
      * @param label 라벨
      */
     private void validateRange(List<Integer> nums, String label) {
+        validateRange(nums, label, MIN_NUM, MAX_NUM);
+    }
+
+    /**
+     * 숫자 범위를 검증한다.
+     *
+     * @param nums 숫자 목록
+     * @param label 라벨
+     * @param min 최소값(포함)
+     * @param max 최대값(포함)
+     */
+    private void validateRange(List<Integer> nums, String label, int min, int max) {
         if (nums == null) {
             return;
         }
         for (Integer num : nums) {
-            if (num == null || num < MIN_NUM || num > MAX_NUM) {
+            if (num == null || num < min || num > max) {
                 throw new BadRequestException(
                         ErrorCode.GAME_INVALID_SETUP_NUMBERS,
-                        label + " 숫자는 " + MIN_NUM + "~" + MAX_NUM + " 사이여야 합니다. 숫자=" + num);
+                        label + " 숫자는 " + min + "~" + max + " 사이여야 합니다. 숫자=" + num);
             }
         }
     }
