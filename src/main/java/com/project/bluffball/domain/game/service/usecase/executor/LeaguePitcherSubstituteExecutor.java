@@ -26,6 +26,9 @@ public class LeaguePitcherSubstituteExecutor {
     /**
      * 투수를 교체한다.
      *
+     * <p>신임 투수(기존 타자)는 마운드만 맡고, 강판 투수는 신임의 타순 슬롯을 이어받아
+     * 이후 공격 이닝에서 타석에 선다.</p>
+     *
      * @param matchSessionId 매치 세션 ID
      * @param oldPitcherUserId 강판 투수
      * @param newPitcherUserId 신임 투수
@@ -47,12 +50,13 @@ public class LeaguePitcherSubstituteExecutor {
         }
         matchInfo.setPlayerCardHand(newPitcherUserId, hand);
 
+        // 타순 슬롯 교환: 강판 투수 ↔ 신임(타자) — Compact 전담 투수도 타석 진입
+        matchInfo.swapDefendingBattingOrderOnPitcherSubstitute(oldPitcherUserId, newPitcherUserId);
+
         // 신임 투수 → 투수 셋업 재제출
         matchInfo.clearPitcherSetupNumbers(newPitcherUserId);
-        // 강판 투수가 타순 멤버면 타자 셋업 재제출 (Compact 전담 투수는 스킵)
-        if (matchInfo.isBattingOrderMember(oldPitcherUserId)) {
-            matchInfo.clearBatterSetupNumbers(oldPitcherUserId);
-        }
+        // 강판 투수 → 타자 셋업 재제출 (이제 타순 멤버)
+        matchInfo.clearBatterSetupNumbers(oldPitcherUserId);
 
         matchInfo.substitutePitcher(newPitcherUserId);
         matchInfoRepository.save(matchInfo);

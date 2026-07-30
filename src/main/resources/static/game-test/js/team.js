@@ -1,5 +1,6 @@
 (() => {
     const formatSelect = document.getElementById('formatSelect');
+    const myRoleSelect = document.getElementById('myRoleSelect');
     const lineupSlots = document.getElementById('lineupSlots');
     const memberPool = document.getElementById('memberPool');
     const teamMeta = document.getElementById('teamMeta');
@@ -9,6 +10,7 @@
     const createTeamBox = document.getElementById('createTeamBox');
     const teamNameInput = document.getElementById('teamNameInput');
     const btnCreateTeam = document.getElementById('btnCreateTeam');
+    const btnFillBots = document.getElementById('btnFillBots');
     const btnSaveLineup = document.getElementById('btnSaveLineup');
 
     const state = {
@@ -281,6 +283,7 @@
             teamMeta.textContent = '소속 팀이 없습니다. 아래에서 창단하세요.';
             createTeamBox.hidden = false;
             btnSaveLineup.disabled = true;
+            btnFillBots.disabled = true;
             resetSlotsForFormat();
             render();
             return;
@@ -288,6 +291,7 @@
 
         createTeamBox.hidden = true;
         btnSaveLineup.disabled = false;
+        btnFillBots.disabled = false;
         teamMeta.textContent = `${state.team.name} · teamId ${state.team.teamId}`;
         state.members = await BluffBallTeamApi.getMembers(state.team.teamId);
         await loadLineupIntoState();
@@ -328,9 +332,44 @@
         }
     }
 
+    async function fillBots() {
+        showError('');
+        showOk('');
+        if (!state.team) {
+            showError('팀이 없습니다.');
+            return;
+        }
+        const leaderUserId = BluffBallAuth.getUserIdFromToken();
+        if (!leaderUserId) {
+            showError('로그인 정보가 없습니다.');
+            return;
+        }
+
+        btnFillBots.disabled = true;
+        try {
+            const result = await BluffBallTeamApi.fillRosterWithBots(
+                leaderUserId,
+                state.team.teamId,
+                formatSelect.value,
+                myRoleSelect.value,
+            );
+            await loadTeam();
+            const created = result.createdBots?.length || 0;
+            if (created === 0) {
+                showOk('이미 로스터가 충분합니다. 기존 멤버/봇을 재사용했습니다.');
+            } else {
+                showOk(`봇 ${created}명을 추가했습니다. (라인업·구종 카드 반영)`);
+            }
+        } catch (e) {
+            showError(e.message || String(e));
+            btnFillBots.disabled = false;
+        }
+    }
+
     formatSelect.addEventListener('change', () => {
         loadLineupIntoState().catch((e) => showError(e.message || String(e)));
     });
+    btnFillBots.addEventListener('click', () => fillBots());
     btnSaveLineup.addEventListener('click', () => save());
     btnCreateTeam.addEventListener('click', async () => {
         showError('');

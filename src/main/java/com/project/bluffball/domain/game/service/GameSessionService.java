@@ -1,11 +1,13 @@
 package com.project.bluffball.domain.game.service;
 
+import com.project.bluffball.domain.game.config.GameModeRule;
 import com.project.bluffball.domain.game.dto.response.GameBoardStateResponse;
 import com.project.bluffball.domain.game.dto.response.GameLastTurnResultResponse;
 import com.project.bluffball.domain.game.dto.response.GameSessionStateResponse;
 import com.project.bluffball.domain.game.dto.response.GameStateSnapshot;
 import com.project.bluffball.domain.game.dto.response.GameTurnStateResponse;
 import com.project.bluffball.domain.game.dto.response.ParticipantPresenceResponse;
+import com.project.bluffball.domain.game.dto.response.PitcherSubstitutionInfo;
 import com.project.bluffball.domain.game.dto.response.CardInfo;
 import com.project.bluffball.domain.game.enums.GameSessionPhase;
 import com.project.bluffball.domain.game.enums.ParticipantRole;
@@ -17,9 +19,11 @@ import com.project.bluffball.domain.game.service.usecase.reader.MatchInfoReader;
 import com.project.bluffball.domain.game.service.usecase.reader.PitchCardReader;
 import com.project.bluffball.domain.game.service.usecase.reader.TurnResultSessionReader;
 import com.project.bluffball.domain.game.service.usecase.validator.MatchParticipantValidator;
+import com.project.bluffball.domain.user.record.enums.GameMode;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
 
@@ -37,6 +41,7 @@ public class GameSessionService {
     private final TurnResultSessionReader turnResultSessionReader;
     private final PitchCardReader pitchCardReader;
     private final MatchPresenceService matchPresenceService;
+    private final GameModeRule gameModeRule;
 
     public GameSessionStateResponse getSessionState(String matchSessionId, Long userId) {
         matchParticipantValidator.validateParticipant(
@@ -81,7 +86,46 @@ public class GameSessionService {
                 buildBoardState(matchSessionId),
                 buildTurnState(matchSessionId, pitcherUserId, batterUserId),
                 buildLastTurnResult(matchSessionId).orElse(null),
-                participants);
+                participants,
+                buildPitcherSubstitution(matchSessionId, userId, pitcherUserId));
+    }
+
+    private PitcherSubstitutionInfo buildPitcherSubstitution(
+            String matchSessionId,
+            Long userId,
+            Long pitcherUserId) {
+        GameMode gameMode = matchInfoReader.getGameMode(matchSessionId);
+        int max = gameModeRule.getMaxPitcherSubstitutions(gameMode);
+        int used = matchInfoReader.getPitcherSubstitutionCount(matchSessionId);
+
+        List<Long> homeRoster = matchInfoReader.getHomeRosterUserIds(matchSessionId);
+        List<Long> awayRoster = matchInfoReader.getAwayRosterUserIds(matchSessionId);
+        List<Long> defendingRoster = homeRoster.contains(pitcherUserId) ? homeRoster : awayRoster;
+        boolean myTeamDefending = defendingRoster.contains(userId);
+
+        // 교체 후 타순 슬롯을 넘기려면 신임은 현재 타순 멤버여야 한다
+        List<Long> defendingBattingOrder = homeRoster.contains(pitcherUserId)
+                ? matchInfoReader.getHomeBattingOrderUserIds(matchSessionId)
+                : matchInfoReader.getAwayBattingOrderUserIds(matchSessionId);
+
+        List<Long> usedAsPitcher = matchInfoReader.getUsedAsPitcherIds(matchSessionId);
+        List<Long> candidates = new ArrayList<>();
+        if (max > 0 && pitcherUserId != null) {
+            for (Long candidateId : defendingBattingOrder) {
+                if (candidateId == null || candidateId.equals(pitcherUserId)) {
+                    continue;
+                }
+                if (usedAsPitcher.contains(candidateId)) {
+                    continue;
+                }
+                if (matchInfoReader.getPlayerDropCard(matchSessionId, candidateId) == null) {
+                    continue;
+                }
+                candidates.add(candidateId);
+            }
+        }
+
+        return new PitcherSubstitutionInfo(used, max, List.copyOf(candidates), myTeamDefending);
     }
 
     private GameSessionPhase resolvePhase(boolean setupComplete,

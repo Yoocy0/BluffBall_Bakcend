@@ -4,12 +4,12 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>BluffBall — 숫자 선택</title>
-    <link rel="stylesheet" href="/game-test/css/game-test.css">
+    <link rel="stylesheet" href="/game-test/css/game-test.css?v=5">
 </head>
 <body>
 <div class="page">
     <h1>블러핑 숫자 선택</h1>
-    <p class="subtitle">아웃 5 → 병살 1 → 3루타 1 → 홈런 1</p>
+    <p id="setupSubtitle" class="subtitle">아웃 5 → 병살 1 → 3루타 1 → 홈런 1</p>
     <p id="matchSessionLabel" class="subtitle version-tag"></p>
     <p id="setupStatus" class="subtitle">WebSocket 연결 중...</p>
 
@@ -19,10 +19,10 @@
         <p id="phaseDesc" class="phase-desc">5개 선택 (1~12)</p>
         <div id="numberGrid" class="number-grid"></div>
         <dl class="selection-summary">
-            <div><dt>아웃:</dt><dd id="summaryOut">-</dd></div>
-            <div><dt>병살:</dt><dd id="summaryDp">-</dd></div>
-            <div><dt>3루타:</dt><dd id="summaryTriple">-</dd></div>
-            <div><dt>홈런:</dt><dd id="summaryHr">-</dd></div>
+            <div id="summaryOutRow"><dt>아웃:</dt><dd id="summaryOut">-</dd></div>
+            <div id="summaryDpRow"><dt>병살:</dt><dd id="summaryDp">-</dd></div>
+            <div id="summaryTripleRow"><dt>3루타:</dt><dd id="summaryTriple">-</dd></div>
+            <div id="summaryHrRow"><dt>홈런:</dt><dd id="summaryHr">-</dd></div>
         </dl>
         <div class="actions">
             <button type="button" id="btnReset" class="secondary">선택 초기화</button>
@@ -40,9 +40,10 @@
 <script src="https://cdn.jsdelivr.net/npm/@stomp/stompjs@7/bundles/stomp.umd.min.js"></script>
 <script src="/game-test/js/auth.js?v=1"></script>
 <script src="/game-test/js/ws-client.js?v=1"></script>
-<script src="/game-test/js/game-role.js?v=2"></script>
-<script src="/game-test/js/game-ws.js?v=6"></script>
-<script src="/game-test/js/game-nav.js?v=4"></script>
-<script src="/game-test/js/setup-number.js?v=12"></script>
+<script src="/game-test/js/game-role.js?v=3"></script>
+<script src="/game-test/js/game-ws.js?v=12"></script>
+<script src="/game-test/js/game-nav.js?v=10"></script>
+<script src="/game-test/js/pitcher-sub.js?v=1"></script>
+<script src="/game-test/js/setup-number.js?v=14"></script>
 </body>
 </html>

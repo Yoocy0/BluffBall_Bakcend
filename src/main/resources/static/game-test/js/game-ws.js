@@ -11,6 +11,7 @@
         CARD_HAND: 'cardHand',
         ROLE_CHANGED: 'roleChanged',
         PITCHER_READY: 'pitcherReady',
+        PITCHER_SUBSTITUTED: 'pitcherSubstituted',
         TURN_RESULT: 'turnResult',
         GAME_END: 'gameEnd',
         UNKNOWN: 'unknown',
@@ -57,6 +58,9 @@
         if (Array.isArray(event.cards)) {
             return { type: EVENT.CARD_HAND, event, rawBody };
         }
+        if (event.newPitcherUserId != null && event.demotedPitcherUserId != null) {
+            return { type: EVENT.PITCHER_SUBSTITUTED, event, rawBody };
+        }
         if (typeof event.pitcherUserId === 'number' && event.turnResult == null) {
             return { type: EVENT.ROLE_CHANGED, event, rawBody };
         }
@@ -91,6 +95,9 @@
                 persistCardHand(parsed.event);
             }
             if (parsed.type === EVENT.ROLE_CHANGED) {
+                persistRoleChanged(parsed.event);
+            }
+            if (parsed.type === EVENT.PITCHER_SUBSTITUTED) {
                 persistRoleChanged(parsed.event);
             }
             if (parsed.type === EVENT.TURN_RESULT) {
@@ -144,7 +151,12 @@
     }
 
     function isAllMulliganReady() {
-        return sessionStorage.getItem(STORAGE_ALL_MULLIGAN_READY) === '1';
+        if (sessionStorage.getItem(STORAGE_ALL_MULLIGAN_READY) === '1') {
+            return true;
+        }
+        // 리그는 인게임 멀리건 없음 — 플래그가 없어도 play-ready
+        const mode = sessionStorage.getItem('bluffball.gameMode');
+        return mode === 'COMPACT_LEAGUE' || mode === 'FULL_LEAGUE';
     }
 
     /** CardHandEvent — 게임 시작 드로우·멀리건 확정 시에만 sessionStorage 갱신 */
@@ -166,7 +178,11 @@
                 setAllMulliganReady(true);
             }
         } else if (!isAllMulliganReady()) {
-            resetMulliganPhase();
+            // 리그 사전선택 핸드는 멀리건 플래그를 리셋하지 않는다
+            const mode = sessionStorage.getItem('bluffball.gameMode');
+            if (mode !== 'COMPACT_LEAGUE' && mode !== 'FULL_LEAGUE') {
+                resetMulliganPhase();
+            }
         }
     }
 
@@ -176,23 +192,6 @@
         }
         sessionStorage.setItem('bluffball.pitcherUserId', String(event.pitcherUserId));
         window.BluffBallRole?.syncRoleFromPitcherUserId?.(event.pitcherUserId);
-    }
-
-    /** 공수 교대 — 역할만 반영해 투수/타자 화면으로 이동 */
-    function routeAfterRoleChange(event) {
-        persistRoleChanged(event);
-
-        const id = getMatchSessionId() || sessionStorage.getItem('bluffball.matchSessionId');
-        if (!id) {
-            return;
-        }
-
-        const qs = `?matchSessionId=${encodeURIComponent(id)}`;
-        if (BluffBallRole.isPitcher()) {
-            window.location.href = `/game-test/PitcherSelect.html${qs}`;
-        } else {
-            window.location.href = `/game-test/BatterWait.html${qs}`;
-        }
     }
 
     /** CardHandEvent 수신 후 역할·멀리건 상태에 맞는 화면으로 이동 */
@@ -211,7 +210,8 @@
 
         const qs = `?matchSessionId=${encodeURIComponent(id)}`;
 
-        if (!event.allMulliganReady) {
+        // 리그 또는 이미 멀리건 완료면 인게임으로
+        if (!event.allMulliganReady && !isAllMulliganReady()) {
             window.location.href = `/game-test/Mulligan.html${qs}`;
             return;
         }
@@ -266,7 +266,7 @@
         sessionStorage.setItem(STORAGE_TURN_RESULT, JSON.stringify(turnResultToDisplay(event)));
     }
 
-    /** 턴 결과 이후 다음 화면으로 이동 (공수 교대·역할 반영) */
+    /** 턴 결과 이후 다음 화면으로 이동 (사람 조작 / 아군·상대 봇 관전) */
     function navigateAfterTurnResult(data) {
         const go = window.BluffBallNav?.goWithMatch
             || ((path) => {
@@ -287,18 +287,57 @@
             go('/game-test/GameEnd.html');
             return;
         }
-        if (data?.halfInningChanged) {
-            if (window.BluffBallRole?.isPitcher?.()) {
-                go('/game-test/PitcherSelect.html');
-            } else {
-                go('/game-test/BatterWait.html');
-            }
+
+        const matchId = getMatchSessionId() || sessionStorage.getItem('bluffball.matchSessionId');
+        if (window.BluffBallNav?.fetchSessionState && matchId) {
+            window.BluffBallNav.fetchSessionState(matchId).then((session) => {
+                if (session) {
+                    window.BluffBallNav.applySessionState?.(session);
+                    const decision = window.BluffBallNav.routeBySession?.(session);
+                    if (decision?.page) {
+                        go(decision.page);
+                        return;
+                    }
+                }
+                go('/game-test/BotSpectate.html');
+            }).catch(() => go('/game-test/BotSpectate.html'));
             return;
         }
-        if (window.BluffBallRole?.isPitcher?.()) {
-            go('/game-test/PitcherSelect.html');
+
+        go('/game-test/BotSpectate.html');
+    }
+
+    /** 공수 교대 — 세션 기준 라우팅 */
+    function routeAfterRoleChange(event) {
+        persistRoleChanged(event);
+
+        const id = getMatchSessionId() || sessionStorage.getItem('bluffball.matchSessionId');
+        if (!id) {
+            return;
+        }
+
+        if (window.BluffBallNav?.fetchSessionState) {
+            window.BluffBallNav.fetchSessionState(id).then((session) => {
+                if (session) {
+                    window.BluffBallNav.applySessionState?.(session);
+                    const decision = window.BluffBallNav.routeBySession?.(session);
+                    if (decision?.page) {
+                        window.BluffBallNav.goWithMatch(decision.page, id);
+                        return;
+                    }
+                }
+                window.BluffBallNav.goWithMatch('/game-test/BotSpectate.html', id);
+            }).catch(() => {
+                window.BluffBallNav.goWithMatch('/game-test/BotSpectate.html', id);
+            });
+            return;
+        }
+
+        const qs = `?matchSessionId=${encodeURIComponent(id)}`;
+        if (BluffBallRole.isPitcher()) {
+            window.location.href = `/game-test/PitcherSelect.html${qs}`;
         } else {
-            go('/game-test/BatterWait.html');
+            window.location.href = `/game-test/BatterWait.html${qs}`;
         }
     }
 
@@ -470,7 +509,8 @@
     }
 
     window.addEventListener('beforeunload', () => {
-        disconnect();
+        // 페이지 이동 시 즉시 deactivate하지 않는다.
+        // (짧은 전환에서 presence grace로 버티고, 다음 페이지가 재연결)
     });
 
     window.BluffBallGameWs = {

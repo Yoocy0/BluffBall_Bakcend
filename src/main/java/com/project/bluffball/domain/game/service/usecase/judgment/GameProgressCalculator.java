@@ -28,12 +28,27 @@ public class GameProgressCalculator {
     }
 
     /**
-     * 현재 아웃 수에 따라 적용할 판정을 보정한다.
-     * 2아웃 상태에서는 병살(아웃 2)이 불가하므로 일반 아웃 1개로 처리한다.
+     * 현재 아웃 수·카운트에 따라 적용할 판정을 보정한다.
+     *
+     * <ul>
+     *   <li>2아웃에서는 병살 → 일반 아웃</li>
+     *   <li>2S에서 STRIKE → STRIKE_OUT (타석 종료·타순 전진용)</li>
+     *   <li>3B에서 BALL/WILD_PITCH → WALK</li>
+     * </ul>
      */
     public TurnResult resolveEffectiveTurnResult(TurnResult turnResult, GameProgressSituation before) {
+        if (turnResult == null) {
+            return null;
+        }
         if (turnResult == TurnResult.DOUBLE_PLAY && before.outs() >= OUTS_PER_INNING - 1) {
             return TurnResult.OUT;
+        }
+        if (turnResult == TurnResult.STRIKE && before.strikes() >= MAX_STRIKES_BEFORE_OUT - 1) {
+            return TurnResult.STRIKE_OUT;
+        }
+        if ((turnResult == TurnResult.BALL || turnResult == TurnResult.WILD_PITCH)
+                && before.balls() >= MAX_BALLS_BEFORE_WALK - 1) {
+            return TurnResult.WALK;
         }
         return turnResult;
     }

@@ -4,7 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>BluffBall</title>
-    <link rel="stylesheet" href="/game-test/css/game-test.css">
+    <link rel="stylesheet" href="/game-test/css/game-test.css?v=4">
 </head>
 <body class="home-body">
 <div class="home-page">
@@ -50,6 +50,12 @@
             <button type="button" id="btnModeShowdown" class="home-mode-btn">쇼다운</button>
             <button type="button" id="btnModeLeagueCompact" class="home-mode-btn">리그 (컴팩트)</button>
             <button type="button" id="btnModeLeagueFull" class="home-mode-btn">리그 (풀)</button>
+            <button type="button" id="btnModeBotCompact" class="home-mode-btn home-mode-btn-alt">
+                컴팩트 · 상대 봇
+            </button>
+            <button type="button" id="btnModeBotFull" class="home-mode-btn home-mode-btn-alt">
+                풀 · 상대 봇
+            </button>
             <button type="button" id="btnBackToHub" class="home-mode-btn home-mode-btn-cancel">뒤로</button>
         </div>
 
@@ -81,8 +87,9 @@
 <script src="https://cdn.jsdelivr.net/npm/@stomp/stompjs@7/bundles/stomp.umd.min.js"></script>
 <script src="/game-test/js/auth.js?v=1"></script>
 <script src="/game-test/js/ws-client.js?v=1"></script>
-<script src="/game-test/js/game-role.js?v=1"></script>
-<script src="/game-test/js/game-ws.js?v=2"></script>
-<script src="/game-test/js/home.js?v=7"></script>
+<script src="/game-test/js/game-role.js?v=3"></script>
+<script src="/game-test/js/game-ws.js?v=11"></script>
+<script src="/game-test/js/game-nav.js?v=10"></script>
+<script src="/game-test/js/home.js?v=11"></script>
 </body>
 </html>

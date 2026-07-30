@@ -154,7 +154,7 @@ public class GamePrepService {
     /**
      * 리그 투수를 교체한다.
      *
-     * <p>신임 투수는 투수 셋업 재제출, 강판 투수는 타자 셋업 재제출이 필요하다.</p>
+     * <p>신임 투수는 투수 셋업 재제출, 강판 투수는 타순 슬롯을 이어받아 타자 셋업 재제출이 필요하다.</p>
      *
      * @param matchSessionId 매치 세션 ID
      * @param requestUserId 요청 유저(현재 투수)
@@ -174,10 +174,12 @@ public class GamePrepService {
         leaguePitcherSubstituteValidator.validateRequesterIsPitcher(requestUserId, currentPitcher);
 
         List<Long> defendingRoster = resolveDefendingRoster(matchSessionId, currentPitcher);
+        List<Long> defendingBattingOrder = resolveDefendingBattingOrder(matchSessionId, currentPitcher);
         leaguePitcherSubstituteValidator.validateNewPitcher(
                 request.newPitcherUserId(),
                 currentPitcher,
                 defendingRoster,
+                defendingBattingOrder,
                 matchInfoReader.getUsedAsPitcherIds(matchSessionId));
 
         Long dropCardId = matchInfoReader.getPlayerDropCard(matchSessionId, request.newPitcherUserId());
@@ -207,6 +209,14 @@ public class GamePrepService {
             return homeRoster;
         }
         return matchInfoReader.getAwayRosterUserIds(matchSessionId);
+    }
+
+    private List<Long> resolveDefendingBattingOrder(String matchSessionId, Long pitcherUserId) {
+        List<Long> homeRoster = matchInfoReader.getHomeRosterUserIds(matchSessionId);
+        if (homeRoster.contains(pitcherUserId)) {
+            return matchInfoReader.getHomeBattingOrderUserIds(matchSessionId);
+        }
+        return matchInfoReader.getAwayBattingOrderUserIds(matchSessionId);
     }
 
     /**
