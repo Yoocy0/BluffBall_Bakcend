@@ -53,11 +53,12 @@ public class LeaguePitcherSubstituteValidator {
     }
 
     /**
-     * 신임 투수가 같은 수비 로스터에 있고, 현재 투수·이미 등판한 투수가 아닌지 검증한다.
+     * 신임 투수가 같은 수비 로스터·타순에 있고, 현재 투수·이미 등판한 투수가 아닌지 검증한다.
      *
      * @param newPitcherUserId 신임 투수
      * @param currentPitcherUserId 현재 투수
      * @param defendingRoster 수비 로스터
+     * @param defendingBattingOrder 수비 팀 타순 (슬롯 교환 대상)
      * @param usedAsPitcherIds 이미 등판한 투수
      * @throws BadRequestException 대상 부적절
      */
@@ -65,6 +66,7 @@ public class LeaguePitcherSubstituteValidator {
             Long newPitcherUserId,
             Long currentPitcherUserId,
             List<Long> defendingRoster,
+            List<Long> defendingBattingOrder,
             List<Long> usedAsPitcherIds) {
         if (newPitcherUserId == null || newPitcherUserId.equals(currentPitcherUserId)) {
             throw new BadRequestException(ErrorCode.GAME_PITCHER_SUBSTITUTE_INVALID, "same pitcher");
@@ -73,10 +75,31 @@ public class LeaguePitcherSubstituteValidator {
             throw new BadRequestException(
                     ErrorCode.GAME_PITCHER_SUBSTITUTE_INVALID, "not on defending roster");
         }
+        if (defendingBattingOrder == null || !defendingBattingOrder.contains(newPitcherUserId)) {
+            throw new BadRequestException(
+                    ErrorCode.GAME_PITCHER_SUBSTITUTE_INVALID, "not in batting order");
+        }
         if (usedAsPitcherIds != null && usedAsPitcherIds.contains(newPitcherUserId)) {
             throw new BadRequestException(
                     ErrorCode.GAME_PITCHER_SUBSTITUTE_INVALID, "already used as pitcher");
         }
+    }
+
+    /**
+     * @deprecated {@link #validateNewPitcher(Long, Long, List, List, List)} 사용
+     */
+    @Deprecated
+    public void validateNewPitcher(
+            Long newPitcherUserId,
+            Long currentPitcherUserId,
+            List<Long> defendingRoster,
+            List<Long> usedAsPitcherIds) {
+        validateNewPitcher(
+                newPitcherUserId,
+                currentPitcherUserId,
+                defendingRoster,
+                defendingRoster,
+                usedAsPitcherIds);
     }
 
     /**

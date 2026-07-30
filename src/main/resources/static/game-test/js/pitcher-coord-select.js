@@ -82,7 +82,11 @@
         }
 
         const matchSessionId = getMatchSessionId();
-        if (!matchSessionId || !BluffBallGameWs.isAllMulliganReady()) {
+        if (!matchSessionId) {
+            goWithMatch('/game-test/Home.html');
+            return;
+        }
+        if (!BluffBallGameWs.isAllMulliganReady() && BluffBallNav.usesInGameMulligan()) {
             goWithMatch('/game-test/Mulligan.html');
             return;
         }

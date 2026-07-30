@@ -24,6 +24,8 @@
     const btnModeShowdown = document.getElementById('btnModeShowdown');
     const btnModeLeagueCompact = document.getElementById('btnModeLeagueCompact');
     const btnModeLeagueFull = document.getElementById('btnModeLeagueFull');
+    const btnModeBotCompact = document.getElementById('btnModeBotCompact');
+    const btnModeBotFull = document.getElementById('btnModeBotFull');
     const matchingModeLabel = document.getElementById('matchingModeLabel');
     const matchingTimer = document.getElementById('matchingTimer');
     const matchingError = document.getElementById('matchingError');
@@ -38,6 +40,10 @@
         /** 'SHOWDOWN' | 'LEAGUE' */
         queueKind: 'SHOWDOWN',
         leagueFormat: null,
+        /** 매칭 성사 시 auto-play에 넘길 봇 ID (상대 봇 매칭 전용) */
+        pendingBotUserIds: null,
+        pendingTeammateBotIds: null,
+        pendingOpponentBotIds: null,
     };
 
     function showScreen(screen) {
@@ -156,9 +162,7 @@
         });
     }
 
-    function navigateToSetup(matchSessionId) {
-        state.waitingInQueue = false;
-        sessionStorage.setItem('bluffball.matchSessionId', matchSessionId);
+    function clearMatchLocalState() {
         sessionStorage.removeItem('bluffball.mulliganDone');
         sessionStorage.removeItem('bluffball.myMulliganDone');
         sessionStorage.removeItem('bluffball.allMulliganReady');
@@ -168,37 +172,150 @@
         sessionStorage.removeItem('bluffball.gameEnd');
         sessionStorage.removeItem('bluffball.mySetupNumbers');
         sessionStorage.removeItem('bluffball.doubleJudgment');
+        sessionStorage.removeItem('bluffball.gameMode');
+        sessionStorage.removeItem('bluffball.role');
+        sessionStorage.removeItem('bluffball.teammateBotIds');
+        sessionStorage.removeItem('bluffball.opponentBotIds');
+    }
+
+    function navigateToSetup(matchSessionId) {
+        state.waitingInQueue = false;
+        sessionStorage.setItem('bluffball.matchSessionId', matchSessionId);
         window.location.href =
             `/game-test/SetupNumber.html?matchSessionId=${encodeURIComponent(matchSessionId)}`;
     }
 
-    function handleMatchComplete(matchSessionId, role) {
+    async function prepareMatchSession(matchSessionId) {
+        clearMatchLocalState();
+        sessionStorage.setItem('bluffball.matchSessionId', matchSessionId);
+        try {
+            const session = await BluffBallNav.fetchSessionState(matchSessionId);
+            if (session) {
+                BluffBallNav.applySessionState(session);
+            }
+        } catch (_) {
+            /* SetupNumber에서 재조회 */
+        }
+    }
+
+    async function startBotAutoPlay(matchSessionId, botUserIds) {
+        if (!matchSessionId || !botUserIds?.length) {
+            return;
+        }
+        const res = await fetch('/game-test/api/bots/league/auto-play', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+                matchSessionId,
+                botUserIds: botUserIds.map(Number),
+            }),
+        });
+        if (!res.ok) {
+            const body = await res.json().catch(() => ({}));
+            throw new Error(body.message || `봇 자동 플레이 시작 실패 (HTTP ${res.status})`);
+        }
+        return res.json();
+    }
+
+    function handleMatchComplete(matchSessionId, roleHint) {
         if (state.matchHandled) {
             return;
         }
         state.matchHandled = true;
         state.waitingInQueue = false;
 
-        if (role) {
-            BluffBallRole.setRole(role);
+        // 큐 순서 역할 힌트는 쇼다운용. 리그는 prepareMatchSession이 덮어쓴다.
+        if (roleHint) {
+            BluffBallRole.setRole(roleHint);
         }
 
         stopMatchingTimer();
         disconnectMatchWs();
 
+        const botIds = state.pendingBotUserIds;
+        state.pendingBotUserIds = null;
+        if (botIds?.length) {
+            startBotAutoPlay(matchSessionId, botIds).catch((e) => {
+                console.warn('bot auto-play failed', e);
+            });
+        }
+
         matchCompleteModal.hidden = false;
         let remaining = MATCH_COMPLETE_DELAY_SEC;
         matchCompleteCountdown.textContent = String(remaining);
 
-        const countdownInterval = setInterval(() => {
-            remaining -= 1;
-            if (remaining <= 0) {
-                clearInterval(countdownInterval);
-                navigateToSetup(matchSessionId);
-                return;
+        prepareMatchSession(matchSessionId).finally(() => {
+            if (state.pendingTeammateBotIds || state.pendingOpponentBotIds) {
+                BluffBallNav.saveBotSides({
+                    teammateBotIds: state.pendingTeammateBotIds || [],
+                    opponentBotIds: state.pendingOpponentBotIds || [],
+                });
             }
-            matchCompleteCountdown.textContent = String(remaining);
-        }, 1000);
+            const countdownInterval = setInterval(() => {
+                remaining -= 1;
+                if (remaining <= 0) {
+                    clearInterval(countdownInterval);
+                    navigateToSetup(matchSessionId);
+                    return;
+                }
+                matchCompleteCountdown.textContent = String(remaining);
+            }, 1000);
+        });
+    }
+
+    async function parseApiError(res) {
+        const body = await res.json().catch(() => ({}));
+        return body.message || `요청 실패 (HTTP ${res.status})`;
+    }
+
+    /** 아군 로스터를 포맷에 맞게 봇으로 채운다. */
+    async function fillMyRoster(format) {
+        const leaderUserId = BluffBallAuth.getUserIdFromToken();
+        if (!leaderUserId) {
+            throw new Error('로그인 정보가 없습니다.');
+        }
+        const res = await fetch('/game-test/api/bots/league/fill-roster', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+                leaderUserId: Number(leaderUserId),
+                teamId: null,
+                format,
+                myRole: 'BATTER',
+            }),
+        });
+        if (!res.ok) {
+            throw new Error(await parseApiError(res));
+        }
+        return res.json();
+    }
+
+    /** 상대 봇 팀을 만들고 같은 티어 큐에 넣는다. */
+    async function enqueueOpponentBot(format, tier) {
+        const res = await fetch('/game-test/api/bots/league/enqueue-opponent', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ format, tier }),
+        });
+        if (!res.ok) {
+            throw new Error(await parseApiError(res));
+        }
+        return res.json();
+    }
+
+    /**
+     * 사람(리더)을 제외한 아군 로스터 ID.
+     * Compact: 타순 + 전담 투수 / Full: 타순(선발 포함)
+     */
+    function collectTeammateBotIds(filled, humanUserId) {
+        const human = Number(humanUserId);
+        const ids = new Set();
+        (filled.batterUserIds || []).forEach((id) => ids.add(Number(id)));
+        if (filled.pitcherUserId != null) {
+            ids.add(Number(filled.pitcherUserId));
+        }
+        ids.delete(human);
+        return [...ids];
     }
 
     async function requestJoinShowdownQueue() {
@@ -346,6 +463,7 @@
         showError(matchingError, '');
         state.matchHandled = false;
         state.waitingInQueue = false;
+        state.pendingBotUserIds = null;
         state.queueKind = queueKind;
         state.leagueFormat = leagueFormat || null;
         matchingModeLabel.textContent = `${label} 매칭 중...`;
@@ -363,6 +481,56 @@
             stopMatchingTimer();
             disconnectMatchWs();
             state.waitingInQueue = false;
+            state.pendingBotUserIds = null;
+            showScreen('modes');
+            showError(homeError, e.message || String(e));
+        }
+    }
+
+    /**
+     * 아군 봇 충원 → 상대 봇 큐잉 → 내 팀 큐 진입 → auto-play.
+     */
+    async function startBotOpponentMatching(format, label) {
+        showError(homeError, '');
+        showError(matchingError, '');
+        state.matchHandled = false;
+        state.waitingInQueue = false;
+        state.pendingBotUserIds = null;
+        state.queueKind = 'LEAGUE';
+        state.leagueFormat = format;
+        matchingModeLabel.textContent = `${label} 준비 중...`;
+
+        showScreen('matching');
+        startMatchingTimer();
+
+        const humanUserId = BluffBallAuth.getUserIdFromToken();
+        try {
+            matchingModeLabel.textContent = `${label} · 아군 봇 채우는 중...`;
+            const filled = await fillMyRoster(format);
+            const teammateBots = collectTeammateBotIds(filled, humanUserId);
+
+            matchingModeLabel.textContent = `${label} · 상대 봇 대기열 등록 중...`;
+            const progress = await ensureLeagueTier(format);
+            const opponent = await enqueueOpponentBot(format, progress.currentTier);
+
+            const opponentBots = (opponent.botUserIds || []).map(Number);
+            const allBots = new Set([...teammateBots, ...opponentBots]);
+            allBots.delete(Number(humanUserId));
+            state.pendingBotUserIds = [...allBots];
+            state.pendingTeammateBotIds = teammateBots;
+            state.pendingOpponentBotIds = opponentBots;
+
+            matchingModeLabel.textContent = `${label} 매칭 중...`;
+            const result = await joinMatchQueue();
+            if (result === 'waiting') {
+                state.waitingInQueue = true;
+                connectMatchNotificationWs();
+            }
+        } catch (e) {
+            stopMatchingTimer();
+            disconnectMatchWs();
+            state.waitingInQueue = false;
+            state.pendingBotUserIds = null;
             showScreen('modes');
             showError(homeError, e.message || String(e));
         }
@@ -380,6 +548,7 @@
         stopMatchingTimer();
         disconnectMatchWs();
         state.matchHandled = false;
+        state.pendingBotUserIds = null;
         showScreen('modes');
     }
 
@@ -437,6 +606,8 @@
     btnModeShowdown?.addEventListener('click', () => startMatching('SHOWDOWN', null, '쇼다운'));
     btnModeLeagueCompact?.addEventListener('click', () => startMatching('LEAGUE', 'COMPACT', '리그 컴팩트'));
     btnModeLeagueFull?.addEventListener('click', () => startMatching('LEAGUE', 'FULL', '리그 풀'));
+    btnModeBotCompact?.addEventListener('click', () => startBotOpponentMatching('COMPACT', '컴팩트 · 상대 봇'));
+    btnModeBotFull?.addEventListener('click', () => startBotOpponentMatching('FULL', '풀 · 상대 봇'));
     btnCancelMatch?.addEventListener('click', () => cancelMatching());
 
     window.addEventListener('pagehide', releaseQueueOnPageHide);

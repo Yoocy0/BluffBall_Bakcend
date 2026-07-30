@@ -1,0 +1,61 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>BluffBall — 봇 관전</title>
+    <link rel="stylesheet" href="/game-test/css/game-test.css?v=4">
+</head>
+<body class="play-body spectate-page">
+<div id="setupNumbersHud" class="setup-numbers-hud" hidden></div>
+<div id="broadcastHud" class="broadcast-hud"></div>
+
+<main class="spectate-main">
+    <section class="spectate-card">
+        <p class="spectate-eyebrow">SPECTATE · 테스트 관전</p>
+        <h1 id="spectateTitle" class="spectate-title">봇 플레이를 보는 중</h1>
+        <p id="spectateSub" class="spectate-sub">우리 팀 봇이 행동하면 이 화면에 표시됩니다.</p>
+
+        <dl class="spectate-meta">
+            <div>
+                <dt>현재 투수</dt>
+                <dd id="spectatePitcher">-</dd>
+            </div>
+            <div>
+                <dt>현재 타자</dt>
+                <dd id="spectateBatter">-</dd>
+            </div>
+            <div>
+                <dt>진행</dt>
+                <dd id="spectatePhase">-</dd>
+            </div>
+        </dl>
+
+        <div id="spectateStartCoord" class="spectate-coord">
+            <p class="label">투수 시작 좌표</p>
+            <p id="spectateCoordValue" class="value">대기 중</p>
+            <div id="spectateCoordGrid" class="coord-grid spectate-coord-grid" aria-label="좌표판"></div>
+            <p class="spectate-coord-hint">노란 칸 = 시작 좌표 · 파란 칸 = 직전 최종 좌표</p>
+        </div>
+
+        <div id="spectateLastResult" class="spectate-last-result" hidden>
+            <p class="label">직전 판정</p>
+            <p id="spectateLastResultText" class="value">-</p>
+            <p id="spectateLastResultDetail" class="spectate-last-detail"></p>
+        </div>
+
+        <ol id="spectateLog" class="spectate-log" aria-live="polite"></ol>
+        <p id="spectateStatus" class="spectate-status">상태 확인 중…</p>
+    </section>
+</main>
+
+<script src="https://cdn.jsdelivr.net/npm/sockjs-client@1/dist/sockjs.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/@stomp/stompjs@7/bundles/stomp.umd.min.js"></script>
+<script src="/game-test/js/auth.js?v=1"></script>
+<script src="/game-test/js/ws-client.js?v=1"></script>
+<script src="/game-test/js/game-role.js?v=3"></script>
+<script src="/game-test/js/game-ws.js?v=11"></script>
+<script src="/game-test/js/game-nav.js?v=9"></script>
+<script src="/game-test/js/bot-spectate.js?v=2"></script>
+</body>
+</html>

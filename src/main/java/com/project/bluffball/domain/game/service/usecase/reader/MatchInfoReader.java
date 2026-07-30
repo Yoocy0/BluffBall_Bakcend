@@ -426,6 +426,26 @@ public class MatchInfoReader {
         return List.copyOf(getById(matchSessionId).getAwayRosterUserIds());
     }
 
+    /**
+     * 홈 타순 (Service ✅)
+     *
+     * @param matchSessionId 매치 세션 ID
+     * @return 홈 타순
+     */
+    public List<Long> getHomeBattingOrderUserIds(String matchSessionId) {
+        return List.copyOf(getById(matchSessionId).resolveHomeBattingOrder());
+    }
+
+    /**
+     * 어웨이 타순 (Service ✅)
+     *
+     * @param matchSessionId 매치 세션 ID
+     * @return 어웨이 타순
+     */
+    public List<Long> getAwayBattingOrderUserIds(String matchSessionId) {
+        return List.copyOf(getById(matchSessionId).resolveAwayBattingOrder());
+    }
+
     /** 투수 아웃 유발 블러핑 숫자 (Executor·Calculator 내부용) */
     public List<Integer> getOutNumbers(String matchSessionId, Long pitcherUserId) {
         return getBluffingNumbers(getById(matchSessionId).getOutNumbers(), pitcherUserId);

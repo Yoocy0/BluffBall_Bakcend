@@ -255,9 +255,31 @@
         BluffBallGameWs.on(BluffBallGameWs.EVENT.TURN_RESULT, handleTurnResult);
         BluffBallGameWs.on(BluffBallGameWs.EVENT.GAME_END, handleGameEnd);
 
+        BluffBallNav.setTurnBanner({
+            tone: 'mine',
+            title: '내 차례 — 타자: 좌표·타이밍을 선택하세요',
+            sub: '5초 안에 선택하세요. 시간이 지나면 스트라이크 처리됩니다.',
+            connected: null,
+        });
+
         BluffBallGameWs.connect({
             matchSessionId,
-            reconnectDelay: 5000,
+            reconnectDelay: 1500,
+            onConnect: () => {
+                BluffBallNav.setTurnBanner({
+                    tone: 'mine',
+                    title: '내 차례 — 타자: 좌표·타이밍을 선택하세요',
+                    sub: '5초 안에 선택하세요. 시간이 지나면 스트라이크 처리됩니다.',
+                    connected: true,
+                });
+            },
+            onDisconnect: () => {
+                BluffBallNav.setTurnBanner({
+                    tone: 'mine',
+                    title: '내 차례 — 타자 (연결 재시도 중)',
+                    connected: false,
+                });
+            },
         });
 
         beginBatterTurn(Number(storedStart));

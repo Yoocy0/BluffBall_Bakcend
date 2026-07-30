@@ -4,7 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>팀 · BluffBall</title>
-    <link rel="stylesheet" href="/game-test/css/game-test.css">
+    <link rel="stylesheet" href="/game-test/css/game-test.css?v=4">
 </head>
 <body class="loadout-body">
 <div class="loadout-page">
@@ -22,6 +22,16 @@
                 <option value="FULL">풀</option>
             </select>
         </label>
+        <label class="loadout-select-label">
+            내 역할
+            <select id="myRoleSelect" class="loadout-select">
+                <option value="BATTER">타자</option>
+                <option value="PITCHER">투수</option>
+            </select>
+        </label>
+        <button type="button" id="btnFillBots" class="home-mode-btn home-mode-btn-alt loadout-save-btn" disabled>
+            봇으로 채우기
+        </button>
         <button type="button" id="btnSaveLineup" class="home-mode-btn loadout-save-btn">저장</button>
     </div>
 
@@ -50,7 +60,7 @@
 
 <script src="/game-test/js/auth.js?v=1"></script>
 <script src="/game-test/js/ws-client.js?v=1"></script>
-<script src="/game-test/js/team-api.js?v=1"></script>
-<script src="/game-test/js/team.js?v=1"></script>
+<script src="/game-test/js/team-api.js?v=2"></script>
+<script src="/game-test/js/team.js?v=2"></script>
 </body>
 </html>

@@ -73,6 +73,11 @@ public class GameTestPageController {
         return "redirect:/game-test/BatterTimingSelect.html";
     }
 
+    @GetMapping("/bot-spectate")
+    public String botSpectate() {
+        return "redirect:/game-test/BotSpectate.html";
+    }
+
     @GetMapping("/batter-result")
     public String batterResult() {
         return "redirect:/game-test/BatterResult.html";

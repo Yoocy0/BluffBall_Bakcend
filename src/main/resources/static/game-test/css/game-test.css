@@ -1252,6 +1252,338 @@ button.danger {
     font-size: 0.85rem;
 }
 
+/* 턴/연결 배너 — 내 차례를 화면 최상단에 고정 */
+.turn-banner {
+    position: sticky;
+    top: 0;
+    z-index: 50;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+    padding: 14px 18px;
+    border-bottom: 2px solid transparent;
+    font-family: inherit;
+}
+
+.turn-banner-mine {
+    background: #14301f;
+    border-bottom-color: #34a853;
+}
+
+.turn-banner-wait {
+    background: #2a2410;
+    border-bottom-color: #f9ab00;
+}
+
+.turn-banner-info {
+    background: #1e2128;
+    border-bottom-color: #5f6368;
+}
+
+.turn-banner-spectate {
+    background: #1a2438;
+    border-bottom-color: #8ab4f8;
+}
+
+.turn-banner-main {
+    min-width: 0;
+}
+
+.turn-banner-title {
+    margin: 0;
+    font-size: 1.05rem;
+    font-weight: 800;
+    color: #e8eaed;
+    letter-spacing: -0.01em;
+}
+
+.turn-banner-sub {
+    margin: 4px 0 0;
+    font-size: 0.82rem;
+    color: #c4c7c5;
+    line-height: 1.35;
+}
+
+.turn-banner-conn {
+    flex: 0 0 auto;
+    padding: 4px 10px;
+    border-radius: 999px;
+    font-size: 0.75rem;
+    font-weight: 700;
+}
+
+.turn-banner-conn-ok {
+    background: rgba(52, 168, 83, 0.2);
+    color: #81c995;
+}
+
+.turn-banner-conn-bad {
+    background: rgba(234, 67, 53, 0.2);
+    color: #f28b82;
+}
+
+.spectate-page .spectate-main {
+    max-width: 720px;
+    margin: 24px auto;
+    padding: 0 16px 40px;
+}
+
+.spectate-card {
+    padding: 28px 24px;
+    border-radius: 18px;
+    background: #1e2128;
+    border: 1px solid #3c4043;
+}
+
+.spectate-eyebrow {
+    margin: 0 0 8px;
+    font-size: 0.75rem;
+    font-weight: 700;
+    letter-spacing: 0.08em;
+    color: #8ab4f8;
+}
+
+.spectate-title {
+    margin: 0 0 8px;
+    font-size: 1.45rem;
+    font-weight: 800;
+    color: #e8eaed;
+}
+
+.spectate-sub {
+    margin: 0 0 20px;
+    color: #c4c7c5;
+    line-height: 1.45;
+}
+
+.spectate-meta {
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 12px;
+    margin: 0 0 18px;
+}
+
+.spectate-meta div {
+    padding: 12px;
+    border-radius: 12px;
+    background: #15171c;
+    border: 1px solid #3c4043;
+}
+
+.spectate-meta dt {
+    margin: 0 0 6px;
+    font-size: 0.72rem;
+    color: #9aa0a6;
+}
+
+.spectate-meta dd {
+    margin: 0;
+    font-size: 0.95rem;
+    font-weight: 700;
+    color: #e8eaed;
+}
+
+.spectate-coord {
+    margin: 0 0 18px;
+    padding: 16px;
+    border-radius: 12px;
+    background: #14301f;
+    border: 1px solid #34a853;
+    text-align: center;
+}
+
+.spectate-coord .label {
+    margin: 0 0 6px;
+    color: #81c995;
+    font-size: 0.8rem;
+}
+
+.spectate-coord .value {
+    margin: 0 0 12px;
+    font-size: 2rem;
+    font-weight: 800;
+    color: #e8eaed;
+}
+
+.spectate-coord-grid {
+    max-width: 280px;
+    margin: 0 auto 8px;
+    pointer-events: none;
+}
+
+.spectate-coord-cell {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: default;
+}
+
+.spectate-coord-hint {
+    margin: 0;
+    font-size: 0.75rem;
+    color: #81c995;
+}
+
+.spectate-last-result {
+    margin: 0 0 18px;
+    padding: 14px 16px;
+    border-radius: 12px;
+    background: #1a2030;
+    border: 1px solid #3c4043;
+    text-align: center;
+}
+
+.spectate-last-result .label {
+    margin: 0 0 6px;
+    font-size: 0.8rem;
+    color: #9aa0a6;
+}
+
+.spectate-last-result .value {
+    margin: 0;
+    font-size: 1.35rem;
+    font-weight: 800;
+    color: #e8eaed;
+}
+
+.spectate-last-detail {
+    margin: 6px 0 0;
+    font-size: 0.85rem;
+    color: #c4c7c5;
+}
+
+.spectate-log {
+    margin: 0 0 14px;
+    padding-left: 18px;
+    color: #bdc1c6;
+    font-size: 0.85rem;
+    line-height: 1.5;
+    max-height: 220px;
+    overflow: auto;
+}
+
+.spectate-status {
+    margin: 0;
+    color: #9aa0a6;
+    font-size: 0.82rem;
+}
+
+/* 투수 교체 테스트 패널 */
+.pitcher-sub-panel {
+    position: fixed;
+    right: 16px;
+    bottom: 16px;
+    z-index: 60;
+    display: flex;
+    flex-direction: column;
+    align-items: flex-end;
+    gap: 8px;
+    max-width: min(360px, calc(100vw - 24px));
+}
+
+.pitcher-sub-toggle {
+    border: 1px solid #f9ab00;
+    background: #2a2410;
+    color: #fdd663;
+    font-weight: 800;
+    font-size: 0.95rem;
+    padding: 12px 16px;
+    border-radius: 999px;
+    cursor: pointer;
+    box-shadow: 0 8px 24px rgba(0, 0, 0, 0.35);
+}
+
+.pitcher-sub-toggle:disabled {
+    opacity: 0.55;
+    cursor: not-allowed;
+}
+
+.pitcher-sub-sheet {
+    width: 100%;
+    padding: 14px;
+    border-radius: 14px;
+    background: #1e2128;
+    border: 1px solid #3c4043;
+    box-shadow: 0 12px 28px rgba(0, 0, 0, 0.45);
+}
+
+.pitcher-sub-title {
+    margin: 0 0 4px;
+    font-size: 1rem;
+    font-weight: 800;
+    color: #e8eaed;
+}
+
+.pitcher-sub-hint {
+    margin: 0 0 12px;
+    font-size: 0.78rem;
+    color: #9aa0a6;
+    line-height: 1.4;
+}
+
+.pitcher-sub-candidates {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    margin-bottom: 10px;
+}
+
+.pitcher-sub-candidate {
+    width: 100%;
+    text-align: left;
+    padding: 10px 12px;
+    border-radius: 10px;
+    border: 1px solid #5f6368;
+    background: #15171c;
+    color: #e8eaed;
+    font-weight: 700;
+    cursor: pointer;
+}
+
+.pitcher-sub-candidate:hover:not(:disabled) {
+    border-color: #fdd663;
+    color: #fdd663;
+}
+
+.pitcher-sub-candidate:disabled {
+    opacity: 0.55;
+    cursor: not-allowed;
+}
+
+.pitcher-sub-empty {
+    margin: 0;
+    color: #9aa0a6;
+    font-size: 0.85rem;
+}
+
+.pitcher-sub-status {
+    margin: 0 0 10px;
+    min-height: 1.2em;
+    font-size: 0.82rem;
+    color: #81c995;
+}
+
+.pitcher-sub-status.is-error {
+    color: #f28b82;
+}
+
+.pitcher-sub-cancel {
+    width: 100%;
+    padding: 8px 12px;
+    border-radius: 8px;
+    border: 1px solid #3c4043;
+    background: transparent;
+    color: #bdc1c6;
+    cursor: pointer;
+}
+
+@media (max-width: 720px) {
+    .spectate-meta {
+        grid-template-columns: 1fr;
+    }
+}
+
 .pitch-tips-rail {
     flex: 0 0 260px;
     max-width: 280px;
@@ -1443,7 +1775,7 @@ button.danger {
     100% { transform: scale(1) rotate(0deg); }
 }
 
-/* ?? �� / ���� ī�� �ε�ƿ� ?? */
+/* ?? �� / ���� ī�� �ε�ƿ� ?? */
 .loadout-body {
     min-height: 100vh;
     background: radial-gradient(ellipse at 50% 0%, #2a3140 0%, #1a1d23 50%);

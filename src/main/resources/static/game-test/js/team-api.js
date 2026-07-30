@@ -94,6 +94,27 @@
         return res.json();
     }
 
+    /**
+     * 테스트용: 선택한 포맷 기준 빈자리를 봇으로 채운다.
+     * 부족한 인원 수는 서버가 format(Compact 4 / Full 9)으로 계산한다.
+     */
+    async function fillRosterWithBots(leaderUserId, teamId, format, myRole) {
+        const res = await fetch('/game-test/api/bots/league/fill-roster', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+                leaderUserId: Number(leaderUserId),
+                teamId: teamId != null ? Number(teamId) : null,
+                format,
+                myRole: myRole || 'BATTER',
+            }),
+        });
+        if (!res.ok) {
+            throw new Error(await parseError(res));
+        }
+        return res.json();
+    }
+
     window.BluffBallTeamApi = {
         getMyTeam,
         createTeam,
@@ -102,5 +123,6 @@
         saveLineup,
         getPitchCards,
         savePitchCards,
+        fillRosterWithBots,
     };
 })();

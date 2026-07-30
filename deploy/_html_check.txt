@@ -1,0 +1,13 @@
+BatterCoordSelect.html	bad=False	has_ko=True	title=BluffBall — 타자 선택
+BatterResult.html	bad=False	has_ko=True	title=BluffBall — 타격 결과
+BatterTimingSelect.html	bad=False	has_ko=False	title=Redirect
+BatterWait.html	bad=False	has_ko=True	title=BluffBall — 타자 대기
+GameEnd.html	bad=False	has_ko=True	title=BluffBall — 경기 종료
+Home.html	bad=False	has_ko=True	title=BluffBall
+Mulligan.html	bad=False	has_ko=True	title=BluffBall — 멀리건 (카드 교체)
+OAuthCallback.html	bad=False	has_ko=True	title=BluffBall — 로그인 처리 중
+PitchCards.html	bad=False	has_ko=True	title=구종 카드 · BluffBall
+PitcherCoordSelect.html	bad=False	has_ko=True	title=BluffBall — 투수 좌표
+PitcherSelect.html	bad=False	has_ko=True	title=BluffBall — 투수 구종
+SetupNumber.html	bad=False	has_ko=True	title=BluffBall — 숫자 선택
+Team.html	bad=False	has_ko=True	title=팀 · BluffBall

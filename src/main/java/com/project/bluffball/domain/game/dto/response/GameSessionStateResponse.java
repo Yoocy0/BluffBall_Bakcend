@@ -12,6 +12,7 @@ import java.util.List;
  *
  * @param requiredSetupKind 다음에 제출해야 할 셋업 종류 (없으면 null)
  * @param mySetupComplete 요청 유저의 필요 셋업이 모두 끝났는지
+ * @param pitcherSubstitution 리그 투수 교체 상태 (쇼다운 등은 max=0)
  */
 public record GameSessionStateResponse(
         String matchSessionId,
@@ -32,6 +33,7 @@ public record GameSessionStateResponse(
         GameBoardStateResponse board,
         GameTurnStateResponse turn,
         GameLastTurnResultResponse lastTurnResult,
-        List<ParticipantPresenceResponse> participants
+        List<ParticipantPresenceResponse> participants,
+        PitcherSubstitutionInfo pitcherSubstitution
 ) {
 }

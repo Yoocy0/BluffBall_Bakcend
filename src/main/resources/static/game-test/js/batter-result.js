@@ -1,5 +1,5 @@
 (() => {
-    const COUNTDOWN_SEC = 3;
+    const COUNTDOWN_SEC = window.BluffBallNav?.isLeagueMode?.() ? 6 : 3;
     const DICE_ROLL_MS = 1800;
     const DICE_TICK_MS = 70;
 
@@ -135,7 +135,7 @@
         if (matchSessionId && typeof StompJs !== 'undefined') {
             BluffBallGameWs.attachInGamePhaseGuard();
             try {
-                BluffBallGameWs.connect({ matchSessionId, reconnectDelay: 0 });
+                BluffBallGameWs.connect({ matchSessionId, reconnectDelay: 1500 });
             } catch (_) {
                 /* ignore */
             }
@@ -177,6 +177,13 @@
         if (hasHitEvent(data)) {
             await rollDiceAnimation(data.diceResults);
         }
+
+        BluffBallNav.setTurnBanner({
+            tone: 'info',
+            title: `결과: ${formatTurnResult(data.turnResult)}`,
+            sub: '다음 플레이로 넘어가기 전, 결과를 확인하세요.',
+            connected: BluffBallGameWs.isConnected?.() ?? null,
+        });
 
         showResultCard(data);
     }

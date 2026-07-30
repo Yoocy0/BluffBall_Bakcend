@@ -1,23 +1,33 @@
 (() => {
-    const PHASES = [
-        { key: 'out', label: '아웃 번호', desc: '5개 선택 (1~12)', max: 5 },
-        { key: 'dp', label: '병살 번호', desc: '1개 선택 — 아웃 번호와 중복 불가', max: 1 },
-        { key: 'triple', label: '3루타 번호', desc: '1개 선택', max: 1 },
-        { key: 'hr', label: '홈런 번호', desc: '1개 선택 — 3루타 번호와 중복 불가', max: 1 },
-    ];
+    const PHASE_DEFS = {
+        out: { key: 'out', label: '아웃 번호', desc: '5개 선택 (1~12)', max: 5 },
+        dp: { key: 'dp', label: '병살 번호', desc: '1개 선택 — 아웃 번호와 중복 불가', max: 1 },
+        triple: { key: 'triple', label: '3루타 번호', desc: '1개 선택', max: 1 },
+        hr: { key: 'hr', label: '홈런 번호', desc: '1개 선택 — 3루타 번호와 중복 불가', max: 1 },
+    };
 
     const state = {
         matchSessionId: '',
+        phases: [
+            PHASE_DEFS.out,
+            PHASE_DEFS.dp,
+            PHASE_DEFS.triple,
+            PHASE_DEFS.hr,
+        ],
+        setupKind: 'FULL',
+        gameMode: '',
         phaseIndex: 0,
         outNumList: [],
         dpNumList: [],
         tripleNumList: [],
         hrNumList: [],
         submitted: false,
+        navigating: false,
     };
 
     const els = {
         matchSessionLabel: document.getElementById('matchSessionLabel'),
+        setupSubtitle: document.getElementById('setupSubtitle'),
         setupStatus: document.getElementById('setupStatus'),
         phaseTitle: document.getElementById('phaseTitle'),
         phaseDesc: document.getElementById('phaseDesc'),
@@ -26,6 +36,10 @@
         summaryDp: document.getElementById('summaryDp'),
         summaryTriple: document.getElementById('summaryTriple'),
         summaryHr: document.getElementById('summaryHr'),
+        summaryOutRow: document.getElementById('summaryOutRow'),
+        summaryDpRow: document.getElementById('summaryDpRow'),
+        summaryTripleRow: document.getElementById('summaryTripleRow'),
+        summaryHrRow: document.getElementById('summaryHrRow'),
         btnReset: document.getElementById('btnReset'),
         btnSubmit: document.getElementById('btnSubmit'),
         log: document.getElementById('log'),
@@ -48,7 +62,6 @@
         els.setupStatus.style.color = isOk ? '#81c995' : '#9aa0a6';
     }
 
-    /** URL·sessionStorage에서 matchSessionId 로드 */
     function resolveMatchSessionId() {
         const params = new URLSearchParams(window.location.search);
         return params.get('matchSessionId')
@@ -64,8 +77,52 @@
         return true;
     }
 
+    function phasesForKind(kind) {
+        switch (kind) {
+            case 'PITCHER':
+                return [PHASE_DEFS.out, PHASE_DEFS.dp];
+            case 'BATTER':
+                return [PHASE_DEFS.triple, PHASE_DEFS.hr];
+            default:
+                return [PHASE_DEFS.out, PHASE_DEFS.dp, PHASE_DEFS.triple, PHASE_DEFS.hr];
+        }
+    }
+
+    function subtitleForKind(kind) {
+        switch (kind) {
+            case 'PITCHER':
+                return '투수 셋업 — 아웃 5 → 병살 1';
+            case 'BATTER':
+                return '타자 셋업 — 3루타 1 → 홈런 1';
+            default:
+                return '쇼다운 셋업 — 아웃 5 → 병살 1 → 3루타 1 → 홈런 1';
+        }
+    }
+
+    function applySetupKind(kind) {
+        state.setupKind = kind || 'FULL';
+        state.phases = phasesForKind(state.setupKind);
+        state.phaseIndex = 0;
+        if (els.setupSubtitle) {
+            els.setupSubtitle.textContent = subtitleForKind(state.setupKind);
+        }
+        const needs = new Set(state.phases.map((p) => p.key));
+        if (els.summaryOutRow) {
+            els.summaryOutRow.hidden = !needs.has('out');
+        }
+        if (els.summaryDpRow) {
+            els.summaryDpRow.hidden = !needs.has('dp');
+        }
+        if (els.summaryTripleRow) {
+            els.summaryTripleRow.hidden = !needs.has('triple');
+        }
+        if (els.summaryHrRow) {
+            els.summaryHrRow.hidden = !needs.has('hr');
+        }
+    }
+
     function currentPhase() {
-        return PHASES[state.phaseIndex];
+        return state.phases[state.phaseIndex];
     }
 
     function listForPhase(key) {
@@ -80,6 +137,9 @@
 
     function isNumberDisabled(num) {
         const phase = currentPhase();
+        if (!phase) {
+            return true;
+        }
         const list = listForPhase(phase.key);
 
         if (list.includes(num)) {
@@ -98,11 +158,15 @@
     }
 
     function isNumberSelected(num) {
-        return listForPhase(currentPhase().key).includes(num);
+        const phase = currentPhase();
+        return phase ? listForPhase(phase.key).includes(num) : false;
     }
 
     function renderPhase() {
         const phase = currentPhase();
+        if (!phase) {
+            return;
+        }
         const list = listForPhase(phase.key);
         els.phaseTitle.textContent = `${phase.label} (${list.length}/${phase.max})`;
         els.phaseDesc.textContent = phase.desc;
@@ -146,6 +210,9 @@
 
     function toggleNumber(num) {
         const phase = currentPhase();
+        if (!phase) {
+            return;
+        }
         const list = listForPhase(phase.key);
         const idx = list.indexOf(num);
 
@@ -162,19 +229,16 @@
         list.push(num);
         list.sort((a, b) => a - b);
 
-        if (list.length >= phase.max && state.phaseIndex < PHASES.length - 1) {
+        if (list.length >= phase.max && state.phaseIndex < state.phases.length - 1) {
             state.phaseIndex++;
-            log(`${phase.label} 선택 완료 → ${PHASES[state.phaseIndex].label} 단계`);
+            log(`${phase.label} 선택 완료 → ${state.phases[state.phaseIndex].label} 단계`);
         }
 
         renderPhase();
     }
 
     function isSelectionComplete() {
-        return state.outNumList.length === 5
-            && state.dpNumList.length === 1
-            && state.tripleNumList.length === 1
-            && state.hrNumList.length === 1;
+        return state.phases.every((phase) => listForPhase(phase.key).length === phase.max);
     }
 
     function buildPayload() {
@@ -192,22 +256,57 @@
     }
 
     function goToMulligan() {
+        if (state.navigating) {
+            return;
+        }
+        state.navigating = true;
         sessionStorage.setItem('bluffball.matchSessionId', state.matchSessionId);
         window.location.href =
             `/game-test/Mulligan.html?matchSessionId=${encodeURIComponent(state.matchSessionId)}`;
     }
 
-    function goToBatterWait() {
-        sessionStorage.setItem('bluffball.matchSessionId', state.matchSessionId);
-        window.location.href =
-            `/game-test/BatterWait.html?matchSessionId=${encodeURIComponent(state.matchSessionId)}`;
-    }
-
     function goToBatterPlay(startCoordinateNumber) {
+        if (state.navigating) {
+            return;
+        }
+        state.navigating = true;
         sessionStorage.setItem('bluffball.matchSessionId', state.matchSessionId);
         sessionStorage.setItem('bluffball.startCoordinate', String(startCoordinateNumber));
         window.location.href =
             `/game-test/BatterCoordSelect.html?matchSessionId=${encodeURIComponent(state.matchSessionId)}`;
+    }
+
+    function goToLeaguePlay() {
+        if (state.navigating) {
+            return;
+        }
+        state.navigating = true;
+        BluffBallNav.goToPlayAfterReady(state.matchSessionId);
+    }
+
+    function sleep(ms) {
+        return new Promise((resolve) => setTimeout(resolve, ms));
+    }
+
+    /** 리그: 전원 셋업 완료 후 멀리건 없이 인게임으로 */
+    async function waitAndEnterLeaguePlay() {
+        setSetupStatus('제출 완료 — 다른 플레이어 셋업 대기 중...', true);
+        for (let i = 0; i < 60; i++) {
+            const session = await BluffBallNav.fetchSessionState(state.matchSessionId);
+            if (session) {
+                BluffBallNav.applySessionState(session);
+                if (session.setupComplete
+                    || session.phase === 'PITCHER_SELECT'
+                    || session.phase === 'BATTER_SELECT') {
+                    log('리그 셋업 완료 — 인게임으로 이동합니다.', 'ok');
+                    goToLeaguePlay();
+                    return;
+                }
+            }
+            await sleep(500);
+        }
+        log('셋업 대기 시간 초과 — 현재 역할로 진행합니다.', 'err');
+        goToLeaguePlay();
     }
 
     function handleCardHandEvent({ event }) {
@@ -217,6 +316,14 @@
         if (event?.pitcherUserId != null) {
             BluffBallRole.syncRoleFromPitcherUserId(event.pitcherUserId);
         }
+
+        if (BluffBallNav.isLeagueMode(state.gameMode) || !BluffBallNav.usesInGameMulligan(state.gameMode)) {
+            BluffBallGameWs.setAllMulliganReady(true);
+            log('리그 핸드 수신 — 멀리건 없이 인게임으로 이동합니다.', 'ok');
+            goToLeaguePlay();
+            return;
+        }
+
         log('카드 패 수신 — 멀리건 화면으로 이동합니다.', 'ok');
         goToMulligan();
     }
@@ -286,7 +393,7 @@
 
     function submitSetupNumbers() {
         if (!isSelectionComplete()) {
-            log('모든 숫자를 선택하세요.', 'err');
+            log('필요한 숫자를 모두 선택하세요.', 'err');
             return;
         }
         if (!BluffBallGameWs.isConnected()) {
@@ -299,15 +406,40 @@
             BluffBallNav.persistMySetupNumbers(payload);
             BluffBallGameWs.publish('setup-numbers', payload);
             state.submitted = true;
-            setSetupStatus('제출 완료 — 상대방·카드 드로우 대기 중...', true);
-            log('setup-numbers 제출 완료', 'ok');
             updateActions();
+
+            if (BluffBallNav.isLeagueMode(state.gameMode) || !BluffBallNav.usesInGameMulligan(state.gameMode)) {
+                log('setup-numbers 제출 완료 (리그)', 'ok');
+                waitAndEnterLeaguePlay().catch((e) => log(e.message || String(e), 'err'));
+            } else {
+                setSetupStatus('제출 완료 — 상대방·카드 드로우 대기 중...', true);
+                log('setup-numbers 제출 완료', 'ok');
+            }
         } catch (e) {
             log(e.message, 'err');
         }
     }
 
-    function init() {
+    async function bootstrapFromSession() {
+        const session = await BluffBallNav.fetchSessionState(state.matchSessionId);
+        if (!session) {
+            applySetupKind('FULL');
+            log('세션 상태 조회 실패 — 쇼다운 셋업으로 진행', 'err');
+            return;
+        }
+
+        BluffBallNav.applySessionState(session);
+        state.gameMode = session.gameMode || '';
+        applySetupKind(session.requiredSetupKind || 'FULL');
+        log(`모드=${state.gameMode || '?'} · 셋업=${state.setupKind} · 역할=${session.myRole || '?'}`, 'ok');
+
+        if (session.mySetupComplete && session.setupComplete) {
+            log('이미 셋업 완료 — 인게임으로 이동합니다.', 'ok');
+            goToLeaguePlay();
+        }
+    }
+
+    async function init() {
         if (!requireLoginOrRedirect()) {
             return;
         }
@@ -327,8 +459,19 @@
         els.btnReset.addEventListener('click', resetSelection);
         els.btnSubmit.addEventListener('click', submitSetupNumbers);
 
+        await bootstrapFromSession();
+        if (state.navigating) {
+            return;
+        }
+
         renderPhase();
         connectGameWebSocket();
+        if (window.BluffBallNav?.isLeagueMode?.()) {
+            window.BluffBallPitcherSub?.mount?.({
+                matchSessionId: state.matchSessionId,
+                pollMs: 2500,
+            });
+        }
     }
 
     init();

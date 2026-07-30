@@ -531,6 +531,8 @@ public class MatchInfo {
     /**
      * 현재 등판 투수를 교체한다. 수비 팀 active 투수도 갱신한다.
      *
+     * <p>타순 슬롯 교환은 {@link #swapDefendingBattingOrderOnPitcherSubstitute(Long, Long)} 에서 수행한다.</p>
+     *
      * @param newPitcherUserId 신임 투수
      */
     public void substitutePitcher(Long newPitcherUserId) {
@@ -547,6 +549,56 @@ public class MatchInfo {
         }
         syncPitcherCardHandFromPlayer();
         incrementDefendingPitcherSubstitutionCount();
+    }
+
+    /**
+     * 투수 교체 시 수비 팀 타순을 맞춘다.
+     *
+     * <ul>
+     *   <li>신임 투수가 타순에 있으면 그 슬롯에 강판 투수를 넣는다 (Compact 전담 투수 → 타석 진입)</li>
+     *   <li>강판 투수도 타순에 있으면 서로 자리를 바꾼다 (Full)</li>
+     * </ul>
+     *
+     * @param oldPitcherUserId 강판 투수
+     * @param newPitcherUserId 신임 투수 (기존 타자)
+     */
+    public void swapDefendingBattingOrderOnPitcherSubstitute(
+            Long oldPitcherUserId,
+            Long newPitcherUserId) {
+        ensureCollectionsInitialized();
+        if (oldPitcherUserId == null || newPitcherUserId == null) {
+            return;
+        }
+
+        boolean homeDefending = isHomeDefending();
+        List<Long> battingOrder = homeDefending
+                ? homeBattingOrderUserIds
+                : awayBattingOrderUserIds;
+
+        // 레거시: 타순 필드가 비어 있으면 로스터에서 타순을 복제해 둔다
+        if (battingOrder.isEmpty()) {
+            List<Long> roster = homeDefending ? homeRosterUserIds : awayRosterUserIds;
+            battingOrder.addAll(roster);
+            // 전담 투수(로스터에만 있는 경우)는 타순에서 제외 — 신임이 타순에 있을 때만 교체
+            battingOrder.remove(oldPitcherUserId);
+        }
+
+        int newPitcherSlot = battingOrder.indexOf(newPitcherUserId);
+        if (newPitcherSlot < 0) {
+            throw new BadRequestException(
+                    ErrorCode.GAME_PITCHER_SUBSTITUTE_INVALID,
+                    "new pitcher not in batting order. newPitcher=" + newPitcherUserId);
+        }
+
+        int oldPitcherSlot = battingOrder.indexOf(oldPitcherUserId);
+        if (oldPitcherSlot >= 0) {
+            // Full 등: 타순 내 서로 자리 교환
+            battingOrder.set(newPitcherSlot, oldPitcherUserId);
+            battingOrder.set(oldPitcherSlot, newPitcherUserId);
+        } else {
+            // Compact 전담 투수: 신임(타자) 슬롯을 강판 투수가 이어받는다
+            battingOrder.set(newPitcherSlot, oldPitcherUserId);
+        }
     }
 
     /**
