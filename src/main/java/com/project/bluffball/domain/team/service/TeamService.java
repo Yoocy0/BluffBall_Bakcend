@@ -5,17 +5,25 @@ import com.project.bluffball.domain.league.enums.LeagueTier;
 import com.project.bluffball.domain.team.dto.request.CreateTeamRequest;
 import com.project.bluffball.domain.team.dto.request.DonateTeamRequest;
 import com.project.bluffball.domain.team.dto.request.UpdateMemberRoleRequest;
+import com.project.bluffball.domain.team.dto.request.UpdateTeamJoinPolicyRequest;
 import com.project.bluffball.domain.team.dto.request.UpdateTeamLogoRequest;
+import com.project.bluffball.domain.team.dto.response.TeamJoinApplicationResponse;
+import com.project.bluffball.domain.team.dto.response.TeamJoinResponse;
 import com.project.bluffball.domain.team.dto.response.TeamMemberResponse;
 import com.project.bluffball.domain.team.dto.response.TeamRecordsResponse;
 import com.project.bluffball.domain.team.dto.response.TeamResponse;
 import com.project.bluffball.domain.team.dto.response.TeamTreasuryResponse;
+import com.project.bluffball.domain.team.enums.TeamJoinOutcome;
+import com.project.bluffball.domain.team.enums.TeamJoinPolicy;
 import com.project.bluffball.domain.team.enums.TeamMemberRole;
 import com.project.bluffball.domain.team.service.usecase.executor.TeamCreateExecutor;
+import com.project.bluffball.domain.team.service.usecase.executor.TeamJoinApplicationExecutor;
+import com.project.bluffball.domain.team.service.usecase.executor.TeamJoinPolicyExecutor;
 import com.project.bluffball.domain.team.service.usecase.executor.TeamLogoExecutor;
 import com.project.bluffball.domain.team.service.usecase.executor.TeamMembershipExecutor;
 import com.project.bluffball.domain.team.service.usecase.executor.TeamPresenceExecutor;
 import com.project.bluffball.domain.team.service.usecase.executor.TeamTreasuryExecutor;
+import com.project.bluffball.domain.team.service.usecase.reader.TeamJoinApplicationReader;
 import com.project.bluffball.domain.team.service.usecase.reader.TeamMemberReader;
 import com.project.bluffball.domain.team.service.usecase.reader.TeamReader;
 import com.project.bluffball.domain.team.service.usecase.reader.TeamRecordReader;
@@ -50,6 +58,7 @@ public class TeamService {
     private final TeamMemberReader teamMemberReader;
     private final TeamTreasuryReader teamTreasuryReader;
     private final TeamRecordReader teamRecordReader;
+    private final TeamJoinApplicationReader teamJoinApplicationReader;
     private final UserReader userReader;
 
     private final TeamCreateExecutor teamCreateExecutor;
@@ -57,6 +66,8 @@ public class TeamService {
     private final TeamTreasuryExecutor teamTreasuryExecutor;
     private final TeamLogoExecutor teamLogoExecutor;
     private final TeamPresenceExecutor teamPresenceExecutor;
+    private final TeamJoinApplicationExecutor teamJoinApplicationExecutor;
+    private final TeamJoinPolicyExecutor teamJoinPolicyExecutor;
 
     /**
      * 팀을 창단한다.
@@ -71,7 +82,9 @@ public class TeamService {
         teamCreateValidator.validateNameNotDuplicated(teamReader.existsByName(name));
         teamCreateValidator.validateNotAlreadyJoined(teamMemberReader.existsByUserId(userId));
 
-        Long teamId = teamCreateExecutor.create(name, userId, request.logoUrl());
+        TeamJoinPolicy joinPolicy =
+                request.joinPolicy() != null ? request.joinPolicy() : TeamJoinPolicy.OPEN;
+        Long teamId = teamCreateExecutor.create(name, userId, request.logoUrl(), joinPolicy);
         return teamReader.getTeamResponse(teamId);
     }
 
@@ -115,27 +128,141 @@ public class TeamService {
      * @param teamId 팀 ID
      */
     public void delete(Long userId, Long teamId) {
-        // 팀 존재 확인
         teamReader.getTeamResponse(teamId);
         teamMembershipValidator.validateLeader(teamMemberReader.isLeader(teamId, userId));
         teamMembershipExecutor.delete(teamId);
     }
 
     /**
-     * 팀에 가입한다.
+     * 팀에 가입하거나 가입 신청을 제출한다.
+     *
+     * <p>{@link TeamJoinPolicy#OPEN}이면 즉시 가입, {@link TeamJoinPolicy#APPROVAL_REQUIRED}이면 PENDING 신청.</p>
      *
      * @param userId 가입 유저 ID
      * @param teamId 팀 ID
-     * @return 가입한 팀 정보
+     * @return 가입/신청 결과
      */
-    public TeamResponse join(Long userId, Long teamId) {
-        // 팀 존재 확인
-        teamReader.getTeamResponse(teamId);
+    public TeamJoinResponse join(Long userId, Long teamId) {
+        TeamResponse team = teamReader.getTeamResponse(teamId);
         teamMembershipValidator.validateCanJoin(teamMemberReader.existsByUserId(userId));
         teamMembershipValidator.validateCapacity(teamMemberReader.countMembers(teamId));
 
+        if (team.joinPolicy() == TeamJoinPolicy.APPROVAL_REQUIRED) {
+            teamMembershipValidator.validateNoPendingApplication(
+                    teamJoinApplicationReader.hasAnyPending(userId));
+            Long applicationId = teamJoinApplicationExecutor.apply(teamId, userId);
+            return new TeamJoinResponse(
+                    TeamJoinOutcome.APPLICATION_SUBMITTED,
+                    team,
+                    applicationId,
+                    teamJoinApplicationReader.getResponse(applicationId, teamId).status());
+        }
+
+        teamJoinApplicationExecutor.cancelAllPendingByUser(userId);
         Long joinedTeamId = teamMembershipExecutor.join(userId, teamId);
-        return teamReader.getTeamResponse(joinedTeamId);
+        return new TeamJoinResponse(
+                TeamJoinOutcome.JOINED,
+                teamReader.getTeamResponse(joinedTeamId),
+                null,
+                null);
+    }
+
+    /**
+     * 팀의 PENDING 가입 신청 목록을 조회한다. 리더만 가능하다.
+     *
+     * @param requesterId 요청자 ID
+     * @param teamId 팀 ID
+     * @return PENDING 신청 목록
+     */
+    public List<TeamJoinApplicationResponse> getPendingJoinApplications(Long requesterId, Long teamId) {
+        teamReader.getTeamResponse(teamId);
+        teamMembershipValidator.validateLeader(teamMemberReader.isLeader(teamId, requesterId));
+        return teamJoinApplicationReader.getPendingResponses(teamId);
+    }
+
+    /**
+     * 가입 신청을 승인한다. 리더만 가능하다.
+     *
+     * @param requesterId 리더 ID
+     * @param teamId 팀 ID
+     * @param applicationId 신청 ID
+     * @return 가입된 팀 정보
+     */
+    public TeamResponse approveJoinApplication(Long requesterId, Long teamId, Long applicationId) {
+        teamReader.getTeamResponse(teamId);
+        teamMembershipValidator.validateLeader(teamMemberReader.isLeader(teamId, requesterId));
+
+        TeamJoinApplicationResponse application =
+                teamJoinApplicationReader.getResponse(applicationId, teamId);
+        teamMembershipValidator.validateApplicationPending(application.status());
+        teamMembershipValidator.validateCanJoin(teamMemberReader.existsByUserId(application.userId()));
+        teamMembershipValidator.validateCapacity(teamMemberReader.countMembers(teamId));
+
+        Long approvedTeamId = teamJoinApplicationExecutor.approve(teamId, applicationId, requesterId);
+        return teamReader.getTeamResponse(approvedTeamId);
+    }
+
+    /**
+     * 가입 신청을 거부한다. 리더만 가능하다.
+     *
+     * @param requesterId 리더 ID
+     * @param teamId 팀 ID
+     * @param applicationId 신청 ID
+     * @return 거부된 신청 정보
+     */
+    public TeamJoinApplicationResponse rejectJoinApplication(
+            Long requesterId,
+            Long teamId,
+            Long applicationId) {
+        teamReader.getTeamResponse(teamId);
+        teamMembershipValidator.validateLeader(teamMemberReader.isLeader(teamId, requesterId));
+
+        TeamJoinApplicationResponse application =
+                teamJoinApplicationReader.getResponse(applicationId, teamId);
+        teamMembershipValidator.validateApplicationPending(application.status());
+
+        teamJoinApplicationExecutor.reject(teamId, applicationId, requesterId);
+        return teamJoinApplicationReader.getResponse(applicationId, teamId);
+    }
+
+    /**
+     * 본인 가입 신청을 취소한다.
+     *
+     * @param userId 신청자 ID
+     * @param teamId 팀 ID
+     * @param applicationId 신청 ID
+     * @return 취소된 신청 정보
+     */
+    public TeamJoinApplicationResponse cancelJoinApplication(
+            Long userId,
+            Long teamId,
+            Long applicationId) {
+        teamReader.getTeamResponse(teamId);
+        TeamJoinApplicationResponse application =
+                teamJoinApplicationReader.getResponse(applicationId, teamId);
+        teamMembershipValidator.validateApplicationOwner(application.userId(), userId);
+        teamMembershipValidator.validateApplicationPending(application.status());
+
+        teamJoinApplicationExecutor.cancel(teamId, applicationId);
+        return teamJoinApplicationReader.getResponse(applicationId, teamId);
+    }
+
+    /**
+     * 팀 가입 정책을 변경한다. 리더만 가능하다.
+     *
+     * @param userId 리더 ID
+     * @param teamId 팀 ID
+     * @param request 정책 변경 요청
+     * @return 갱신된 팀 정보
+     */
+    public TeamResponse updateJoinPolicy(
+            Long userId,
+            Long teamId,
+            UpdateTeamJoinPolicyRequest request) {
+        teamMembershipValidator.validateLeader(teamMemberReader.isLeader(teamId, userId));
+        teamMembershipValidator.validateJoinPolicy(request.joinPolicy());
+        Long updatedTeamId = teamJoinPolicyExecutor.updateJoinPolicy(teamId, request.joinPolicy());
+        return teamReader.getTeamResponse(updatedTeamId);
     }
 
     /**
@@ -171,7 +298,6 @@ public class TeamService {
      * @return 멤버 목록
      */
     public List<TeamMemberResponse> getMembers(Long teamId) {
-        // 팀 존재 확인
         teamReader.getTeamResponse(teamId);
         return teamMemberReader.getMemberResponses(teamId);
     }
@@ -194,7 +320,6 @@ public class TeamService {
         teamMembershipValidator.validateLeader(teamMemberReader.isLeader(teamId, requesterId));
         teamMembershipValidator.validateMember(teamMemberReader.isMember(teamId, targetUserId));
 
-        // 현재 리더를 MEMBER로 내리는 직접 강등은 금지 — 다른 멤버를 LEADER로 승격해야 한다
         if (teamMemberReader.isLeader(teamId, targetUserId)
                 && request.role() == TeamMemberRole.MEMBER) {
             throw new BadRequestException(
@@ -230,7 +355,6 @@ public class TeamService {
      * @return 재정 정보
      */
     public TeamTreasuryResponse getTreasury(Long teamId) {
-        // 팀 존재 확인
         teamReader.getTeamResponse(teamId);
         return teamTreasuryReader.getTreasuryResponse(teamId);
     }
@@ -263,7 +387,6 @@ public class TeamService {
             LeagueFormat format,
             LeagueTier tier,
             boolean aggregate) {
-        // 팀 존재 확인
         teamReader.getTeamResponse(teamId);
         return teamRecordReader.getRecords(teamId, format, tier, aggregate);
     }

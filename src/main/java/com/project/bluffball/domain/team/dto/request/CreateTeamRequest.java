@@ -1,5 +1,6 @@
 package com.project.bluffball.domain.team.dto.request;
 
+import com.project.bluffball.domain.team.enums.TeamJoinPolicy;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.Size;
 
@@ -14,6 +15,9 @@ public record CreateTeamRequest(
         String name,
 
         /** 팀 로고 URL (선택) */
-        String logoUrl
+        String logoUrl,
+
+        /** 가입 정책 (미지정 시 OPEN) */
+        TeamJoinPolicy joinPolicy
 ) {
 }

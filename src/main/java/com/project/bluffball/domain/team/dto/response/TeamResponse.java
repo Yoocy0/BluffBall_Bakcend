@@ -1,5 +1,7 @@
 package com.project.bluffball.domain.team.dto.response;
 
+import com.project.bluffball.domain.team.enums.TeamJoinPolicy;
+
 /**
  * 팀 정보 응답 DTO.
  */
@@ -9,6 +11,7 @@ public record TeamResponse(
         String logoUrl,
         Long leaderUserId,
         long treasury,
-        Long currentLeagueId
+        Long currentLeagueId,
+        TeamJoinPolicy joinPolicy
 ) {
 }

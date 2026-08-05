@@ -5,16 +5,22 @@ import com.project.bluffball.domain.team.dto.request.CreateTeamRequest;
 import com.project.bluffball.domain.team.dto.request.DonateTeamRequest;
 import com.project.bluffball.domain.team.dto.request.UpdateMemberRoleRequest;
 import com.project.bluffball.domain.team.dto.request.UpdateTeamLogoRequest;
+import com.project.bluffball.domain.team.dto.response.TeamJoinResponse;
 import com.project.bluffball.domain.team.dto.response.TeamMemberResponse;
 import com.project.bluffball.domain.team.dto.response.TeamRecordsResponse;
 import com.project.bluffball.domain.team.dto.response.TeamResponse;
 import com.project.bluffball.domain.team.dto.response.TeamTreasuryResponse;
+import com.project.bluffball.domain.team.enums.TeamJoinOutcome;
+import com.project.bluffball.domain.team.enums.TeamJoinPolicy;
 import com.project.bluffball.domain.team.enums.TeamMemberRole;
 import com.project.bluffball.domain.team.service.usecase.executor.TeamCreateExecutor;
+import com.project.bluffball.domain.team.service.usecase.executor.TeamJoinApplicationExecutor;
+import com.project.bluffball.domain.team.service.usecase.executor.TeamJoinPolicyExecutor;
 import com.project.bluffball.domain.team.service.usecase.executor.TeamLogoExecutor;
 import com.project.bluffball.domain.team.service.usecase.executor.TeamMembershipExecutor;
 import com.project.bluffball.domain.team.service.usecase.executor.TeamPresenceExecutor;
 import com.project.bluffball.domain.team.service.usecase.executor.TeamTreasuryExecutor;
+import com.project.bluffball.domain.team.service.usecase.reader.TeamJoinApplicationReader;
 import com.project.bluffball.domain.team.service.usecase.reader.TeamMemberReader;
 import com.project.bluffball.domain.team.service.usecase.reader.TeamReader;
 import com.project.bluffball.domain.team.service.usecase.reader.TeamRecordReader;
@@ -58,18 +64,22 @@ class TeamServiceTest {
     @Mock private TeamMemberReader teamMemberReader;
     @Mock private TeamTreasuryReader teamTreasuryReader;
     @Mock private TeamRecordReader teamRecordReader;
+    @Mock private TeamJoinApplicationReader teamJoinApplicationReader;
     @Mock private UserReader userReader;
     @Mock private TeamCreateExecutor teamCreateExecutor;
     @Mock private TeamMembershipExecutor teamMembershipExecutor;
     @Mock private TeamTreasuryExecutor teamTreasuryExecutor;
     @Mock private TeamLogoExecutor teamLogoExecutor;
     @Mock private TeamPresenceExecutor teamPresenceExecutor;
+    @Mock private TeamJoinApplicationExecutor teamJoinApplicationExecutor;
+    @Mock private TeamJoinPolicyExecutor teamJoinPolicyExecutor;
 
     private TeamService teamService;
 
     private static final Long USER_ID = 1L;
     private static final Long TEAM_ID = 10L;
-    private static final TeamResponse TEAM = new TeamResponse(TEAM_ID, "블러프", null, USER_ID, 0L, null);
+    private static final TeamResponse TEAM =
+            new TeamResponse(TEAM_ID, "블러프", null, USER_ID, 0L, null, TeamJoinPolicy.OPEN);
 
     @BeforeEach
     void setUp() {
@@ -81,12 +91,15 @@ class TeamServiceTest {
                 teamMemberReader,
                 teamTreasuryReader,
                 teamRecordReader,
+                teamJoinApplicationReader,
                 userReader,
                 teamCreateExecutor,
                 teamMembershipExecutor,
                 teamTreasuryExecutor,
                 teamLogoExecutor,
-                teamPresenceExecutor
+                teamPresenceExecutor,
+                teamJoinApplicationExecutor,
+                teamJoinPolicyExecutor
         );
     }
 
@@ -99,13 +112,13 @@ class TeamServiceTest {
         void success() {
             when(teamReader.existsByName("블러프")).thenReturn(false);
             when(teamMemberReader.existsByUserId(USER_ID)).thenReturn(false);
-            when(teamCreateExecutor.create("블러프", USER_ID, null)).thenReturn(TEAM_ID);
+            when(teamCreateExecutor.create("블러프", USER_ID, null, TeamJoinPolicy.OPEN)).thenReturn(TEAM_ID);
             when(teamReader.getTeamResponse(TEAM_ID)).thenReturn(TEAM);
 
-            TeamResponse result = teamService.create(USER_ID, new CreateTeamRequest(" 블러프 ", null));
+            TeamResponse result = teamService.create(USER_ID, new CreateTeamRequest(" 블러프 ", null, null));
 
             assertThat(result).isEqualTo(TEAM);
-            verify(teamCreateExecutor).create("블러프", USER_ID, null);
+            verify(teamCreateExecutor).create("블러프", USER_ID, null, TeamJoinPolicy.OPEN);
         }
 
         @Test
@@ -113,11 +126,11 @@ class TeamServiceTest {
         void duplicatedName() {
             when(teamReader.existsByName("블러프")).thenReturn(true);
 
-            assertThatThrownBy(() -> teamService.create(USER_ID, new CreateTeamRequest("블러프", null)))
+            assertThatThrownBy(() -> teamService.create(USER_ID, new CreateTeamRequest("블러프", null, null)))
                     .isInstanceOf(ConflictException.class)
                     .extracting(ex -> ((ConflictException) ex).getErrorCode())
                     .isEqualTo(ErrorCode.TEAM_NAME_DUPLICATED);
-            verify(teamCreateExecutor, never()).create(anyString(), anyLong(), isNull());
+            verify(teamCreateExecutor, never()).create(anyString(), anyLong(), isNull(), eq(TeamJoinPolicy.OPEN));
         }
 
         @Test
@@ -126,7 +139,7 @@ class TeamServiceTest {
             when(teamReader.existsByName("블러프")).thenReturn(false);
             when(teamMemberReader.existsByUserId(USER_ID)).thenReturn(true);
 
-            assertThatThrownBy(() -> teamService.create(USER_ID, new CreateTeamRequest("블러프", null)))
+            assertThatThrownBy(() -> teamService.create(USER_ID, new CreateTeamRequest("블러프", null, null)))
                     .isInstanceOf(ConflictException.class)
                     .extracting(ex -> ((ConflictException) ex).getErrorCode())
                     .isEqualTo(ErrorCode.TEAM_ALREADY_JOINED);
@@ -163,14 +176,18 @@ class TeamServiceTest {
     class Membership {
 
         @Test
-        @DisplayName("가입 성공")
+        @DisplayName("OPEN 정책이면 즉시 가입한다")
         void joinSuccess() {
             when(teamReader.getTeamResponse(TEAM_ID)).thenReturn(TEAM);
             when(teamMemberReader.existsByUserId(USER_ID)).thenReturn(false);
             when(teamMemberReader.countMembers(TEAM_ID)).thenReturn(3L);
             when(teamMembershipExecutor.join(USER_ID, TEAM_ID)).thenReturn(TEAM_ID);
 
-            assertThat(teamService.join(USER_ID, TEAM_ID)).isEqualTo(TEAM);
+            TeamJoinResponse result = teamService.join(USER_ID, TEAM_ID);
+
+            assertThat(result.outcome()).isEqualTo(TeamJoinOutcome.JOINED);
+            assertThat(result.team()).isEqualTo(TEAM);
+            verify(teamJoinApplicationExecutor).cancelAllPendingByUser(USER_ID);
             verify(teamMembershipExecutor).join(USER_ID, TEAM_ID);
         }
 

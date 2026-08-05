@@ -1,5 +1,7 @@
 package com.project.bluffball.domain.team.service.usecase.validator;
 
+import com.project.bluffball.domain.team.enums.TeamJoinApplicationStatus;
+import com.project.bluffball.domain.team.enums.TeamJoinPolicy;
 import com.project.bluffball.global.exception.BadRequestException;
 import com.project.bluffball.global.exception.ConflictException;
 import com.project.bluffball.global.exception.ErrorCode;
@@ -87,6 +89,56 @@ public class TeamMembershipValidator {
     public void validateKickTarget(Long requesterId, Long targetUserId) {
         if (requesterId.equals(targetUserId)) {
             throw new BadRequestException(ErrorCode.TEAM_LEADER_CANNOT_KICK_SELF);
+        }
+    }
+
+    /**
+     * 가입 정책 값이 유효한지 검증한다.
+     *
+     * @param joinPolicy 가입 정책
+     * @throws BadRequestException null이면
+     */
+    public void validateJoinPolicy(TeamJoinPolicy joinPolicy) {
+        if (joinPolicy == null) {
+            throw new BadRequestException(ErrorCode.TEAM_JOIN_POLICY_INVALID);
+        }
+    }
+
+    /**
+     * 동일 팀에 대한 PENDING 신청이 없는지 검증한다.
+     *
+     * @param alreadyPending 이미 PENDING 여부
+     * @throws ConflictException 이미 있으면
+     */
+    public void validateNoPendingApplication(boolean alreadyPending) {
+        if (alreadyPending) {
+            throw new ConflictException(ErrorCode.TEAM_JOIN_APPLICATION_ALREADY_PENDING);
+        }
+    }
+
+    /**
+     * 신청 상태가 PENDING인지 검증한다.
+     *
+     * @param status 신청 상태
+     * @throws BadRequestException PENDING이 아니면
+     */
+    public void validateApplicationPending(TeamJoinApplicationStatus status) {
+        if (status != TeamJoinApplicationStatus.PENDING) {
+            throw new BadRequestException(
+                    ErrorCode.TEAM_JOIN_APPLICATION_NOT_PENDING, "status=" + status);
+        }
+    }
+
+    /**
+     * 신청자 본인만 취소할 수 있음을 검증한다.
+     *
+     * @param applicantUserId 신청자 ID
+     * @param requesterUserId 요청자 ID
+     * @throws ForbiddenException 본인이 아니면
+     */
+    public void validateApplicationOwner(Long applicantUserId, Long requesterUserId) {
+        if (!applicantUserId.equals(requesterUserId)) {
+            throw new ForbiddenException(ErrorCode.TEAM_FORBIDDEN);
         }
     }
 }
