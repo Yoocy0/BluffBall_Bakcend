@@ -1,5 +1,6 @@
 package com.project.bluffball.domain.user.service.usecase.reader;
 
+import com.project.bluffball.domain.user.dto.response.UserProfileResponse;
 import com.project.bluffball.domain.user.entity.User;
 import com.project.bluffball.domain.user.repository.UserRepository;
 import com.project.bluffball.global.exception.ErrorCode;
@@ -14,11 +15,28 @@ import org.springframework.stereotype.Component;
 @RequiredArgsConstructor
 public class UserReader {
 
+    /** 유저 JPA Repository */
     private final UserRepository userRepository;
 
-    User getById(Long userId) {
+    /**
+     * Entity 조회 (Executor·Reader 내부용).
+     *
+     * @param userId 유저 ID
+     * @return 유저 Entity
+     */
+    public User getById(Long userId) {
         return userRepository.findById(userId)
                 .orElseThrow(() -> new NotFoundException(ErrorCode.USER_NOT_FOUND, "userId=" + userId));
+    }
+
+    /**
+     * 유저 존재 여부를 반환한다.
+     *
+     * @param userId 유저 ID
+     * @return 존재하면 true
+     */
+    public boolean exists(Long userId) {
+        return userRepository.existsById(userId);
     }
 
     /**
@@ -59,5 +77,21 @@ public class UserReader {
      */
     public long getCurrency(Long userId) {
         return getById(userId).getCurrency();
+    }
+
+    /**
+     * 유저 기본 프로필 DTO를 반환한다. (Service ✅)
+     *
+     * @param userId 유저 ID
+     * @return 프로필 응답
+     */
+    public UserProfileResponse getProfileResponse(Long userId) {
+        User user = getById(userId);
+        return new UserProfileResponse(
+                user.getId(),
+                user.getNickname(),
+                user.getCurrency(),
+                user.isNicknameChangeFree(),
+                user.getCreatedAt());
     }
 }
