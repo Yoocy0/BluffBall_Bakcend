@@ -45,6 +45,10 @@ public class User {
     @Column(name = "is_nickname_change_free", nullable = false)
     private boolean isNicknameChangeFree;
 
+    /** 튜토리얼 완료 여부 (완료 시 시작 구종 지급) */
+    @Column(name = "tutorial_completed", nullable = false)
+    private boolean tutorialCompleted;
+
     /** 최초 가입 일시 — 이후 변경 불가 */
     @Column(name = "created_at", nullable = false, updatable = false)
     private LocalDateTime createdAt;
@@ -55,6 +59,7 @@ public class User {
         this.isActive = true;
         this.currency = 0L;
         this.isNicknameChangeFree = true;
+        this.tutorialCompleted = false;
         if (this.role == null) {
             this.role = UserRole.USER;
         }
@@ -128,5 +133,17 @@ public class User {
             throw new IllegalArgumentException("보유 재화가 부족합니다.");
         }
         this.currency -= amount;
+    }
+
+    /**
+     * 튜토리얼을 완료 처리한다.
+     *
+     * @throws IllegalStateException 이미 완료된 경우
+     */
+    public void completeTutorial() {
+        if (this.tutorialCompleted) {
+            throw new IllegalStateException("이미 튜토리얼을 완료했습니다.");
+        }
+        this.tutorialCompleted = true;
     }
 }

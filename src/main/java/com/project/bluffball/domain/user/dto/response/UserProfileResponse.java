@@ -12,6 +12,7 @@ public record UserProfileResponse(
         String nickname,
         long currency,
         boolean nicknameChangeFree,
+        boolean tutorialCompleted,
         LocalDateTime createdAt
 ) {
 }

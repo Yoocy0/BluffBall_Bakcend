@@ -63,6 +63,26 @@ public class UserPitchCardExecutor {
     }
 
     /**
+     * 미보유 카드만 획득한다.
+     *
+     * @param userId 유저 ID
+     * @param cardIds 마스터 구종 ID 목록
+     * @return 새로 획득한 마스터 카드 ID 목록
+     */
+    @Transactional
+    public List<Long> acquireIfMissing(Long userId, List<Long> cardIds) {
+        List<Long> acquired = new ArrayList<>();
+        for (Long cardId : cardIds) {
+            requireMasterExists(cardId);
+            if (!userPitchCardRepository.existsByUserIdAndCardId(userId, cardId)) {
+                userPitchCardRepository.save(new UserPitchCard(userId, cardId));
+                acquired.add(cardId);
+            }
+        }
+        return acquired;
+    }
+
+    /**
      * 변화량 강화를 적용한다.
      *
      * @param userId 유저 ID

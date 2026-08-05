@@ -92,6 +92,17 @@ public class UserReader {
                 user.getNickname(),
                 user.getCurrency(),
                 user.isNicknameChangeFree(),
+                user.isTutorialCompleted(),
                 user.getCreatedAt());
+    }
+
+    /**
+     * 튜토리얼 완료 여부를 반환한다.
+     *
+     * @param userId 유저 ID
+     * @return 완료면 true
+     */
+    public boolean isTutorialCompleted(Long userId) {
+        return getById(userId).isTutorialCompleted();
     }
 }
