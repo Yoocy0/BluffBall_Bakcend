@@ -1,0 +1,15 @@
+# ─────────────────────────────────────────────────────────────
+# Google Play Billing 로컬 설정 템플릿
+#
+# 1. 이 파일을 billing-local.yml 로 복사
+# 2. Play Console 서비스 계정 JSON을 service-account-json 에 넣거나
+#    환경 변수 GOOGLE_PLAY_SERVICE_ACCOUNT_JSON 사용
+# 3. verification-mode 를 LIVE 로 바꾸고 package-name 확인
+# 4. billing-local.yml 은 git에 올리지 마세요.
+# ─────────────────────────────────────────────────────────────
+
+billing:
+  google:
+    verification-mode: MOCK
+    package-name: com.project.bluffball
+    service-account-json: ""
