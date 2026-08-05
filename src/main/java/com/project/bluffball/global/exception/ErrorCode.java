@@ -142,6 +142,16 @@ public enum ErrorCode {
     TUTORIAL_ALREADY_COMPLETED(HttpStatus.CONFLICT, "이미 튜토리얼을 완료했습니다."),
     TUTORIAL_STARTER_SELECTION_INVALID(HttpStatus.BAD_REQUEST, "시작 구종 선택이 올바르지 않습니다."),
 
+    // Store
+    STORE_OFFER_NOT_FOUND(HttpStatus.BAD_REQUEST, "오늘 상점 상품이 아니거나 존재하지 않습니다."),
+    STORE_PITCH_ALREADY_PURCHASED(HttpStatus.CONFLICT, "오늘 이미 구매한 구종입니다."),
+    STORE_PITCH_ALREADY_OWNED(HttpStatus.CONFLICT, "이미 보유한 구종입니다."),
+    STORE_CURRENCY_INSUFFICIENT(HttpStatus.BAD_REQUEST, "보유 재화가 부족합니다."),
+    STORE_PRODUCT_NOT_FOUND(HttpStatus.BAD_REQUEST, "결제 상품을 찾을 수 없습니다."),
+    STORE_PURCHASE_ALREADY_PROCESSED(HttpStatus.CONFLICT, "이미 처리된 결제입니다."),
+    STORE_PURCHASE_INVALID(HttpStatus.BAD_REQUEST, "결제 정보가 올바르지 않습니다."),
+    STORE_BILLING_UNAVAILABLE(HttpStatus.SERVICE_UNAVAILABLE, "결제 검증 서비스를 사용할 수 없습니다."),
+
     // External
     OAUTH_API_FAILED(HttpStatus.SERVICE_UNAVAILABLE, "소셜 로그인 서비스에 연결할 수 없습니다."),
     ;

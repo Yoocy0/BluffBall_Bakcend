@@ -8,6 +8,7 @@
 **/application.yml
 **/application-*.yml
 **/oauth-local.yml
+**/billing-local.yml
 
 # -------------------------------------------------------
 # Compiled class files

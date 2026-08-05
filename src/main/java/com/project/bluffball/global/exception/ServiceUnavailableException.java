@@ -9,6 +9,10 @@ public class ServiceUnavailableException extends CustomException {
         super(errorCode);
     }
 
+    public ServiceUnavailableException(ErrorCode errorCode, String detail) {
+        super(errorCode, detail);
+    }
+
     public ServiceUnavailableException(ErrorCode errorCode, Throwable cause) {
         super(errorCode, cause);
     }
