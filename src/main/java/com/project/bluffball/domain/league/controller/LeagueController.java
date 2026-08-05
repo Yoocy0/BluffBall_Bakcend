@@ -1,6 +1,7 @@
 package com.project.bluffball.domain.league.controller;
 
 import com.project.bluffball.domain.league.dto.response.LeagueResponse;
+import com.project.bluffball.domain.league.dto.response.LeagueStandingsResponse;
 import com.project.bluffball.domain.league.dto.response.TeamLeagueProgressResponse;
 import com.project.bluffball.domain.league.enums.LeagueFormat;
 import com.project.bluffball.domain.league.enums.LeagueTier;
@@ -111,6 +112,34 @@ public class LeagueController {
             @RequestParam LeagueFormat format) {
         Long userId = authenticatedUserResolver.requireUserId();
         return ResponseEntity.ok(leagueProgressService.getProgress(userId, format));
+    }
+
+    /**
+     * 포맷·티어별 리그 전체 순위를 조회한다.
+     *
+     * @param format 리그 포맷 (COMPACT / FULL)
+     * @param tier 리그 티어
+     * @return 순위표
+     */
+    @Operation(
+            summary = "리그 전체 순위 조회",
+            description = "지정한 format·tier에 속한 팀들의 순위를 반환한다. "
+                    + "정렬: rating ↓ → wins ↓ → runDiff ↓ → teamId ↑.",
+            security = @SecurityRequirement(name = "bearerAuth")
+    )
+    @ApiResponses({
+            @ApiResponse(responseCode = "200", description = "조회 성공"),
+            @ApiResponse(responseCode = "401", description = "인증 토큰 없음 또는 만료"),
+            @ApiResponse(responseCode = "404", description = "해당 format·tier 리그 없음")
+    })
+    @GetMapping("/standings")
+    public ResponseEntity<LeagueStandingsResponse> getStandings(
+            @Parameter(description = "리그 포맷")
+            @RequestParam LeagueFormat format,
+            @Parameter(description = "리그 티어")
+            @RequestParam LeagueTier tier) {
+        authenticatedUserResolver.requireUserId();
+        return ResponseEntity.ok(leagueProgressService.getStandings(format, tier));
     }
 
     /**

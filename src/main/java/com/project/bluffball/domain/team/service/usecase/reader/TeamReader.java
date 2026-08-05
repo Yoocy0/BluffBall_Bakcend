@@ -3,6 +3,7 @@ package com.project.bluffball.domain.team.service.usecase.reader;
 import com.project.bluffball.domain.league.entity.TeamLeagueProgress;
 import com.project.bluffball.domain.league.repository.TeamLeagueProgressRepository;
 import com.project.bluffball.domain.league.service.usecase.reader.LeagueReader;
+import com.project.bluffball.domain.team.dto.response.TeamDisplayInfo;
 import com.project.bluffball.domain.team.dto.response.TeamResponse;
 import com.project.bluffball.domain.team.entity.Team;
 import com.project.bluffball.domain.team.repository.TeamRepository;
@@ -11,8 +12,13 @@ import com.project.bluffball.global.exception.NotFoundException;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Component;
 
+import java.util.Collection;
+import java.util.Collections;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
+import java.util.function.Function;
+import java.util.stream.Collectors;
 
 /**
  * 팀 읽기 전담 Reader (usecase/reader 계층).
@@ -88,6 +94,21 @@ public class TeamReader {
      */
     public long getTreasury(Long teamId) {
         return getById(teamId).getTreasury();
+    }
+
+    /**
+     * 팀 ID 목록에 대한 표시용 이름·로고 맵을 반환한다. (Service ✅)
+     *
+     * @param teamIds 팀 ID 목록
+     * @return teamId → 표시 정보 (없는 ID는 맵에 없음)
+     */
+    public Map<Long, TeamDisplayInfo> getDisplayInfoMap(Collection<Long> teamIds) {
+        if (teamIds == null || teamIds.isEmpty()) {
+            return Collections.emptyMap();
+        }
+        return teamRepository.findAllById(teamIds).stream()
+                .map(team -> new TeamDisplayInfo(team.getId(), team.getName(), team.getLogoUrl()))
+                .collect(Collectors.toMap(TeamDisplayInfo::teamId, Function.identity()));
     }
 
     /**
