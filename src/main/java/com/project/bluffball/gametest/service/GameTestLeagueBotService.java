@@ -1,5 +1,6 @@
 package com.project.bluffball.gametest.service;
 
+import com.project.bluffball.domain.card.service.UserPitchCardService;
 import com.project.bluffball.domain.game.config.GameModeRule;
 import com.project.bluffball.domain.game.dto.request.LeagueMatchQueueJoinRequest;
 import com.project.bluffball.domain.game.dto.response.MatchJoinResponse;
@@ -72,6 +73,7 @@ public class GameTestLeagueBotService {
     private final TeamMembershipValidator teamMembershipValidator;
     private final GameTestBotUserExecutor gameTestBotUserExecutor;
     private final PitchCardReader pitchCardReader;
+    private final UserPitchCardService userPitchCardService;
     private final GameModeRule gameModeRule;
     private final LeagueMatchService leagueMatchService;
 
@@ -402,6 +404,10 @@ public class GameTestLeagueBotService {
         List<Long> roster = new ArrayList<>(batters);
         if (!roster.contains(pitcher)) {
             roster.add(pitcher);
+        }
+
+        for (Long rosterUserId : roster) {
+            userPitchCardService.acquireAllMissing(rosterUserId);
         }
 
         List<UpsertTeamPitchCardsRequest.MemberPitchCardSelection> selections = roster.stream()

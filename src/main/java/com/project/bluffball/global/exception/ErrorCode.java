@@ -46,6 +46,11 @@ public enum ErrorCode {
 
     // Card
     PITCH_CARD_NOT_FOUND(HttpStatus.NOT_FOUND, "구종 카드를 찾을 수 없습니다."),
+    USER_PITCH_CARD_NOT_FOUND(HttpStatus.NOT_FOUND, "보유하지 않은 구종 카드입니다."),
+    USER_PITCH_CARD_ALREADY_OWNED(HttpStatus.CONFLICT, "이미 보유한 구종 카드입니다."),
+    USER_PITCH_CARD_ALREADY_ENHANCED(HttpStatus.CONFLICT, "이미 해당 강화가 적용된 카드입니다."),
+    USER_PITCH_CARD_TIMING_BOUNDARY(HttpStatus.BAD_REQUEST, "타이밍 강화가 허용 범위를 벗어납니다."),
+    USER_PITCH_CARD_TIMING_INVALID(HttpStatus.BAD_REQUEST, "타이밍 강화 방향이 올바르지 않습니다."),
     COORDINATE_CARD_NOT_FOUND(HttpStatus.NOT_FOUND, "좌표 카드를 찾을 수 없습니다."),
     COORDINATE_CARD_INVALID_TYPE(HttpStatus.BAD_REQUEST, "좌표 카드 유형이 올바르지 않습니다."),
     COORDINATE_CARD_MASTER_NOT_FOUND(HttpStatus.BAD_REQUEST, "좌표 카드 마스터가 없습니다."),
@@ -114,6 +119,8 @@ public enum ErrorCode {
     TEAM_PITCH_CARDS_INVALID(HttpStatus.BAD_REQUEST, "구종·강화 카드 선택이 올바르지 않습니다."),
     TEAM_PITCH_DROP_CARD_INVALID(HttpStatus.BAD_REQUEST, "교체 시 제외 카드(dropCardId)가 올바르지 않습니다."),
     TEAM_PITCH_CARDS_MEMBER_MISMATCH(HttpStatus.BAD_REQUEST, "사전 선택 멤버가 출전 로스터와 일치하지 않습니다."),
+    TEAM_PITCH_CARDS_COST_INVALID(HttpStatus.BAD_REQUEST, "구종 카드 코스트 합이 핸드 장수와 일치하지 않습니다."),
+    TEAM_PITCH_CARDS_NOT_OWNED(HttpStatus.BAD_REQUEST, "보유하지 않은 구종 카드가 포함되어 있습니다."),
     TEAM_JOIN_APPLICATION_NOT_FOUND(HttpStatus.NOT_FOUND, "가입 신청을 찾을 수 없습니다."),
     TEAM_JOIN_APPLICATION_ALREADY_PENDING(HttpStatus.CONFLICT, "이미 대기 중인 가입 신청이 있습니다."),
     TEAM_JOIN_APPLICATION_NOT_PENDING(HttpStatus.BAD_REQUEST, "대기 중인 가입 신청만 처리할 수 있습니다."),

@@ -1,5 +1,6 @@
 package com.project.bluffball.domain.game.service;
 
+import com.project.bluffball.domain.card.service.usecase.reader.UserPitchCardReader;
 import com.project.bluffball.domain.game.config.GameModeRule;
 import com.project.bluffball.domain.game.dto.response.GameBoardStateResponse;
 import com.project.bluffball.domain.game.dto.response.GameLastTurnResultResponse;
@@ -39,6 +40,7 @@ public class GameSessionService {
     private final GameStateReader gameStateReader;
     private final GameProgressReader gameProgressReader;
     private final TurnResultSessionReader turnResultSessionReader;
+    private final UserPitchCardReader userPitchCardReader;
     private final PitchCardReader pitchCardReader;
     private final MatchPresenceService matchPresenceService;
     private final GameModeRule gameModeRule;
@@ -61,8 +63,8 @@ public class GameSessionService {
         GameSessionPhase phase = resolvePhase(setupComplete, allMulliganDone, gameOver, matchSessionId);
         ParticipantRole myRole = resolveRole(userId, pitcherUserId, batterUserId);
 
-        List<CardInfo> myCardHand = pitchCardReader.getPitchCardDetails(
-                matchInfoReader.getPlayerCardHand(matchSessionId, userId));
+        List<CardInfo> myCardHand = userPitchCardReader.getEffectiveCardInfos(
+                userId, matchInfoReader.getPlayerCardHand(matchSessionId, userId));
 
         List<ParticipantPresenceResponse> participants =
                 matchPresenceService.getParticipantPresenceResponses(matchSessionId);

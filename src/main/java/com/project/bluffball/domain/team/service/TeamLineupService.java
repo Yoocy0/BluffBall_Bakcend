@@ -1,8 +1,10 @@
 package com.project.bluffball.domain.team.service;
 
 import com.project.bluffball.domain.card.service.usecase.reader.CardReader;
+import com.project.bluffball.domain.card.service.usecase.reader.UserPitchCardReader;
 import com.project.bluffball.domain.game.config.GameModeRule;
 import com.project.bluffball.domain.league.enums.LeagueFormat;
+import com.project.bluffball.domain.team.dto.request.UpsertMyPitchCardsRequest;
 import com.project.bluffball.domain.team.dto.request.UpsertTeamLineupRequest;
 import com.project.bluffball.domain.team.dto.request.UpsertTeamPitchCardsRequest;
 import com.project.bluffball.domain.team.dto.response.TeamLineupResponse;
@@ -40,6 +42,7 @@ public class TeamLineupService {
     private final TeamLineupReader teamLineupReader;
     private final TeamPitchCardsReader teamPitchCardsReader;
     private final CardReader cardReader;
+    private final UserPitchCardReader userPitchCardReader;
     private final GameModeRule gameModeRule;
 
     private final TeamLineupExecutor teamLineupExecutor;
@@ -102,14 +105,11 @@ public class TeamLineupService {
     }
 
     /**
-     * 멤버별 구종·강화 사전 선택을 저장한다. 리더만 가능하다.
+     * 멤버별 구종 사전 선택을 일괄 저장한다. (레거시 — 리더 전용)
      *
-     * @param userId 요청 유저 ID
-     * @param teamId 팀 ID
-     * @param format 리그 구분
-     * @param request 멤버별 선택
-     * @return 저장된 사전 선택
+     * @deprecated 개인 선택 {@link #upsertMyPitchCards} 사용
      */
+    @Deprecated
     public TeamPitchCardsResponse upsertPitchCards(
             Long userId,
             Long teamId,
@@ -119,7 +119,6 @@ public class TeamLineupService {
         teamReader.getTeamResponse(teamId);
         teamMembershipValidator.validateLeader(teamMemberReader.isLeader(teamId, userId));
 
-        // 로스터(타순 + Compact 전담 투수)가 먼저 있어야 함
         List<Long> matchRosterUserIds = teamLineupReader.getMatchRosterUserIds(teamId, format);
         List<Long> selectionUserIds = request.selections().stream()
                 .map(UpsertTeamPitchCardsRequest.MemberPitchCardSelection::userId)
@@ -128,10 +127,11 @@ public class TeamLineupService {
 
         int requiredHandSize = gameModeRule.getHandSize(toGameMode(format));
         for (UpsertTeamPitchCardsRequest.MemberPitchCardSelection selection : request.selections()) {
-            teamPitchCardsValidator.validateHandSize(selection.cardIds().size(), requiredHandSize);
-            teamPitchCardsValidator.validateDropCardInHand(selection.cardIds(), selection.dropCardId());
-            teamPitchCardsValidator.validateCardsValid(
-                    cardReader.areValidPitcherHandCards(selection.cardIds()));
+            validateMemberSelection(
+                    selection.userId(),
+                    selection.cardIds(),
+                    selection.dropCardId(),
+                    requiredHandSize);
         }
 
         Long savedTeamId = teamPitchCardsExecutor.replaceAll(teamId, format, request.selections());
@@ -139,7 +139,58 @@ public class TeamLineupService {
     }
 
     /**
-     * 멤버별 구종·강화 사전 선택을 조회한다.
+     * 본인 구종 사전 선택을 저장한다. 출전 로스터에 포함된 멤버만 가능하다.
+     *
+     * <p>카드별 코스트 합 = 모드 핸드 장수. 보유·강화 오버레이 기준.</p>
+     *
+     * @param userId 요청 유저 ID
+     * @param teamId 팀 ID
+     * @param format 리그 구분
+     * @param request 본인 카드 선택
+     * @return 팀 전체 사전 선택 현황
+     */
+    public TeamPitchCardsResponse upsertMyPitchCards(
+            Long userId,
+            Long teamId,
+            LeagueFormat format,
+            UpsertMyPitchCardsRequest request) {
+
+        teamReader.getTeamResponse(teamId);
+        teamMembershipValidator.validateMember(teamMemberReader.isMember(teamId, userId));
+
+        List<Long> matchRosterUserIds = teamLineupReader.getMatchRosterUserIds(teamId, format);
+        teamPitchCardsValidator.validateRequesterInRoster(userId, matchRosterUserIds);
+
+        int requiredHandSize = gameModeRule.getHandSize(toGameMode(format));
+        validateMemberSelection(userId, request.cardIds(), request.dropCardId(), requiredHandSize);
+
+        Long savedTeamId = teamPitchCardsExecutor.upsertOne(
+                teamId, format, userId, request.cardIds(), request.dropCardId());
+        return teamPitchCardsReader.getPitchCardsResponse(savedTeamId, format);
+    }
+
+    /**
+     * 멤버 1명 선택 공통 검증.
+     *
+     * @param ownerUserId 카드 소유자
+     * @param cardIds 선택 카드
+     * @param dropCardId drop 카드
+     * @param requiredHandSize 핸드 장수(코스트 합 목표)
+     */
+    private void validateMemberSelection(
+            Long ownerUserId,
+            List<Long> cardIds,
+            Long dropCardId,
+            int requiredHandSize) {
+        teamPitchCardsValidator.validateDropCardInHand(cardIds, dropCardId);
+        teamPitchCardsValidator.validateCardsValid(cardReader.areValidPitcherHandCards(cardIds));
+        teamPitchCardsValidator.validateOwned(userPitchCardReader.ownsAll(ownerUserId, cardIds));
+        teamPitchCardsValidator.validateTotalCost(
+                userPitchCardReader.sumCost(ownerUserId, cardIds), requiredHandSize);
+    }
+
+    /**
+     * 멤버별 구종 사전 선택을 조회한다.
      *
      * @param teamId 팀 ID
      * @param format 리그 구분

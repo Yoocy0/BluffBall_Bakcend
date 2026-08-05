@@ -1,5 +1,6 @@
 package com.project.bluffball.domain.game.service;
 
+import com.project.bluffball.domain.card.service.usecase.reader.UserPitchCardReader;
 import com.project.bluffball.domain.game.config.GameModeRule;
 import com.project.bluffball.domain.game.dto.request.LeagueSubstitutePitcherRequest;
 import com.project.bluffball.domain.game.dto.request.MulliganRequest;
@@ -16,7 +17,6 @@ import com.project.bluffball.domain.game.service.usecase.executor.LeaguePitcherS
 import com.project.bluffball.domain.game.service.usecase.executor.MulliganExecutor;
 import com.project.bluffball.domain.game.service.usecase.executor.SetupNumberExecutor;
 import com.project.bluffball.domain.game.service.usecase.reader.MatchInfoReader;
-import com.project.bluffball.domain.game.service.usecase.reader.PitchCardReader;
 import com.project.bluffball.domain.game.service.usecase.validator.LeaguePitcherSubstituteValidator;
 import com.project.bluffball.domain.game.service.usecase.validator.MulliganValidator;
 import com.project.bluffball.domain.game.service.usecase.validator.SetupNumberValidator;
@@ -51,7 +51,7 @@ public class GamePrepService {
     private final LeaguePitcherSubstituteValidator leaguePitcherSubstituteValidator;
     private final LeaguePitcherSubstituteExecutor leaguePitcherSubstituteExecutor;
     private final MatchInfoReader matchInfoReader;
-    private final PitchCardReader pitchCardReader;
+    private final UserPitchCardReader userPitchCardReader;
     private final GameProgressService gameProgressService;
     private final GameModeRule gameModeRule;
     private final SimpMessagingTemplate messagingTemplate;
@@ -126,7 +126,7 @@ public class GamePrepService {
         Long pitcherUserId = matchInfoReader.getPitcherUserId(matchSessionId);
         for (Long userId : matchInfoReader.getParticipantUserIds(matchSessionId)) {
             List<Long> handIds = matchInfoReader.getPlayerCardHand(matchSessionId, userId);
-            List<CardInfo> cardInfos = pitchCardReader.getPitchCardDetails(handIds);
+            List<CardInfo> cardInfos = userPitchCardReader.getEffectiveCardInfos(userId, handIds);
             publishCardHandEvent(matchSessionId, cardInfos, pitcherUserId, userId, false, false);
         }
     }
@@ -246,7 +246,7 @@ public class GamePrepService {
 
         Long pitcherUserId = matchInfoReader.getPitcherUserId(matchSessionId);
         boolean allReady = matchInfoReader.isMulliganDone(matchSessionId);
-        List<CardInfo> cardInfos = pitchCardReader.getPitchCardDetails(finalHand);
+        List<CardInfo> cardInfos = userPitchCardReader.getEffectiveCardInfos(userId, finalHand);
 
         publishCardHandEvent(matchSessionId, cardInfos, pitcherUserId, userId, allReady, true);
 
@@ -258,7 +258,7 @@ public class GamePrepService {
                 List<Long> hand = matchInfoReader.getPlayerCardHand(matchSessionId, participantId);
                 publishCardHandEvent(
                         matchSessionId,
-                        pitchCardReader.getPitchCardDetails(hand),
+                        userPitchCardReader.getEffectiveCardInfos(participantId, hand),
                         pitcherUserId,
                         participantId,
                         true,

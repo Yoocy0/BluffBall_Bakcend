@@ -34,7 +34,6 @@ public class TeamPitchCardsExecutor {
             List<UpsertTeamPitchCardsRequest.MemberPitchCardSelection> selections) {
 
         teamPitchLoadoutRepository.deleteByTeamIdAndFormat(teamId, format);
-        // delete 후 insert가 같은 트랜잭션에서 충돌하지 않도록 flush
         teamPitchLoadoutRepository.flush();
 
         for (UpsertTeamPitchCardsRequest.MemberPitchCardSelection selection : selections) {
@@ -45,6 +44,31 @@ public class TeamPitchCardsExecutor {
                     selection.cardIds(),
                     selection.dropCardId()));
         }
+        return teamId;
+    }
+
+    /**
+     * 멤버 1명의 구종 사전 선택을 upsert한다.
+     *
+     * @param teamId 팀 ID
+     * @param format 리그 구분
+     * @param userId 멤버 유저 ID
+     * @param cardIds 구종 카드 ID
+     * @param dropCardId 교체 제외 카드 ID
+     * @return 팀 ID
+     */
+    @Transactional
+    public Long upsertOne(
+            Long teamId,
+            LeagueFormat format,
+            Long userId,
+            List<Long> cardIds,
+            Long dropCardId) {
+        teamPitchLoadoutRepository.findByTeamIdAndFormatAndUserId(teamId, format, userId)
+                .ifPresentOrElse(
+                        loadout -> loadout.replaceCards(cardIds, dropCardId),
+                        () -> teamPitchLoadoutRepository.save(
+                                new TeamPitchLoadout(teamId, format, userId, cardIds, dropCardId)));
         return teamId;
     }
 }
