@@ -1,5 +1,6 @@
 package com.project.bluffball.domain.team.entity;
 
+import com.project.bluffball.domain.team.enums.TeamJoinPolicy;
 import jakarta.persistence.*;
 import lombok.AccessLevel;
 import lombok.Getter;
@@ -46,23 +47,44 @@ public class Team {
     @Column(name = "treasury", nullable = false)
     private long treasury;
 
+    /** 가입 정책 — 즉시 가입 또는 승인제 */
+    @Enumerated(EnumType.ORDINAL)
+    @Column(name = "join_policy", nullable = false)
+    private TeamJoinPolicy joinPolicy;
+
     @Column(name = "created_at", nullable = false, updatable = false)
     private LocalDateTime createdAt;
 
     @PrePersist
     private void prePersist() {
         this.createdAt = LocalDateTime.now(KST);
+        if (this.joinPolicy == null) {
+            this.joinPolicy = TeamJoinPolicy.OPEN;
+        }
     }
 
     public Team(String name, Long leaderUserId) {
-        this(name, leaderUserId, null);
+        this(name, leaderUserId, null, TeamJoinPolicy.OPEN);
     }
 
     public Team(String name, Long leaderUserId, String logoUrl) {
+        this(name, leaderUserId, logoUrl, TeamJoinPolicy.OPEN);
+    }
+
+    /**
+     * 팀을 생성한다.
+     *
+     * @param name 팀 이름
+     * @param leaderUserId 리더 유저 ID
+     * @param logoUrl 로고 URL (nullable)
+     * @param joinPolicy 가입 정책 (null이면 OPEN)
+     */
+    public Team(String name, Long leaderUserId, String logoUrl, TeamJoinPolicy joinPolicy) {
         this.name = name;
         this.leaderUserId = leaderUserId;
         this.logoUrl = logoUrl;
         this.treasury = 0L;
+        this.joinPolicy = joinPolicy != null ? joinPolicy : TeamJoinPolicy.OPEN;
     }
 
     /**
@@ -70,6 +92,18 @@ public class Team {
      */
     public void updateLogo(String logoUrl) {
         this.logoUrl = logoUrl;
+    }
+
+    /**
+     * 가입 정책을 변경한다.
+     *
+     * @param joinPolicy 새 가입 정책
+     */
+    public void updateJoinPolicy(TeamJoinPolicy joinPolicy) {
+        if (joinPolicy == null) {
+            throw new IllegalArgumentException("가입 정책은 null일 수 없습니다.");
+        }
+        this.joinPolicy = joinPolicy;
     }
 
     /**

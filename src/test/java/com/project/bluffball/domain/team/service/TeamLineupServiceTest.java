@@ -55,7 +55,7 @@ class TeamLineupServiceTest {
     private static final Long USER_ID = 1L;
     private static final Long TEAM_ID = 10L;
     private static final TeamResponse TEAM =
-            new TeamResponse(TEAM_ID, "블러프", null, USER_ID, 0L, null);
+            new TeamResponse(TEAM_ID, "블러프", null, USER_ID, 0L, null, com.project.bluffball.domain.team.enums.TeamJoinPolicy.OPEN);
 
     @BeforeEach
     void setUp() {

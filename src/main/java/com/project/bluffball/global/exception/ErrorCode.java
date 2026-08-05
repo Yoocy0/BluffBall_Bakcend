@@ -114,6 +114,10 @@ public enum ErrorCode {
     TEAM_PITCH_CARDS_INVALID(HttpStatus.BAD_REQUEST, "구종·강화 카드 선택이 올바르지 않습니다."),
     TEAM_PITCH_DROP_CARD_INVALID(HttpStatus.BAD_REQUEST, "교체 시 제외 카드(dropCardId)가 올바르지 않습니다."),
     TEAM_PITCH_CARDS_MEMBER_MISMATCH(HttpStatus.BAD_REQUEST, "사전 선택 멤버가 출전 로스터와 일치하지 않습니다."),
+    TEAM_JOIN_APPLICATION_NOT_FOUND(HttpStatus.NOT_FOUND, "가입 신청을 찾을 수 없습니다."),
+    TEAM_JOIN_APPLICATION_ALREADY_PENDING(HttpStatus.CONFLICT, "이미 대기 중인 가입 신청이 있습니다."),
+    TEAM_JOIN_APPLICATION_NOT_PENDING(HttpStatus.BAD_REQUEST, "대기 중인 가입 신청만 처리할 수 있습니다."),
+    TEAM_JOIN_POLICY_INVALID(HttpStatus.BAD_REQUEST, "가입 정책이 올바르지 않습니다."),
 
     // League
     LEAGUE_NOT_FOUND(HttpStatus.NOT_FOUND, "리그를 찾을 수 없습니다."),

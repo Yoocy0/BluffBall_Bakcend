@@ -3,6 +3,7 @@ package com.project.bluffball.domain.team.service.usecase.executor;
 import com.project.bluffball.domain.team.entity.Team;
 import com.project.bluffball.domain.team.entity.TeamMember;
 import com.project.bluffball.domain.team.enums.TeamMemberRole;
+import com.project.bluffball.domain.team.repository.TeamJoinApplicationRepository;
 import com.project.bluffball.domain.team.repository.TeamMemberRepository;
 import com.project.bluffball.domain.team.repository.TeamPresenceRepository;
 import com.project.bluffball.domain.team.repository.TeamRepository;
@@ -26,6 +27,7 @@ public class TeamMembershipExecutor {
     private final TeamMemberRepository teamMemberRepository;
     private final TeamTreasuryTransactionRepository teamTreasuryTransactionRepository;
     private final TeamPresenceRepository teamPresenceRepository;
+    private final TeamJoinApplicationRepository teamJoinApplicationRepository;
     private final TeamReader teamReader;
     private final TeamMemberReader teamMemberReader;
 
@@ -105,6 +107,7 @@ public class TeamMembershipExecutor {
         }
         teamMemberRepository.deleteByTeamId(teamId);
         teamTreasuryTransactionRepository.deleteByTeamId(teamId);
+        teamJoinApplicationRepository.deleteByTeamId(teamId);
         teamPresenceRepository.deleteById(String.valueOf(teamId));
         teamRepository.deleteById(teamId);
     }

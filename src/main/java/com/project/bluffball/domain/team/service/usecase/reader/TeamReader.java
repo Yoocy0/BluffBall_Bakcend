@@ -6,6 +6,7 @@ import com.project.bluffball.domain.league.service.usecase.reader.LeagueReader;
 import com.project.bluffball.domain.team.dto.response.TeamDisplayInfo;
 import com.project.bluffball.domain.team.dto.response.TeamResponse;
 import com.project.bluffball.domain.team.entity.Team;
+import com.project.bluffball.domain.team.enums.TeamJoinPolicy;
 import com.project.bluffball.domain.team.repository.TeamRepository;
 import com.project.bluffball.global.exception.ErrorCode;
 import com.project.bluffball.global.exception.NotFoundException;
@@ -97,6 +98,16 @@ public class TeamReader {
     }
 
     /**
+     * 팀 가입 정책을 반환한다.
+     *
+     * @param teamId 팀 ID
+     * @return 가입 정책
+     */
+    public TeamJoinPolicy getJoinPolicy(Long teamId) {
+        return getById(teamId).getJoinPolicy();
+    }
+
+    /**
      * 팀 ID 목록에 대한 표시용 이름·로고 맵을 반환한다. (Service ✅)
      *
      * @param teamIds 팀 ID 목록
@@ -125,7 +136,8 @@ public class TeamReader {
                 team.getLogoUrl(),
                 team.getLeaderUserId(),
                 team.getTreasury(),
-                currentLeagueId.orElse(null));
+                currentLeagueId.orElse(null),
+                team.getJoinPolicy());
     }
 
     /**

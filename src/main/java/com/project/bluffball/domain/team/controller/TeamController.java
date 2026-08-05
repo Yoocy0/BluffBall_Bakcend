@@ -5,7 +5,10 @@ import com.project.bluffball.domain.league.enums.LeagueTier;
 import com.project.bluffball.domain.team.dto.request.CreateTeamRequest;
 import com.project.bluffball.domain.team.dto.request.DonateTeamRequest;
 import com.project.bluffball.domain.team.dto.request.UpdateMemberRoleRequest;
+import com.project.bluffball.domain.team.dto.request.UpdateTeamJoinPolicyRequest;
 import com.project.bluffball.domain.team.dto.request.UpdateTeamLogoRequest;
+import com.project.bluffball.domain.team.dto.response.TeamJoinApplicationResponse;
+import com.project.bluffball.domain.team.dto.response.TeamJoinResponse;
 import com.project.bluffball.domain.team.dto.response.TeamMemberResponse;
 import com.project.bluffball.domain.team.dto.response.TeamRecordsResponse;
 import com.project.bluffball.domain.team.dto.response.TeamResponse;
@@ -163,26 +166,155 @@ public class TeamController {
     }
 
     /**
-     * 팀에 가입한다.
+     * 팀에 가입하거나 가입 신청을 제출한다.
      *
      * @param teamId 팀 ID
-     * @return 가입한 팀 정보
+     * @return 즉시 가입 또는 신청 제출 결과
      */
     @Operation(
-            summary = "팀 가입",
-            description = "팀에 가입한다.",
+            summary = "팀 가입 / 가입 신청",
+            description = "가입 정책이 OPEN이면 즉시 가입(JOINED), APPROVAL_REQUIRED이면 PENDING 신청을 생성한다.",
             security = @SecurityRequirement(name = "bearerAuth")
     )
     @ApiResponses({
-            @ApiResponse(responseCode = "200", description = "가입 성공"),
+            @ApiResponse(responseCode = "200", description = "가입 성공 또는 신청 제출"),
             @ApiResponse(responseCode = "401", description = "인증 토큰 없음 또는 만료"),
             @ApiResponse(responseCode = "404", description = "팀 없음"),
-            @ApiResponse(responseCode = "409", description = "이미 다른 팀 소속 또는 팀 인원 초과(최대 50명)")
+            @ApiResponse(responseCode = "409", description = "이미 소속·대기 신청 존재 또는 인원 초과")
     })
     @PostMapping("/{teamId}/join")
-    public ResponseEntity<TeamResponse> join(@PathVariable Long teamId) {
+    public ResponseEntity<TeamJoinResponse> join(@PathVariable Long teamId) {
         Long userId = authenticatedUserResolver.requireUserId();
         return ResponseEntity.ok(teamService.join(userId, teamId));
+    }
+
+    /**
+     * PENDING 가입 신청 목록을 조회한다.
+     *
+     * @param teamId 팀 ID
+     * @return PENDING 신청 목록
+     */
+    @Operation(
+            summary = "가입 신청 목록 조회",
+            description = "리더가 팀의 대기 중 가입 신청 목록을 조회한다.",
+            security = @SecurityRequirement(name = "bearerAuth")
+    )
+    @ApiResponses({
+            @ApiResponse(responseCode = "200", description = "조회 성공"),
+            @ApiResponse(responseCode = "401", description = "인증 토큰 없음 또는 만료"),
+            @ApiResponse(responseCode = "403", description = "리더가 아님"),
+            @ApiResponse(responseCode = "404", description = "팀 없음")
+    })
+    @GetMapping("/{teamId}/join-applications")
+    public ResponseEntity<List<TeamJoinApplicationResponse>> getPendingJoinApplications(
+            @PathVariable Long teamId) {
+        Long userId = authenticatedUserResolver.requireUserId();
+        return ResponseEntity.ok(teamService.getPendingJoinApplications(userId, teamId));
+    }
+
+    /**
+     * 가입 신청을 승인한다.
+     *
+     * @param teamId 팀 ID
+     * @param applicationId 신청 ID
+     * @return 가입된 팀 정보
+     */
+    @Operation(
+            summary = "가입 신청 승인",
+            description = "리더가 PENDING 신청을 승인하여 멤버로 등록한다.",
+            security = @SecurityRequirement(name = "bearerAuth")
+    )
+    @ApiResponses({
+            @ApiResponse(responseCode = "200", description = "승인 성공"),
+            @ApiResponse(responseCode = "400", description = "대기 상태가 아님"),
+            @ApiResponse(responseCode = "403", description = "리더가 아님"),
+            @ApiResponse(responseCode = "404", description = "팀 또는 신청 없음"),
+            @ApiResponse(responseCode = "409", description = "이미 소속 또는 인원 초과")
+    })
+    @PostMapping("/{teamId}/join-applications/{applicationId}/approve")
+    public ResponseEntity<TeamResponse> approveJoinApplication(
+            @PathVariable Long teamId,
+            @PathVariable Long applicationId) {
+        Long userId = authenticatedUserResolver.requireUserId();
+        return ResponseEntity.ok(teamService.approveJoinApplication(userId, teamId, applicationId));
+    }
+
+    /**
+     * 가입 신청을 거부한다.
+     *
+     * @param teamId 팀 ID
+     * @param applicationId 신청 ID
+     * @return 거부된 신청 정보
+     */
+    @Operation(
+            summary = "가입 신청 거부",
+            description = "리더가 PENDING 신청을 거부한다.",
+            security = @SecurityRequirement(name = "bearerAuth")
+    )
+    @ApiResponses({
+            @ApiResponse(responseCode = "200", description = "거부 성공"),
+            @ApiResponse(responseCode = "400", description = "대기 상태가 아님"),
+            @ApiResponse(responseCode = "403", description = "리더가 아님"),
+            @ApiResponse(responseCode = "404", description = "팀 또는 신청 없음")
+    })
+    @PostMapping("/{teamId}/join-applications/{applicationId}/reject")
+    public ResponseEntity<TeamJoinApplicationResponse> rejectJoinApplication(
+            @PathVariable Long teamId,
+            @PathVariable Long applicationId) {
+        Long userId = authenticatedUserResolver.requireUserId();
+        return ResponseEntity.ok(teamService.rejectJoinApplication(userId, teamId, applicationId));
+    }
+
+    /**
+     * 본인 가입 신청을 취소한다.
+     *
+     * @param teamId 팀 ID
+     * @param applicationId 신청 ID
+     * @return 취소된 신청 정보
+     */
+    @Operation(
+            summary = "가입 신청 취소",
+            description = "신청자 본인이 PENDING 신청을 취소한다.",
+            security = @SecurityRequirement(name = "bearerAuth")
+    )
+    @ApiResponses({
+            @ApiResponse(responseCode = "200", description = "취소 성공"),
+            @ApiResponse(responseCode = "400", description = "대기 상태가 아님"),
+            @ApiResponse(responseCode = "403", description = "본인 신청이 아님"),
+            @ApiResponse(responseCode = "404", description = "팀 또는 신청 없음")
+    })
+    @PostMapping("/{teamId}/join-applications/{applicationId}/cancel")
+    public ResponseEntity<TeamJoinApplicationResponse> cancelJoinApplication(
+            @PathVariable Long teamId,
+            @PathVariable Long applicationId) {
+        Long userId = authenticatedUserResolver.requireUserId();
+        return ResponseEntity.ok(teamService.cancelJoinApplication(userId, teamId, applicationId));
+    }
+
+    /**
+     * 팀 가입 정책을 변경한다.
+     *
+     * @param teamId 팀 ID
+     * @param request 정책 변경 요청
+     * @return 갱신된 팀 정보
+     */
+    @Operation(
+            summary = "가입 정책 변경",
+            description = "리더가 OPEN / APPROVAL_REQUIRED 정책을 변경한다.",
+            security = @SecurityRequirement(name = "bearerAuth")
+    )
+    @ApiResponses({
+            @ApiResponse(responseCode = "200", description = "변경 성공"),
+            @ApiResponse(responseCode = "400", description = "정책 값 오류"),
+            @ApiResponse(responseCode = "403", description = "리더가 아님"),
+            @ApiResponse(responseCode = "404", description = "팀 없음")
+    })
+    @PatchMapping("/{teamId}/join-policy")
+    public ResponseEntity<TeamResponse> updateJoinPolicy(
+            @PathVariable Long teamId,
+            @Valid @RequestBody UpdateTeamJoinPolicyRequest request) {
+        Long userId = authenticatedUserResolver.requireUserId();
+        return ResponseEntity.ok(teamService.updateJoinPolicy(userId, teamId, request));
     }
 
     /**

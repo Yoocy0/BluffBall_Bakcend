@@ -334,7 +334,7 @@ public class GameTestLeagueBotService {
         return teamMemberReader.findTeamIdByUserId(leaderUserId)
                 .orElseGet(() -> {
                     String name = "BT" + UUID.randomUUID().toString().replace("-", "").substring(0, 6);
-                    TeamResponse created = teamService.create(leaderUserId, new CreateTeamRequest(name, null));
+                    TeamResponse created = teamService.create(leaderUserId, new CreateTeamRequest(name, null, null));
                     return created.teamId();
                 });
     }
