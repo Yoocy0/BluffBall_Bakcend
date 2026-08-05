@@ -1,6 +1,7 @@
 package com.project.bluffball.domain.league.service;
 
 import com.project.bluffball.domain.league.config.LeagueTierRule;
+import com.project.bluffball.domain.league.dto.response.LeagueStandingsResponse;
 import com.project.bluffball.domain.league.dto.response.TeamLeagueProgressResponse;
 import com.project.bluffball.domain.league.enums.LeagueFormat;
 import com.project.bluffball.domain.league.enums.LeagueTier;
@@ -58,6 +59,17 @@ public class LeagueProgressService {
     public TeamLeagueProgressResponse getProgress(Long userId, LeagueFormat format) {
         Long teamId = requireTeamId(userId);
         return teamLeagueProgressReader.getProgressResponse(teamId, format);
+    }
+
+    /**
+     * 포맷·티어별 리그 전체 순위를 조회한다.
+     *
+     * @param format 리그 포맷
+     * @param tier 리그 티어
+     * @return 순위 응답
+     */
+    public LeagueStandingsResponse getStandings(LeagueFormat format, LeagueTier tier) {
+        return teamLeagueProgressReader.getStandingsResponse(format, tier);
     }
 
     /**
