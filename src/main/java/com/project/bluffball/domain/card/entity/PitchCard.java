@@ -72,6 +72,17 @@ public class PitchCard extends Card {
      * @return 변화 적용 후 최종 좌표 번호 (1 ~ 25), 격자 이탈 시 0
      */
     public int calculateFinalCoordinateNumber(int startCoordinateNumber) {
+        return calculateFinalCoordinateNumber(startCoordinateNumber, this.changeAmount);
+    }
+
+    /**
+     * 시작 좌표에 지정 변화량을 적용하여 최종 좌표 번호를 반환한다.
+     *
+     * @param startCoordinateNumber 시작 좌표 (1~25)
+     * @param effectiveChangeAmount 실효 변화량 (강화 반영 가능)
+     * @return 최종 좌표 (1~25), 격자 이탈 시 0
+     */
+    public int calculateFinalCoordinateNumber(int startCoordinateNumber, int effectiveChangeAmount) {
         int startY = (startCoordinateNumber - 1) / 5;
         int startX = (startCoordinateNumber - 1) % 5;
 
@@ -80,19 +91,19 @@ public class PitchCard extends Card {
 
         switch (direction) {
             case SIDE -> {
-                finalX = startX + this.changeAmount;
+                finalX = startX + effectiveChangeAmount;
                 if (finalX > 4) {
                     return 0;
                 }
             }
             case REVERSE -> {
-                finalX = startX - this.changeAmount;
+                finalX = startX - effectiveChangeAmount;
                 if (finalX < 0) {
                     return 0;
                 }
             }
             case DOWN -> {
-                finalY = startY + this.changeAmount;
+                finalY = startY + effectiveChangeAmount;
                 if (finalY > 4) {
                     return 0;
                 }

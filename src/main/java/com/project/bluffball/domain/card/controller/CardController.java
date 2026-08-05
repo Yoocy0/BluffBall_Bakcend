@@ -133,7 +133,7 @@ public class CardController {
     })
     @GetMapping("/enhancement")
     public ResponseEntity<List<?>> getEnhancementCards() {
-        // TODO: CardService.getEnhancementCards()
-        return ResponseEntity.ok().build();
+        // 강화는 UserPitchCard 오버레이로 이전됨 — GET /api/v1/users/me/pitch-cards 사용
+        return ResponseEntity.ok(List.of());
     }
 }

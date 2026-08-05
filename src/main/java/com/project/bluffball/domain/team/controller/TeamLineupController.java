@@ -1,6 +1,7 @@
 package com.project.bluffball.domain.team.controller;
 
 import com.project.bluffball.domain.league.enums.LeagueFormat;
+import com.project.bluffball.domain.team.dto.request.UpsertMyPitchCardsRequest;
 import com.project.bluffball.domain.team.dto.request.UpsertTeamLineupRequest;
 import com.project.bluffball.domain.team.dto.request.UpsertTeamPitchCardsRequest;
 import com.project.bluffball.domain.team.dto.response.TeamLineupResponse;
@@ -94,25 +95,56 @@ public class TeamLineupController {
     }
 
     /**
-     * 멤버별 구종·강화 사전 선택을 저장한다.
+     * 본인 구종 사전 선택을 저장한다.
+     *
+     * @param teamId 팀 ID
+     * @param format 리그 구분
+     * @param request 본인 카드·dropCard
+     * @return 팀 전체 사전 선택 현황
+     */
+    @Operation(
+            summary = "내 구종 사전 선택 저장",
+            description = "출전 로스터에 포함된 멤버가 본인 보유 구종으로 사전 선택을 저장한다. "
+                    + "카드 코스트 합 = Compact 4 / Full 5. dropCardId는 선택에 포함되어야 한다.",
+            security = @SecurityRequirement(name = "bearerAuth")
+    )
+    @ApiResponses({
+            @ApiResponse(responseCode = "200", description = "저장 성공"),
+            @ApiResponse(responseCode = "400", description = "코스트·보유·dropCard·로스터 오류"),
+            @ApiResponse(responseCode = "401", description = "인증 토큰 없음 또는 만료"),
+            @ApiResponse(responseCode = "403", description = "팀 멤버가 아님")
+    })
+    @PutMapping("/{format}/pitch-cards/me")
+    public ResponseEntity<TeamPitchCardsResponse> upsertMyPitchCards(
+            @PathVariable Long teamId,
+            @PathVariable LeagueFormat format,
+            @Valid @RequestBody UpsertMyPitchCardsRequest request) {
+        Long userId = authenticatedUserResolver.requireUserId();
+        return ResponseEntity.ok(teamLineupService.upsertMyPitchCards(userId, teamId, format, request));
+    }
+
+    /**
+     * 멤버별 구종·강화 사전 선택을 저장한다. (레거시 리더 일괄)
      *
      * @param teamId 팀 ID
      * @param format 리그 구분
      * @param request 멤버별 카드 선택
      * @return 저장된 사전 선택
+     * @deprecated {@code PUT .../pitch-cards/me} 사용
      */
     @Operation(
-            summary = "구종·강화 사전 선택 저장",
-            description = "출전 멤버별 구종·강화 n+1장과 교체 시 제외할 dropCardId를 저장한다. "
-                    + "Compact 4장 / Full 5장.",
+            summary = "구종 사전 선택 일괄 저장 (레거시)",
+            description = "리더가 출전 멤버 전체를 일괄 저장한다. 개인 선택은 PUT .../pitch-cards/me 권장.",
+            deprecated = true,
             security = @SecurityRequirement(name = "bearerAuth")
     )
     @ApiResponses({
             @ApiResponse(responseCode = "200", description = "저장 성공"),
-            @ApiResponse(responseCode = "400", description = "장수·dropCard·로스터 불일치"),
+            @ApiResponse(responseCode = "400", description = "코스트·보유·dropCard·로스터 불일치"),
             @ApiResponse(responseCode = "401", description = "인증 토큰 없음 또는 만료"),
             @ApiResponse(responseCode = "403", description = "리더가 아님")
     })
+    @Deprecated
     @PutMapping("/{format}/pitch-cards")
     public ResponseEntity<TeamPitchCardsResponse> upsertPitchCards(
             @PathVariable Long teamId,

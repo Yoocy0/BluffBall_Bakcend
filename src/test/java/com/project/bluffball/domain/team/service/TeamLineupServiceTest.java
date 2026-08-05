@@ -1,6 +1,7 @@
 package com.project.bluffball.domain.team.service;
 
 import com.project.bluffball.domain.card.service.usecase.reader.CardReader;
+import com.project.bluffball.domain.card.service.usecase.reader.UserPitchCardReader;
 import com.project.bluffball.domain.game.config.GameModeRule;
 import com.project.bluffball.domain.league.enums.LeagueFormat;
 import com.project.bluffball.domain.team.dto.request.UpsertTeamLineupRequest;
@@ -47,6 +48,7 @@ class TeamLineupServiceTest {
     @Mock private TeamLineupReader teamLineupReader;
     @Mock private TeamPitchCardsReader teamPitchCardsReader;
     @Mock private CardReader cardReader;
+    @Mock private UserPitchCardReader userPitchCardReader;
     @Mock private TeamLineupExecutor teamLineupExecutor;
     @Mock private TeamPitchCardsExecutor teamPitchCardsExecutor;
 
@@ -68,6 +70,7 @@ class TeamLineupServiceTest {
                 teamLineupReader,
                 teamPitchCardsReader,
                 cardReader,
+                userPitchCardReader,
                 new GameModeRule(),
                 teamLineupExecutor,
                 teamPitchCardsExecutor
@@ -165,6 +168,14 @@ class TeamLineupServiceTest {
             when(teamMemberReader.isLeader(TEAM_ID, USER_ID)).thenReturn(true);
             when(teamLineupReader.getMatchRosterUserIds(TEAM_ID, LeagueFormat.COMPACT)).thenReturn(matchRoster);
             when(cardReader.areValidPitcherHandCards(cards)).thenReturn(true);
+            when(userPitchCardReader.ownsAll(eq(1L), eq(cards))).thenReturn(true);
+            when(userPitchCardReader.ownsAll(eq(2L), eq(cards))).thenReturn(true);
+            when(userPitchCardReader.ownsAll(eq(3L), eq(cards))).thenReturn(true);
+            when(userPitchCardReader.ownsAll(eq(4L), eq(cards))).thenReturn(true);
+            when(userPitchCardReader.sumCost(eq(1L), eq(cards))).thenReturn(4);
+            when(userPitchCardReader.sumCost(eq(2L), eq(cards))).thenReturn(4);
+            when(userPitchCardReader.sumCost(eq(3L), eq(cards))).thenReturn(4);
+            when(userPitchCardReader.sumCost(eq(4L), eq(cards))).thenReturn(4);
             when(teamPitchCardsExecutor.replaceAll(TEAM_ID, LeagueFormat.COMPACT, selections))
                     .thenReturn(TEAM_ID);
             when(teamPitchCardsReader.getPitchCardsResponse(TEAM_ID, LeagueFormat.COMPACT))

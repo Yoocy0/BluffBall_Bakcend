@@ -1,9 +1,7 @@
 package com.project.bluffball.domain.card.service.usecase.reader;
 
 import com.project.bluffball.domain.card.entity.Card;
-import com.project.bluffball.domain.card.entity.CoordinateCard;
 import com.project.bluffball.domain.card.entity.PitchCard;
-import com.project.bluffball.domain.card.enums.UserType;
 import com.project.bluffball.domain.card.repository.CardRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Component;
@@ -22,13 +20,13 @@ public class CardReader {
     private final CardRepository cardRepository;
 
     /**
-     * 리그 사전 선택(구종·강화)으로 허용되는 카드인지 판정한다.
+     * 리그 사전 선택으로 허용되는 구종 카드인지 판정한다.
      *
-     * <p>허용: {@link PitchCard}, 또는 기본 Card 중 {@code userType=PITCHER}(구종 강화).
-     * 좌표 카드·타자 타이밍 카드는 불가.</p>
+     * <p>허용: {@link PitchCard}만. 좌표·타자 타이밍·구 강화 카드 타입은 불가.
+     * 강화는 {@code UserPitchCard} 오버레이로 처리한다.</p>
      *
      * @param cardIds 카드 ID 목록
-     * @return 전부 허용 카드이면 true
+     * @return 전부 구종 카드이면 true
      */
     public boolean areValidPitcherHandCards(List<Long> cardIds) {
         if (cardIds == null || cardIds.isEmpty()) {
@@ -42,22 +40,6 @@ public class CardReader {
         if (cards.size() != uniqueIds.size()) {
             return false;
         }
-        return cards.stream().allMatch(this::isSelectablePitchHandCard);
-    }
-
-    /**
-     * 단일 카드가 구종 핸드로 선택 가능한지 판정한다.
-     *
-     * @param card 카드 Entity
-     * @return 선택 가능하면 true
-     */
-    private boolean isSelectablePitchHandCard(Card card) {
-        if (card instanceof CoordinateCard) {
-            return false;
-        }
-        if (card instanceof PitchCard) {
-            return true;
-        }
-        return card.getUserType() == UserType.PITCHER;
+        return cards.stream().allMatch(card -> card instanceof PitchCard);
     }
 }

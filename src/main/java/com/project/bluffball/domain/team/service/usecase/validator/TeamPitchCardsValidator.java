@@ -65,7 +65,7 @@ public class TeamPitchCardsValidator {
     }
 
     /**
-     * 카드 ID가 구종·강화로 유효한지 검증한다.
+     * 카드 ID가 구종으로 유효한지 검증한다.
      *
      * @param allValid {@code CardReader.areValidPitcherHandCards} 결과
      * @throws BadRequestException 유효하지 않으면
@@ -73,6 +73,48 @@ public class TeamPitchCardsValidator {
     public void validateCardsValid(boolean allValid) {
         if (!allValid) {
             throw new BadRequestException(ErrorCode.TEAM_PITCH_CARDS_INVALID);
+        }
+    }
+
+    /**
+     * 요청자가 출전 로스터에 포함되는지 검증한다.
+     *
+     * @param requesterUserId 요청자
+     * @param matchRosterUserIds 로스터
+     * @throws BadRequestException 로스터에 없으면
+     */
+    public void validateRequesterInRoster(Long requesterUserId, List<Long> matchRosterUserIds) {
+        if (requesterUserId == null || !matchRosterUserIds.contains(requesterUserId)) {
+            throw new BadRequestException(
+                    ErrorCode.TEAM_PITCH_CARDS_MEMBER_MISMATCH,
+                    "requester not in roster userId=" + requesterUserId);
+        }
+    }
+
+    /**
+     * 보유 여부를 검증한다.
+     *
+     * @param ownsAll 전부 보유 여부
+     * @throws BadRequestException 미보유 포함 시
+     */
+    public void validateOwned(boolean ownsAll) {
+        if (!ownsAll) {
+            throw new BadRequestException(ErrorCode.TEAM_PITCH_CARDS_NOT_OWNED);
+        }
+    }
+
+    /**
+     * 코스트 합이 핸드 장수와 같은지 검증한다.
+     *
+     * @param totalCost 코스트 합
+     * @param requiredHandSize 모드 핸드 장수
+     * @throws BadRequestException 불일치 시
+     */
+    public void validateTotalCost(int totalCost, int requiredHandSize) {
+        if (totalCost != requiredHandSize) {
+            throw new BadRequestException(
+                    ErrorCode.TEAM_PITCH_CARDS_COST_INVALID,
+                    "totalCost=" + totalCost + ", required=" + requiredHandSize);
         }
     }
 }
