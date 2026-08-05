@@ -41,7 +41,7 @@ public class UserController {
      */
     @Operation(
             summary = "내 프로필 조회",
-            description = "JWT로 인증된 본인의 userId·닉네임·재화·닉네임 무료 변경 여부·가입일을 반환한다. "
+            description = "JWT로 인증된 본인의 userId·닉네임·재화·닉네임 무료 변경 여부·튜토리얼 완료 여부·가입일을 반환한다. "
                     + "전적은 GET /api/v1/users/{userId}/records 로 별도 조회한다.",
             security = @SecurityRequirement(name = "bearerAuth")
     )

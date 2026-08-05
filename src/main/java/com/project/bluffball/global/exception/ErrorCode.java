@@ -138,6 +138,10 @@ public enum ErrorCode {
     LEAGUE_TIER_ENTRY_INVALID(HttpStatus.BAD_REQUEST, "해당 티어로 진입할 수 없습니다."),
     LEAGUE_PROMOTE_NOT_READY(HttpStatus.BAD_REQUEST, "상위 리그 진출에 필요한 점수가 부족합니다."),
 
+    // Tutorial
+    TUTORIAL_ALREADY_COMPLETED(HttpStatus.CONFLICT, "이미 튜토리얼을 완료했습니다."),
+    TUTORIAL_STARTER_SELECTION_INVALID(HttpStatus.BAD_REQUEST, "시작 구종 선택이 올바르지 않습니다."),
+
     // External
     OAUTH_API_FAILED(HttpStatus.SERVICE_UNAVAILABLE, "소셜 로그인 서비스에 연결할 수 없습니다."),
     ;
