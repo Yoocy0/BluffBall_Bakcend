@@ -71,9 +71,10 @@ public class SingleMatchCreateExecutor {
             List<Long> botDrawPool) {
         String matchSessionId = UUID.randomUUID().toString();
 
+        // 연습 봇 매치는 GameMode.BOT(ordinal 4) + practiceBotMatch 플래그를 함께 설정한다.
         MatchInfo matchInfo = MatchInfo.builder()
                 .id(matchSessionId)
-                .gameMode(GameMode.SHOWDOWN)
+                .gameMode(practiceBotMatch ? GameMode.BOT : GameMode.SHOWDOWN)
                 .pitcherUserId(pitcherUserId)
                 .batterLineup(List.of(batterUserId))
                 .build();

@@ -1,6 +1,7 @@
 package com.project.bluffball.domain.game.service.usecase.reader;
 
 import com.project.bluffball.domain.game.config.GameModeRule;
+import com.project.bluffball.domain.game.enums.BotDifficulty;
 import com.project.bluffball.domain.game.enums.SetupKind;
 import com.project.bluffball.domain.game.redis.MatchInfo;
 import com.project.bluffball.domain.game.repository.MatchInfoRepository;
@@ -348,11 +349,16 @@ public class MatchInfoReader {
     /**
      * 연습용 봇 매치 여부 (Service ✅)
      *
+     * <p>{@code practiceBotMatch} 플래그 또는 {@link GameMode#BOT}이면 true.
+     * 플래그가 누락돼도 gameMode로 방어적으로 판정한다.</p>
+     *
      * @param matchSessionId 매치 세션 ID
      * @return 봇 연습 매치면 true
      */
     public boolean isPracticeBotMatch(String matchSessionId) {
-        return getById(matchSessionId).isPracticeBotMatch();
+        MatchInfo matchInfo = getById(matchSessionId);
+        return matchInfo.isPracticeBotMatch()
+                || matchInfo.getGameMode() == GameMode.BOT;
     }
 
     /**
@@ -363,6 +369,16 @@ public class MatchInfoReader {
      */
     public Long getBotUserId(String matchSessionId) {
         return getById(matchSessionId).getBotUserId();
+    }
+
+    /**
+     * 연습 봇 난이도 (Service ✅)
+     *
+     * @param matchSessionId 매치 세션 ID
+     * @return 봇 난이도 (봇 매치가 아니면 null)
+     */
+    public BotDifficulty getBotDifficulty(String matchSessionId) {
+        return getById(matchSessionId).getBotDifficulty();
     }
 
     /**

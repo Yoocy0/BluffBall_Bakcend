@@ -39,7 +39,7 @@ public class UserRecord {
     private Long userId;
 
     /**
-     * 게임 모드 — DB에 ordinal(0=SHOWDOWN, 1=COMPACT_LEAGUE, 2=FULL_LEAGUE, 3=CUSTOM) 정수로 저장.
+     * 게임 모드 — DB에 ordinal(0=SHOWDOWN, 1=COMPACT_LEAGUE, 2=FULL_LEAGUE, 3=CUSTOM, 4=BOT) 정수로 저장.
      */
     @Enumerated(EnumType.ORDINAL)
     @Column(name = "game_mode", nullable = false)
