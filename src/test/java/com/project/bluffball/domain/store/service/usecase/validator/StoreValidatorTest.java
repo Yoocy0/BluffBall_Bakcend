@@ -26,14 +26,14 @@ class StoreValidatorTest {
     }
 
     @Test
-    @DisplayName("이미 보유하면 409")
-    void alreadyOwned() {
-        assertThrows(ConflictException.class, () -> validator.validateNotOwned(true));
+    @DisplayName("카탈로그에 없으면 400")
+    void notInCatalog() {
+        assertThrows(BadRequestException.class, () -> validator.validateInCatalog(false));
     }
 
     @Test
-    @DisplayName("오늘 오퍼가 아니면 400")
-    void notOffered() {
-        assertThrows(BadRequestException.class, () -> validator.validateOfferedToday(false));
+    @DisplayName("기본본 이미 있으면 409")
+    void baseNotPurchasable() {
+        assertThrows(ConflictException.class, () -> validator.validatePitchBasePurchasable(false));
     }
 }

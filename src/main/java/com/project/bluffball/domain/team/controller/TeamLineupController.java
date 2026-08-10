@@ -104,8 +104,8 @@ public class TeamLineupController {
      */
     @Operation(
             summary = "내 구종 사전 선택 저장",
-            description = "출전 로스터에 포함된 멤버가 본인 보유 구종으로 사전 선택을 저장한다. "
-                    + "카드 코스트 합 = Compact 4 / Full 5. dropCardId는 선택에 포함되어야 한다.",
+            description = "출전 로스터에 포함된 멤버가 본인 보유 구종 인스턴스(userPitchCardId)로 사전 선택을 저장한다. "
+                    + "인스턴스 코스트 합 = Compact 4 / Full 5. dropCardId는 userPitchCardIds에 포함되어야 한다.",
             security = @SecurityRequirement(name = "bearerAuth")
     )
     @ApiResponses({

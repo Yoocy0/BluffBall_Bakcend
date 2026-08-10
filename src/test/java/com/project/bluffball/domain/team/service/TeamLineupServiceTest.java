@@ -1,6 +1,5 @@
 package com.project.bluffball.domain.team.service;
 
-import com.project.bluffball.domain.card.service.usecase.reader.CardReader;
 import com.project.bluffball.domain.card.service.usecase.reader.UserPitchCardReader;
 import com.project.bluffball.domain.game.config.GameModeRule;
 import com.project.bluffball.domain.league.enums.LeagueFormat;
@@ -47,7 +46,6 @@ class TeamLineupServiceTest {
     @Mock private TeamMemberReader teamMemberReader;
     @Mock private TeamLineupReader teamLineupReader;
     @Mock private TeamPitchCardsReader teamPitchCardsReader;
-    @Mock private CardReader cardReader;
     @Mock private UserPitchCardReader userPitchCardReader;
     @Mock private TeamLineupExecutor teamLineupExecutor;
     @Mock private TeamPitchCardsExecutor teamPitchCardsExecutor;
@@ -69,7 +67,6 @@ class TeamLineupServiceTest {
                 teamMemberReader,
                 teamLineupReader,
                 teamPitchCardsReader,
-                cardReader,
                 userPitchCardReader,
                 new GameModeRule(),
                 teamLineupExecutor,
@@ -155,27 +152,26 @@ class TeamLineupServiceTest {
         @DisplayName("Compact 구종 사전 선택 저장 성공(4명)")
         void success() {
             List<Long> matchRoster = List.of(1L, 2L, 3L, 4L);
-            List<Long> cards = List.of(10L, 20L, 30L, 40L);
+            List<Long> instances = List.of(10L, 20L, 30L, 40L);
             var selections = List.of(
-                    new UpsertTeamPitchCardsRequest.MemberPitchCardSelection(1L, cards, 40L),
-                    new UpsertTeamPitchCardsRequest.MemberPitchCardSelection(2L, cards, 40L),
-                    new UpsertTeamPitchCardsRequest.MemberPitchCardSelection(3L, cards, 40L),
-                    new UpsertTeamPitchCardsRequest.MemberPitchCardSelection(4L, cards, 40L)
+                    new UpsertTeamPitchCardsRequest.MemberPitchCardSelection(1L, instances, 40L),
+                    new UpsertTeamPitchCardsRequest.MemberPitchCardSelection(2L, instances, 40L),
+                    new UpsertTeamPitchCardsRequest.MemberPitchCardSelection(3L, instances, 40L),
+                    new UpsertTeamPitchCardsRequest.MemberPitchCardSelection(4L, instances, 40L)
             );
             TeamPitchCardsResponse response = new TeamPitchCardsResponse(TEAM_ID, LeagueFormat.COMPACT, List.of());
 
             when(teamReader.getTeamResponse(TEAM_ID)).thenReturn(TEAM);
             when(teamMemberReader.isLeader(TEAM_ID, USER_ID)).thenReturn(true);
             when(teamLineupReader.getMatchRosterUserIds(TEAM_ID, LeagueFormat.COMPACT)).thenReturn(matchRoster);
-            when(cardReader.areValidPitcherHandCards(cards)).thenReturn(true);
-            when(userPitchCardReader.ownsAll(eq(1L), eq(cards))).thenReturn(true);
-            when(userPitchCardReader.ownsAll(eq(2L), eq(cards))).thenReturn(true);
-            when(userPitchCardReader.ownsAll(eq(3L), eq(cards))).thenReturn(true);
-            when(userPitchCardReader.ownsAll(eq(4L), eq(cards))).thenReturn(true);
-            when(userPitchCardReader.sumCost(eq(1L), eq(cards))).thenReturn(4);
-            when(userPitchCardReader.sumCost(eq(2L), eq(cards))).thenReturn(4);
-            when(userPitchCardReader.sumCost(eq(3L), eq(cards))).thenReturn(4);
-            when(userPitchCardReader.sumCost(eq(4L), eq(cards))).thenReturn(4);
+            when(userPitchCardReader.ownsAllInstances(eq(1L), eq(instances))).thenReturn(true);
+            when(userPitchCardReader.ownsAllInstances(eq(2L), eq(instances))).thenReturn(true);
+            when(userPitchCardReader.ownsAllInstances(eq(3L), eq(instances))).thenReturn(true);
+            when(userPitchCardReader.ownsAllInstances(eq(4L), eq(instances))).thenReturn(true);
+            when(userPitchCardReader.sumInstanceCost(eq(1L), eq(instances))).thenReturn(4);
+            when(userPitchCardReader.sumInstanceCost(eq(2L), eq(instances))).thenReturn(4);
+            when(userPitchCardReader.sumInstanceCost(eq(3L), eq(instances))).thenReturn(4);
+            when(userPitchCardReader.sumInstanceCost(eq(4L), eq(instances))).thenReturn(4);
             when(teamPitchCardsExecutor.replaceAll(TEAM_ID, LeagueFormat.COMPACT, selections))
                     .thenReturn(TEAM_ID);
             when(teamPitchCardsReader.getPitchCardsResponse(TEAM_ID, LeagueFormat.COMPACT))

@@ -1,6 +1,6 @@
 package com.project.bluffball.domain.store.service.usecase.executor;
 
-import com.project.bluffball.domain.card.service.usecase.executor.UserPitchCardExecutor;
+import com.project.bluffball.domain.card.service.usecase.executor.UserEnhancementCardExecutor;
 import com.project.bluffball.domain.user.entity.User;
 import com.project.bluffball.domain.user.repository.UserRepository;
 import com.project.bluffball.domain.user.service.usecase.reader.UserReader;
@@ -11,26 +11,31 @@ import org.springframework.stereotype.Component;
 import org.springframework.transaction.annotation.Transactional;
 
 /**
- * 상점 구종 기본본 구매 Executor.
+ * 상점 강화 카드 구매 Executor.
  */
 @Component
 @RequiredArgsConstructor
-public class StorePitchPurchaseExecutor {
+public class StoreEnhancementPurchaseExecutor {
 
+    /** 유저 Reader */
     private final UserReader userReader;
+
+    /** 유저 Repository */
     private final UserRepository userRepository;
-    private final UserPitchCardExecutor userPitchCardExecutor;
+
+    /** 강화 카드 지급 Executor */
+    private final UserEnhancementCardExecutor userEnhancementCardExecutor;
 
     /**
-     * 재화 차감 후 구종 기본본 인스턴스를 생성한다.
+     * 재화를 차감하고 강화 카드 1장을 지급한다.
      *
-     * @param userId 유저 ID
-     * @param cardId 마스터 구종 ID
-     * @param price  가격
-     * @return 새 userPitchCardId
+     * @param userId            유저 ID
+     * @param enhancementCardId 강화 카드 마스터 ID
+     * @param price             가격
+     * @return 강화 카드 마스터 ID
      */
     @Transactional
-    public Long purchase(Long userId, Long cardId, long price) {
+    public Long purchase(Long userId, Long enhancementCardId, long price) {
         User user = userReader.getById(userId);
         try {
             user.spendCurrency(price);
@@ -38,6 +43,7 @@ public class StorePitchPurchaseExecutor {
             throw new BadRequestException(ErrorCode.STORE_CURRENCY_INSUFFICIENT, ex.getMessage());
         }
         userRepository.save(user);
-        return userPitchCardExecutor.acquire(userId, cardId);
+        userEnhancementCardExecutor.grant(userId, enhancementCardId, 1);
+        return enhancementCardId;
     }
 }

@@ -49,11 +49,16 @@ public enum ErrorCode {
     USER_PITCH_CARD_NOT_FOUND(HttpStatus.NOT_FOUND, "보유하지 않은 구종 카드입니다."),
     USER_PITCH_CARD_ALREADY_OWNED(HttpStatus.CONFLICT, "이미 보유한 구종 카드입니다."),
     USER_PITCH_CARD_ALREADY_ENHANCED(HttpStatus.CONFLICT, "이미 해당 강화가 적용된 카드입니다."),
+    USER_PITCH_CARD_NOT_ENHANCED(HttpStatus.BAD_REQUEST, "해당 강화가 적용되어 있지 않습니다."),
     USER_PITCH_CARD_TIMING_BOUNDARY(HttpStatus.BAD_REQUEST, "타이밍 강화가 허용 범위를 벗어납니다."),
     USER_PITCH_CARD_TIMING_INVALID(HttpStatus.BAD_REQUEST, "타이밍 강화 방향이 올바르지 않습니다."),
+    USER_CURRENCY_INSUFFICIENT(HttpStatus.BAD_REQUEST, "보유 재화가 부족합니다."),
     COORDINATE_CARD_NOT_FOUND(HttpStatus.NOT_FOUND, "좌표 카드를 찾을 수 없습니다."),
     COORDINATE_CARD_INVALID_TYPE(HttpStatus.BAD_REQUEST, "좌표 카드 유형이 올바르지 않습니다."),
     COORDINATE_CARD_MASTER_NOT_FOUND(HttpStatus.BAD_REQUEST, "좌표 카드 마스터가 없습니다."),
+    ENHANCEMENT_CARD_NOT_FOUND(HttpStatus.NOT_FOUND, "강화 카드를 찾을 수 없습니다."),
+    USER_ENHANCEMENT_CARD_NOT_FOUND(HttpStatus.NOT_FOUND, "보유하지 않은 강화 카드입니다."),
+    USER_ENHANCEMENT_CARD_INSUFFICIENT(HttpStatus.BAD_REQUEST, "강화 카드 수량이 부족합니다."),
 
     // Game
     GAME_NOT_INITIALIZED(HttpStatus.BAD_REQUEST, "경기 진행이 초기화되지 않았습니다."),

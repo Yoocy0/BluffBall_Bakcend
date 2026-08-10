@@ -12,9 +12,9 @@ import java.util.ArrayList;
 import java.util.List;
 
 /**
- * 리그 출전 멤버의 구종·강화 사전 선택 (n+1 핸드).
+ * 리그 출전 멤버의 구종 인스턴스 사전 선택 (n+1 핸드).
  *
- * <p>{@code dropCardId}는 투수 교체 시 빠지는 +1장이다.</p>
+ * <p>{@code dropCardId}는 투수 교체 시 빠지는 +1 인스턴스이다.</p>
  */
 @Entity
 @Table(
@@ -45,7 +45,7 @@ public class TeamPitchLoadout {
     @Column(name = "user_id", nullable = false)
     private Long userId;
 
-    /** 구종·강화 카드 ID (n+1장, 순서 유지) */
+    /** 구종 인스턴스 ID (n+1장, 순서 유지) — DB 컬럼명 card_id 유지 */
     @ElementCollection
     @CollectionTable(
             name = "team_pitch_loadout_card",
@@ -53,9 +53,9 @@ public class TeamPitchLoadout {
     )
     @Column(name = "card_id", nullable = false)
     @OrderColumn(name = "card_order")
-    private List<Long> cardIds = new ArrayList<>();
+    private List<Long> userPitchCardIds = new ArrayList<>();
 
-    /** 교체 시 제외할 카드 ID ({@code cardIds}에 포함) */
+    /** 교체 시 제외할 인스턴스 ID ({@code userPitchCardIds}에 포함) */
     @Column(name = "drop_card_id", nullable = false)
     private Long dropCardId;
 
@@ -65,32 +65,32 @@ public class TeamPitchLoadout {
     /**
      * 사전 선택을 생성한다.
      *
-     * @param teamId 팀 ID
-     * @param format 리그 구분
-     * @param userId 멤버 유저 ID
-     * @param cardIds 구종·강화 카드 ID
-     * @param dropCardId 교체 시 제외 카드 ID
+     * @param teamId           팀 ID
+     * @param format           리그 구분
+     * @param userId           멤버 유저 ID
+     * @param userPitchCardIds 구종 인스턴스 ID
+     * @param dropCardId       교체 시 제외 인스턴스 ID
      */
     public TeamPitchLoadout(
             Long teamId,
             LeagueFormat format,
             Long userId,
-            List<Long> cardIds,
+            List<Long> userPitchCardIds,
             Long dropCardId) {
         this.teamId = teamId;
         this.format = format;
         this.userId = userId;
-        replaceCards(cardIds, dropCardId);
+        replaceCards(userPitchCardIds, dropCardId);
     }
 
     /**
-     * 카드 선택과 drop 카드를 교체한다.
+     * 인스턴스 선택과 drop 카드를 교체한다.
      *
-     * @param cardIds 구종·강화 카드 ID
-     * @param dropCardId 교체 시 제외 카드 ID
+     * @param userPitchCardIds 구종 인스턴스 ID
+     * @param dropCardId       교체 시 제외 인스턴스 ID
      */
-    public void replaceCards(List<Long> cardIds, Long dropCardId) {
-        this.cardIds = new ArrayList<>(cardIds);
+    public void replaceCards(List<Long> userPitchCardIds, Long dropCardId) {
+        this.userPitchCardIds = new ArrayList<>(userPitchCardIds);
         this.dropCardId = dropCardId;
         this.updatedAt = LocalDateTime.now(KST);
     }

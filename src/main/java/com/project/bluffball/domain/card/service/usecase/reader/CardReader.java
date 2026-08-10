@@ -20,20 +20,20 @@ public class CardReader {
     private final CardRepository cardRepository;
 
     /**
-     * 리그 사전 선택으로 허용되는 구종 카드인지 판정한다.
+     * 마스터 구종 ID 목록이 리그 핸드로 허용되는지 판정한다.
      *
-     * <p>허용: {@link PitchCard}만. 좌표·타자 타이밍·구 강화 카드 타입은 불가.
-     * 강화는 {@code UserPitchCard} 오버레이로 처리한다.</p>
+     * <p>로드아웃(인스턴스 ID) 검증은 {@code UserPitchCardReader#areValidPitchInstances}를 사용한다.
+     * 허용: {@link PitchCard}만. 좌표·타자 타이밍 등 다른 타입은 불가.</p>
      *
-     * @param cardIds 카드 ID 목록
-     * @return 전부 구종 카드이면 true
+     * @param masterCardIds 마스터 카드 ID 목록
+     * @return 전부 구종 마스터이면 true
      */
-    public boolean areValidPitcherHandCards(List<Long> cardIds) {
-        if (cardIds == null || cardIds.isEmpty()) {
+    public boolean areValidPitcherHandCards(List<Long> masterCardIds) {
+        if (masterCardIds == null || masterCardIds.isEmpty()) {
             return false;
         }
-        Set<Long> uniqueIds = new HashSet<>(cardIds);
-        if (uniqueIds.size() != cardIds.size()) {
+        Set<Long> uniqueIds = new HashSet<>(masterCardIds);
+        if (uniqueIds.size() != masterCardIds.size()) {
             return false;
         }
         List<Card> cards = cardRepository.findAllById(uniqueIds);

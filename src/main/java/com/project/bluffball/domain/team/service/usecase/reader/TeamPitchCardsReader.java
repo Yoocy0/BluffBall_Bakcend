@@ -34,8 +34,8 @@ public class TeamPitchCardsReader {
     /**
      * 로스터 전원에 대해 사전 선택이 완료됐는지 반환한다.
      *
-     * @param teamId 팀 ID
-     * @param format 리그 구분
+     * @param teamId     팀 ID
+     * @param format     리그 구분
      * @param rosterSize 로스터 인원
      * @return 완료면 true
      */
@@ -62,7 +62,7 @@ public class TeamPitchCardsReader {
         List<TeamPitchCardsResponse.MemberPitchCards> selections = loadouts.stream()
                 .map(loadout -> new TeamPitchCardsResponse.MemberPitchCards(
                         loadout.getUserId(),
-                        List.copyOf(loadout.getCardIds()),
+                        List.copyOf(loadout.getUserPitchCardIds()),
                         loadout.getDropCardId()))
                 .toList();
         return new TeamPitchCardsResponse(teamId, format, selections);

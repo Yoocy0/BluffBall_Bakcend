@@ -1,130 +1,102 @@
 package com.project.bluffball.domain.store.service.usecase.reader;
 
+import com.project.bluffball.domain.card.entity.EnhancementCard;
 import com.project.bluffball.domain.card.entity.PitchCard;
+import com.project.bluffball.domain.card.repository.EnhancementCardRepository;
 import com.project.bluffball.domain.card.repository.PitchCardRepository;
+import com.project.bluffball.domain.card.service.usecase.reader.EnhancementCardReader;
 import com.project.bluffball.domain.card.service.usecase.reader.UserPitchCardReader;
 import com.project.bluffball.domain.store.StoreConstants;
 import com.project.bluffball.domain.store.dto.response.CurrencyProductListResponse;
 import com.project.bluffball.domain.store.dto.response.CurrencyProductResponse;
-import com.project.bluffball.domain.store.dto.response.DailyStoreResponse;
+import com.project.bluffball.domain.store.dto.response.StoreCatalogResponse;
+import com.project.bluffball.domain.store.dto.response.StoreEnhancementOfferResponse;
 import com.project.bluffball.domain.store.dto.response.StorePitchOfferResponse;
-import com.project.bluffball.domain.store.entity.StorePitchPurchase;
 import com.project.bluffball.domain.store.repository.GooglePlayPurchaseRepository;
-import com.project.bluffball.domain.store.repository.StorePitchPurchaseRepository;
-import com.project.bluffball.domain.store.service.usecase.DailyStoreOfferGenerator;
 import com.project.bluffball.domain.user.service.usecase.reader.UserReader;
 import com.project.bluffball.global.config.BillingProperties;
+import com.project.bluffball.global.exception.ErrorCode;
+import com.project.bluffball.global.exception.NotFoundException;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Component;
 
-import java.time.LocalDate;
-import java.util.HashSet;
+import java.util.Comparator;
 import java.util.List;
 import java.util.Optional;
-import java.util.Set;
-import java.util.stream.Collectors;
 
 /**
- * 상점 오퍼·상품·구매 상태 읽기 Reader.
+ * 상점 카탈로그·결제 상태 Reader.
  */
 @Component
 @RequiredArgsConstructor
 public class StoreReader {
 
-    /** 유저 Reader */
     private final UserReader userReader;
-
-    /** 마스터 구종 Repository */
     private final PitchCardRepository pitchCardRepository;
-
-    /** 보유 구종 Reader */
+    private final EnhancementCardRepository enhancementCardRepository;
     private final UserPitchCardReader userPitchCardReader;
-
-    /** 일일 오퍼 생성기 */
-    private final DailyStoreOfferGenerator dailyStoreOfferGenerator;
-
-    /** 구종 구매 기록 */
-    private final StorePitchPurchaseRepository storePitchPurchaseRepository;
-
-    /** Google 결제 기록 */
+    private final EnhancementCardReader enhancementCardReader;
     private final GooglePlayPurchaseRepository googlePlayPurchaseRepository;
-
-    /** Billing 설정 */
     private final BillingProperties billingProperties;
 
     /**
-     * 오늘(KST) 일일 상점 상태를 반환한다.
+     * 상시 상점 카탈로그.
      *
      * @param userId 유저 ID
-     * @return 일일 상점
+     * @return 카탈로그
      */
-    public DailyStoreResponse getDailyStore(Long userId) {
-        LocalDate offerDate = LocalDate.now(StoreConstants.STORE_ZONE);
-        List<PitchCard> offers = resolveTodayOffers(userId, offerDate);
-        Set<Long> purchasedIds = storePitchPurchaseRepository
-                .findByUserIdAndOfferDateAndCardIdIn(
-                        userId,
-                        offerDate,
-                        offers.stream().map(PitchCard::getId).toList())
-                .stream()
-                .map(StorePitchPurchase::getCardId)
-                .collect(Collectors.toCollection(HashSet::new));
-
+    public StoreCatalogResponse getCatalog(Long userId) {
         long currency = userReader.getCurrency(userId);
-        List<StorePitchOfferResponse> offerResponses = offers.stream()
-                .map(card -> toOfferResponse(userId, card, purchasedIds.contains(card.getId())))
+        List<StorePitchOfferResponse> pitches = pitchCardRepository.findAll().stream()
+                .sorted(Comparator.comparing(PitchCard::getName))
+                .map(card -> toPitchOffer(userId, card))
                 .toList();
-        return new DailyStoreResponse(offerDate, currency, offerResponses);
+        List<StoreEnhancementOfferResponse> enhancements = enhancementCardRepository.findAll().stream()
+                .sorted(Comparator.comparing(c -> c.getEffect().ordinal()))
+                .map(card -> toEnhancementOffer(userId, card))
+                .toList();
+        return new StoreCatalogResponse(currency, pitches, enhancements);
     }
 
     /**
-     * 오늘 오퍼에 해당 구종이 포함되는지.
+     * 마스터 구종이 상점에 있는지.
+     *
+     * @param cardId 마스터 ID
+     * @return 존재하면 true
+     */
+    public boolean isPitchInCatalog(Long cardId) {
+        return pitchCardRepository.existsById(cardId);
+    }
+
+    /**
+     * 강화 카드가 상점에 있는지.
+     *
+     * @param enhancementCardId 강화 마스터 ID
+     * @return 존재하면 true
+     */
+    public boolean isEnhancementInCatalog(Long enhancementCardId) {
+        return enhancementCardRepository.existsById(enhancementCardId);
+    }
+
+    /**
+     * 구종 기본본 구매 가능 여부 (미강화 인스턴스 없음).
      *
      * @param userId 유저 ID
-     * @param cardId 구종 ID
-     * @return 포함되면 true
+     * @param cardId 마스터 ID
+     * @return 구매 가능하면 true
      */
-    public boolean isOfferedToday(Long userId, Long cardId) {
-        LocalDate offerDate = LocalDate.now(StoreConstants.STORE_ZONE);
-        return resolveTodayOffers(userId, offerDate).stream()
-                .anyMatch(card -> card.getId().equals(cardId));
+    public boolean canPurchasePitchBase(Long userId, Long cardId) {
+        return !userPitchCardReader.hasUnenhancedInstance(userId, cardId);
     }
 
-    /**
-     * 오늘 해당 구종 구매 여부.
-     *
-     * @param userId 유저 ID
-     * @param cardId 구종 ID
-     * @return 구매했으면 true
-     */
-    public boolean isPurchasedToday(Long userId, Long cardId) {
-        LocalDate offerDate = LocalDate.now(StoreConstants.STORE_ZONE);
-        return storePitchPurchaseRepository.existsByUserIdAndOfferDateAndCardId(userId, offerDate, cardId);
-    }
-
-    /**
-     * 오늘 오퍼 날짜(KST).
-     *
-     * @return 날짜
-     */
-    public LocalDate todayOfferDate() {
-        return LocalDate.now(StoreConstants.STORE_ZONE);
-    }
-
-    /**
-     * 구종 기본 가격.
-     *
-     * @return 가격
-     */
     public long pitchPrice() {
         return StoreConstants.DEFAULT_PITCH_PRICE;
     }
 
-    /**
-     * 재화 상품 목록.
-     *
-     * @return 상품 목록
-     */
+    public long enhancementPrice() {
+        return StoreConstants.DEFAULT_ENHANCEMENT_PRICE;
+    }
+
     public CurrencyProductListResponse getCurrencyProducts() {
         List<CurrencyProductResponse> products = billingProperties.getCurrencyProducts().stream()
                 .map(p -> new CurrencyProductResponse(p.getProductId(), p.getCurrencyAmount()))
@@ -132,12 +104,6 @@ public class StoreReader {
         return new CurrencyProductListResponse(products);
     }
 
-    /**
-     * 재화 상품 지급량을 조회한다.
-     *
-     * @param productId SKU
-     * @return 지급량 Optional
-     */
     public Optional<Long> findCurrencyAmount(String productId) {
         return billingProperties.getCurrencyProducts().stream()
                 .filter(p -> productId.equals(p.getProductId()))
@@ -145,22 +111,10 @@ public class StoreReader {
                 .findFirst();
     }
 
-    /**
-     * purchaseToken 처리 여부.
-     *
-     * @param purchaseToken 토큰
-     * @return 처리됐으면 true
-     */
     public boolean isPurchaseTokenProcessed(String purchaseToken) {
         return googlePlayPurchaseRepository.existsByPurchaseToken(purchaseToken);
     }
 
-    /**
-     * orderId 처리 여부.
-     *
-     * @param orderId 주문 ID
-     * @return 처리됐으면 true
-     */
     public boolean isOrderIdProcessed(String orderId) {
         if (orderId == null || orderId.isBlank()) {
             return false;
@@ -168,20 +122,38 @@ public class StoreReader {
         return googlePlayPurchaseRepository.existsByOrderId(orderId);
     }
 
-    private List<PitchCard> resolveTodayOffers(Long userId, LocalDate offerDate) {
-        List<PitchCard> catalog = pitchCardRepository.findAll();
-        return dailyStoreOfferGenerator.generate(userId, offerDate.toEpochDay(), catalog);
+    /**
+     * 강화 카드 인벤 한 건.
+     *
+     * @param userId 유저 ID
+     * @param cardId 강화 마스터 ID
+     * @return 응답
+     */
+    public com.project.bluffball.domain.card.dto.response.UserEnhancementCardResponse getEnhancementInventoryItem(
+            Long userId, Long cardId) {
+        return enhancementCardReader.getInventoryResponses(userId).stream()
+                .filter(r -> r.cardId().equals(cardId))
+                .findFirst()
+                .orElseThrow(() -> new NotFoundException(
+                        ErrorCode.ENHANCEMENT_CARD_NOT_FOUND, "cardId=" + cardId));
     }
 
-    private StorePitchOfferResponse toOfferResponse(Long userId, PitchCard card, boolean purchasedToday) {
-        boolean owned = userPitchCardReader.exists(userId, card.getId());
-        boolean purchasable = !owned && !purchasedToday;
+    private StorePitchOfferResponse toPitchOffer(Long userId, PitchCard card) {
+        boolean hasBase = userPitchCardReader.hasUnenhancedInstance(userId, card.getId());
         return new StorePitchOfferResponse(
                 card.getId(),
                 card.getName(),
                 StoreConstants.DEFAULT_PITCH_PRICE,
-                owned,
-                purchasedToday,
-                purchasable);
+                hasBase,
+                !hasBase);
+    }
+
+    private StoreEnhancementOfferResponse toEnhancementOffer(Long userId, EnhancementCard card) {
+        return new StoreEnhancementOfferResponse(
+                card.getId(),
+                card.getName(),
+                card.getEffect(),
+                StoreConstants.DEFAULT_ENHANCEMENT_PRICE,
+                enhancementCardReader.getQuantity(userId, card.getId()));
     }
 }

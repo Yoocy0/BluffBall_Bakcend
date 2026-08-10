@@ -6,46 +6,35 @@ import com.project.bluffball.global.exception.ErrorCode;
 import org.springframework.stereotype.Component;
 
 /**
- * 상점 구매·결제 검증 (원시 값만 사용).
+ * 상점 구매·결제 검증.
  */
 @Component
 public class StoreValidator {
 
     /**
-     * 오늘 오퍼에 포함된 구종인지 검증한다.
+     * 카탈로그에 있는 상품인지.
      *
-     * @param offeredToday 오늘 오퍼에 포함 여부
+     * @param inCatalog 카탈로그 포함 여부
      */
-    public void validateOfferedToday(boolean offeredToday) {
-        if (!offeredToday) {
+    public void validateInCatalog(boolean inCatalog) {
+        if (!inCatalog) {
             throw new BadRequestException(ErrorCode.STORE_OFFER_NOT_FOUND);
         }
     }
 
     /**
-     * 당일 미구매인지 검증한다.
+     * 구종 기본본 구매 가능 여부 (이미 기본본 있으면 거부).
      *
-     * @param purchasedToday 오늘 구매 여부
+     * @param canPurchase 구매 가능
      */
-    public void validateNotPurchasedToday(boolean purchasedToday) {
-        if (purchasedToday) {
-            throw new ConflictException(ErrorCode.STORE_PITCH_ALREADY_PURCHASED);
+    public void validatePitchBasePurchasable(boolean canPurchase) {
+        if (!canPurchase) {
+            throw new ConflictException(ErrorCode.STORE_PITCH_ALREADY_OWNED, "unenhanced base already owned");
         }
     }
 
     /**
-     * 미보유 구종인지 검증한다.
-     *
-     * @param owned 보유 여부
-     */
-    public void validateNotOwned(boolean owned) {
-        if (owned) {
-            throw new ConflictException(ErrorCode.STORE_PITCH_ALREADY_OWNED);
-        }
-    }
-
-    /**
-     * 재화 잔액이 충분한지 검증한다.
+     * 재화 잔액.
      *
      * @param balance 잔액
      * @param price   가격
@@ -57,9 +46,9 @@ public class StoreValidator {
     }
 
     /**
-     * 재화 상품이 카탈로그에 있는지 검증한다.
+     * 재화 상품 존재.
      *
-     * @param knownProduct 카탈로그에 존재하면 true
+     * @param knownProduct 존재 여부
      */
     public void validateKnownCurrencyProduct(boolean knownProduct) {
         if (!knownProduct) {
@@ -68,9 +57,9 @@ public class StoreValidator {
     }
 
     /**
-     * 결제 토큰 미처리인지 검증한다.
+     * 결제 미처리.
      *
-     * @param alreadyProcessed 이미 처리됐으면 true
+     * @param alreadyProcessed 이미 처리됨
      */
     public void validatePurchaseNotProcessed(boolean alreadyProcessed) {
         if (alreadyProcessed) {
@@ -79,10 +68,10 @@ public class StoreValidator {
     }
 
     /**
-     * Play 검증 결과가 유효한지 확인한다.
+     * Play 검증 유효.
      *
-     * @param valid 유효 여부
-     * @param detail 실패 메시지
+     * @param valid  유효
+     * @param detail 메시지
      */
     public void validatePurchaseValid(boolean valid, String detail) {
         if (!valid) {
