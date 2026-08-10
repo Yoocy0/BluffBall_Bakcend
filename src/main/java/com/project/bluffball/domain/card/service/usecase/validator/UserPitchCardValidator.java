@@ -36,6 +36,17 @@ public class UserPitchCardValidator {
     }
 
     /**
+     * 변화량 강화가 적용되어 있음을 검증한다.
+     *
+     * @param enhanced 강화 여부
+     */
+    public void validateChangeAmountEnhanced(boolean enhanced) {
+        if (!enhanced) {
+            throw new BadRequestException(ErrorCode.USER_PITCH_CARD_NOT_ENHANCED, "changeAmount");
+        }
+    }
+
+    /**
      * 타이밍 강화가 아직 없음을 검증한다.
      *
      * @param current 현재 타이밍 강화 상태
@@ -43,6 +54,17 @@ public class UserPitchCardValidator {
     public void validateTimingNotEnhanced(TimingEnhancement current) {
         if (current != TimingEnhancement.NONE) {
             throw new ConflictException(ErrorCode.USER_PITCH_CARD_ALREADY_ENHANCED, "timing");
+        }
+    }
+
+    /**
+     * 타이밍 강화가 적용되어 있음을 검증한다.
+     *
+     * @param current 현재 타이밍 강화 상태
+     */
+    public void validateTimingEnhanced(TimingEnhancement current) {
+        if (current == TimingEnhancement.NONE) {
+            throw new BadRequestException(ErrorCode.USER_PITCH_CARD_NOT_ENHANCED, "timing");
         }
     }
 
@@ -74,6 +96,18 @@ public class UserPitchCardValidator {
             throw new BadRequestException(
                     ErrorCode.USER_PITCH_CARD_TIMING_BOUNDARY,
                     "base=" + baseTiming + ", enhancement=" + enhancement);
+        }
+    }
+
+    /**
+     * 재화 잔액이 충분한지 검증한다.
+     *
+     * @param balance 잔액
+     * @param cost    비용
+     */
+    public void validateCurrencyEnough(long balance, long cost) {
+        if (balance < cost) {
+            throw new BadRequestException(ErrorCode.USER_CURRENCY_INSUFFICIENT);
         }
     }
 }

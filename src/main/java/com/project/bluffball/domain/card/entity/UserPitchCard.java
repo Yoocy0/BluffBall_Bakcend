@@ -155,6 +155,28 @@ public class UserPitchCard {
         touch();
     }
 
+    /**
+     * 변화량 강화를 되돌린다.
+     */
+    public void revertChangeAmount() {
+        if (!this.changeAmountEnhanced) {
+            throw new IllegalStateException("변화량 강화가 적용되어 있지 않습니다.");
+        }
+        this.changeAmountEnhanced = false;
+        touch();
+    }
+
+    /**
+     * 타이밍 강화를 되돌린다.
+     */
+    public void revertTiming() {
+        if (this.timingEnhancement == TimingEnhancement.NONE) {
+            throw new IllegalStateException("타이밍 강화가 적용되어 있지 않습니다.");
+        }
+        this.timingEnhancement = TimingEnhancement.NONE;
+        touch();
+    }
+
     private void touch() {
         this.updatedAt = LocalDateTime.now(KST);
     }

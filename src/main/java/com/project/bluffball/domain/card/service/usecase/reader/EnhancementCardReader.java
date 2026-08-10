@@ -56,6 +56,16 @@ public class EnhancementCardReader {
     }
 
     /**
+     * 마스터 효과 enum을 반환한다 (Service ✅).
+     *
+     * @param cardId 마스터 ID
+     * @return 효과
+     */
+    public EnhancementEffect getEffect(Long cardId) {
+        return getById(cardId).getEffect();
+    }
+
+    /**
      * 마스터 존재 여부.
      *
      * @param cardId 마스터 ID
