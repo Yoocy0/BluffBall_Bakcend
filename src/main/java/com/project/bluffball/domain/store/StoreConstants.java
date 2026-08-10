@@ -3,18 +3,18 @@ package com.project.bluffball.domain.store;
 import java.time.ZoneId;
 
 /**
- * 상점·일일 구종 오퍼 상수.
+ * 상점 상수 (상시 구매).
  */
 public final class StoreConstants {
 
-    /** 상점 날짜 기준 타임존 */
+    /** 상점 날짜·시각 기준 타임존 */
     public static final ZoneId STORE_ZONE = ZoneId.of("Asia/Seoul");
 
-    /** 하루 노출 구종 슬롯 수 */
-    public static final int DAILY_OFFER_COUNT = 3;
-
-    /** 구종 기본 구매 가격 (재화) */
+    /** 구종(기본본) 구매 가격 */
     public static final long DEFAULT_PITCH_PRICE = 100L;
+
+    /** 강화 카드 1장 구매 가격 */
+    public static final long DEFAULT_ENHANCEMENT_PRICE = 80L;
 
     private StoreConstants() {
     }

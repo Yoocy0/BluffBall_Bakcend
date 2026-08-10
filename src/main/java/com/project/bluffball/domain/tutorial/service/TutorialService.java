@@ -63,10 +63,10 @@ public class TutorialService {
         tutorialCompleteValidator.validateStarterSelection(selectedIds, selectedNames);
 
         Long fixedId = tutorialReader.getFixedStarterPitchCardId();
-        List<Long> grantIds = tutorialCompleteExecutor.completeAndGrant(userId, fixedId, selectedIds);
+        List<Long> instanceIds = tutorialCompleteExecutor.completeAndGrant(userId, fixedId, selectedIds);
 
-        List<UserPitchCardResponse> cards = grantIds.stream()
-                .map(cardId -> userPitchCardReader.getResponse(userId, cardId))
+        List<UserPitchCardResponse> cards = instanceIds.stream()
+                .map(instanceId -> userPitchCardReader.getResponseByInstance(userId, instanceId))
                 .toList();
         return new TutorialCompleteResponse(cards);
     }

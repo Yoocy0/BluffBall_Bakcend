@@ -22,8 +22,8 @@ public class TeamPitchCardsExecutor {
     /**
      * 팀·포맷의 멤버별 구종 사전 선택을 통째로 교체한다.
      *
-     * @param teamId 팀 ID
-     * @param format 리그 구분
+     * @param teamId     팀 ID
+     * @param format     리그 구분
      * @param selections 멤버별 선택
      * @return 팀 ID
      */
@@ -41,7 +41,7 @@ public class TeamPitchCardsExecutor {
                     teamId,
                     format,
                     selection.userId(),
-                    selection.cardIds(),
+                    selection.userPitchCardIds(),
                     selection.dropCardId()));
         }
         return teamId;
@@ -50,11 +50,11 @@ public class TeamPitchCardsExecutor {
     /**
      * 멤버 1명의 구종 사전 선택을 upsert한다.
      *
-     * @param teamId 팀 ID
-     * @param format 리그 구분
-     * @param userId 멤버 유저 ID
-     * @param cardIds 구종 카드 ID
-     * @param dropCardId 교체 제외 카드 ID
+     * @param teamId           팀 ID
+     * @param format           리그 구분
+     * @param userId           멤버 유저 ID
+     * @param userPitchCardIds 구종 인스턴스 ID
+     * @param dropCardId       교체 제외 인스턴스 ID
      * @return 팀 ID
      */
     @Transactional
@@ -62,13 +62,14 @@ public class TeamPitchCardsExecutor {
             Long teamId,
             LeagueFormat format,
             Long userId,
-            List<Long> cardIds,
+            List<Long> userPitchCardIds,
             Long dropCardId) {
         teamPitchLoadoutRepository.findByTeamIdAndFormatAndUserId(teamId, format, userId)
                 .ifPresentOrElse(
-                        loadout -> loadout.replaceCards(cardIds, dropCardId),
+                        loadout -> loadout.replaceCards(userPitchCardIds, dropCardId),
                         () -> teamPitchLoadoutRepository.save(
-                                new TeamPitchLoadout(teamId, format, userId, cardIds, dropCardId)));
+                                new TeamPitchLoadout(
+                                        teamId, format, userId, userPitchCardIds, dropCardId)));
         return teamId;
     }
 }

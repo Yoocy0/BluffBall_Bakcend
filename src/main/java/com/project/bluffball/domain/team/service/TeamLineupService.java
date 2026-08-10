@@ -1,6 +1,5 @@
 package com.project.bluffball.domain.team.service;
 
-import com.project.bluffball.domain.card.service.usecase.reader.CardReader;
 import com.project.bluffball.domain.card.service.usecase.reader.UserPitchCardReader;
 import com.project.bluffball.domain.game.config.GameModeRule;
 import com.project.bluffball.domain.league.enums.LeagueFormat;
@@ -41,7 +40,6 @@ public class TeamLineupService {
     private final TeamMemberReader teamMemberReader;
     private final TeamLineupReader teamLineupReader;
     private final TeamPitchCardsReader teamPitchCardsReader;
-    private final CardReader cardReader;
     private final UserPitchCardReader userPitchCardReader;
     private final GameModeRule gameModeRule;
 
@@ -129,7 +127,7 @@ public class TeamLineupService {
         for (UpsertTeamPitchCardsRequest.MemberPitchCardSelection selection : request.selections()) {
             validateMemberSelection(
                     selection.userId(),
-                    selection.cardIds(),
+                    selection.userPitchCardIds(),
                     selection.dropCardId(),
                     requiredHandSize);
         }
@@ -162,31 +160,34 @@ public class TeamLineupService {
         teamPitchCardsValidator.validateRequesterInRoster(userId, matchRosterUserIds);
 
         int requiredHandSize = gameModeRule.getHandSize(toGameMode(format));
-        validateMemberSelection(userId, request.cardIds(), request.dropCardId(), requiredHandSize);
+        validateMemberSelection(
+                userId, request.userPitchCardIds(), request.dropCardId(), requiredHandSize);
 
         Long savedTeamId = teamPitchCardsExecutor.upsertOne(
-                teamId, format, userId, request.cardIds(), request.dropCardId());
+                teamId, format, userId, request.userPitchCardIds(), request.dropCardId());
         return teamPitchCardsReader.getPitchCardsResponse(savedTeamId, format);
     }
 
     /**
-     * 멤버 1명 선택 공통 검증.
+     * 멤버 1명 선택 공통 검증 (인스턴스 ID 기준).
      *
-     * @param ownerUserId 카드 소유자
-     * @param cardIds 선택 카드
-     * @param dropCardId drop 카드
+     * @param ownerUserId      카드 소유자
+     * @param userPitchCardIds 선택 인스턴스
+     * @param dropCardId       drop 인스턴스
      * @param requiredHandSize 핸드 장수(코스트 합 목표)
      */
     private void validateMemberSelection(
             Long ownerUserId,
-            List<Long> cardIds,
+            List<Long> userPitchCardIds,
             Long dropCardId,
             int requiredHandSize) {
-        teamPitchCardsValidator.validateDropCardInHand(cardIds, dropCardId);
-        teamPitchCardsValidator.validateCardsValid(cardReader.areValidPitcherHandCards(cardIds));
-        teamPitchCardsValidator.validateOwned(userPitchCardReader.ownsAll(ownerUserId, cardIds));
+        teamPitchCardsValidator.validateDropCardInHand(userPitchCardIds, dropCardId);
+        teamPitchCardsValidator.validateCardsValid(
+                userPitchCardReader.areValidPitchInstances(ownerUserId, userPitchCardIds));
+        teamPitchCardsValidator.validateOwned(
+                userPitchCardReader.ownsAllInstances(ownerUserId, userPitchCardIds));
         teamPitchCardsValidator.validateTotalCost(
-                userPitchCardReader.sumCost(ownerUserId, cardIds), requiredHandSize);
+                userPitchCardReader.sumInstanceCost(ownerUserId, userPitchCardIds), requiredHandSize);
     }
 
     /**

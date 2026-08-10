@@ -17,58 +17,46 @@ import org.springframework.stereotype.Service;
 import java.util.List;
 
 /**
- * 유저 구종 카드 보유·강화·되돌리기 서비스.
+ * 유저 구종 인스턴스 보유·강화·되돌리기 서비스.
  */
 @Service
 @RequiredArgsConstructor
 public class UserPitchCardService {
 
-    /** 강화·보유 검증 */
     private final UserPitchCardValidator userPitchCardValidator;
-
-    /** 강화 카드 수량 검증 */
     private final UserEnhancementCardValidator userEnhancementCardValidator;
-
-    /** 보유 카드 Reader */
     private final UserPitchCardReader userPitchCardReader;
-
-    /** 강화 카드 Reader */
     private final EnhancementCardReader enhancementCardReader;
-
-    /** 획득·강화 Executor */
     private final UserPitchCardExecutor userPitchCardExecutor;
-
-    /** 유저 Reader */
     private final UserReader userReader;
 
     /**
-     * 내 보유 구종 카드 목록을 조회한다.
+     * 내 보유 구종 인스턴스 목록.
      *
      * @param userId 유저 ID
-     * @return 보유 목록
+     * @return 인벤
      */
     public List<UserPitchCardResponse> getMyCards(Long userId) {
         return userPitchCardReader.getInventoryResponses(userId);
     }
 
     /**
-     * 마스터 구종 1장을 획득한다.
+     * 마스터 구종 기본본 인스턴스를 새로 획득한다.
      *
      * @param userId 유저 ID
      * @param cardId 마스터 구종 ID
-     * @return 획득한 카드
+     * @return 새 인스턴스
      */
     public UserPitchCardResponse acquire(Long userId, Long cardId) {
-        userPitchCardValidator.validateNotOwned(userPitchCardReader.exists(userId, cardId));
-        Long acquiredId = userPitchCardExecutor.acquire(userId, cardId);
-        return userPitchCardReader.getResponse(userId, acquiredId);
+        Long instanceId = userPitchCardExecutor.acquire(userId, cardId);
+        return userPitchCardReader.getResponseByInstance(userId, instanceId);
     }
 
     /**
-     * 미보유 마스터 구종을 모두 획득한다.
+     * 미보유 마스터만 기본본 1장씩 지급한다.
      *
      * @param userId 유저 ID
-     * @return 갱신된 전체 보유 목록
+     * @return 전체 인벤
      */
     public List<UserPitchCardResponse> acquireAllMissing(Long userId) {
         userPitchCardExecutor.acquireAllMissing(userId);
@@ -76,15 +64,15 @@ public class UserPitchCardService {
     }
 
     /**
-     * 강화 카드를 소모하여 구종에 강화를 적용한다.
+     * 강화 카드로 인스턴스를 강화한다.
      *
-     * @param userId  유저 ID
-     * @param cardId  마스터 구종 ID
-     * @param request 강화 카드 ID
-     * @return 강화 후 구종
+     * @param userId          유저 ID
+     * @param userPitchCardId 구종 인스턴스 ID
+     * @param request         강화 카드 ID
+     * @return 강화 후 인스턴스
      */
     public UserPitchCardResponse applyEnhancement(
-            Long userId, Long cardId, ApplyEnhancementRequest request) {
+            Long userId, Long userPitchCardId, ApplyEnhancementRequest request) {
         Long enhancementCardId = request.enhancementCardId();
         EnhancementEffect effect = enhancementCardReader.getEffect(enhancementCardId);
 
@@ -93,57 +81,59 @@ public class UserPitchCardService {
 
         switch (effect) {
             case CHANGE_AMOUNT_PLUS_1 -> userPitchCardValidator.validateChangeAmountNotEnhanced(
-                    userPitchCardReader.isChangeAmountEnhanced(userId, cardId));
+                    userPitchCardReader.isChangeAmountEnhanced(userId, userPitchCardId));
             case TIMING_FASTER -> {
                 userPitchCardValidator.validateTimingNotEnhanced(
-                        userPitchCardReader.getTimingEnhancement(userId, cardId));
+                        userPitchCardReader.getTimingEnhancement(userId, userPitchCardId));
                 userPitchCardValidator.validateTimingBoundary(
-                        userPitchCardReader.getBaseTiming(cardId), TimingEnhancement.FASTER);
+                        userPitchCardReader.getBaseTimingForInstance(userId, userPitchCardId),
+                        TimingEnhancement.FASTER);
             }
             case TIMING_SLOWER -> {
                 userPitchCardValidator.validateTimingNotEnhanced(
-                        userPitchCardReader.getTimingEnhancement(userId, cardId));
+                        userPitchCardReader.getTimingEnhancement(userId, userPitchCardId));
                 userPitchCardValidator.validateTimingBoundary(
-                        userPitchCardReader.getBaseTiming(cardId), TimingEnhancement.SLOWER);
+                        userPitchCardReader.getBaseTimingForInstance(userId, userPitchCardId),
+                        TimingEnhancement.SLOWER);
             }
         }
 
         Long enhancedId = userPitchCardExecutor.applyEnhancement(
-                userId, cardId, enhancementCardId, effect);
-        return userPitchCardReader.getResponse(userId, enhancedId);
+                userId, userPitchCardId, enhancementCardId, effect);
+        return userPitchCardReader.getResponseByInstance(userId, enhancedId);
     }
 
     /**
-     * 변화량 강화를 재화로 되돌린다.
+     * 변화량 강화 되돌리기.
      *
-     * @param userId 유저 ID
-     * @param cardId 마스터 구종 ID
-     * @return 되돌린 구종
+     * @param userId          유저 ID
+     * @param userPitchCardId 인스턴스 ID
+     * @return 인스턴스
      */
-    public UserPitchCardResponse revertChangeAmount(Long userId, Long cardId) {
+    public UserPitchCardResponse revertChangeAmount(Long userId, Long userPitchCardId) {
         userPitchCardValidator.validateChangeAmountEnhanced(
-                userPitchCardReader.isChangeAmountEnhanced(userId, cardId));
+                userPitchCardReader.isChangeAmountEnhanced(userId, userPitchCardId));
         userPitchCardValidator.validateCurrencyEnough(
                 userReader.getCurrency(userId), EnhancementConstants.REVERT_COST);
-        Long revertedId = userPitchCardExecutor.revertChangeAmount(
-                userId, cardId, EnhancementConstants.REVERT_COST);
-        return userPitchCardReader.getResponse(userId, revertedId);
+        Long id = userPitchCardExecutor.revertChangeAmount(
+                userId, userPitchCardId, EnhancementConstants.REVERT_COST);
+        return userPitchCardReader.getResponseByInstance(userId, id);
     }
 
     /**
-     * 타이밍 강화를 재화로 되돌린다.
+     * 타이밍 강화 되돌리기.
      *
-     * @param userId 유저 ID
-     * @param cardId 마스터 구종 ID
-     * @return 되돌린 구종
+     * @param userId          유저 ID
+     * @param userPitchCardId 인스턴스 ID
+     * @return 인스턴스
      */
-    public UserPitchCardResponse revertTiming(Long userId, Long cardId) {
+    public UserPitchCardResponse revertTiming(Long userId, Long userPitchCardId) {
         userPitchCardValidator.validateTimingEnhanced(
-                userPitchCardReader.getTimingEnhancement(userId, cardId));
+                userPitchCardReader.getTimingEnhancement(userId, userPitchCardId));
         userPitchCardValidator.validateCurrencyEnough(
                 userReader.getCurrency(userId), EnhancementConstants.REVERT_COST);
-        Long revertedId = userPitchCardExecutor.revertTiming(
-                userId, cardId, EnhancementConstants.REVERT_COST);
-        return userPitchCardReader.getResponse(userId, revertedId);
+        Long id = userPitchCardExecutor.revertTiming(
+                userId, userPitchCardId, EnhancementConstants.REVERT_COST);
+        return userPitchCardReader.getResponseByInstance(userId, id);
     }
 }

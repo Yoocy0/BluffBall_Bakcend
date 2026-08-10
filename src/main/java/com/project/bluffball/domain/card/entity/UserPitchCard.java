@@ -9,9 +9,9 @@ import jakarta.persistence.Enumerated;
 import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
+import jakarta.persistence.Index;
 import jakarta.persistence.PrePersist;
 import jakarta.persistence.Table;
-import jakarta.persistence.UniqueConstraint;
 import lombok.AccessLevel;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
@@ -20,18 +20,15 @@ import java.time.LocalDateTime;
 import java.time.ZoneId;
 
 /**
- * 유저 보유 구종 카드 (마스터 {@link PitchCard} + 강화 오버레이).
+ * 유저 보유 구종 카드 인스턴스 (마스터 {@link PitchCard} + 강화 오버레이).
  *
- * <p>식별: {@code (userId, cardId)}. 변화 방향은 마스터 고정.
- * 변화량·타이밍만 강화 가능하며, 핸드 코스트는 {@code 1 + 강화횟수}로 계산한다.</p>
+ * <p>동일 마스터 구종을 여러 장(기본본·강화본) 보유할 수 있다.
+ * 식별은 {@code userPitchCardId}이며, 로드아웃·강화 API는 이 ID를 사용한다.</p>
  */
 @Entity
 @Table(
         name = "user_pitch_card",
-        uniqueConstraints = @UniqueConstraint(
-                name = "uk_user_pitch_card_user_card",
-                columnNames = {"user_id", "card_id"}
-        )
+        indexes = @Index(name = "ix_user_pitch_card_user_master", columnList = "user_id, card_id")
 )
 @Getter
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
@@ -67,7 +64,7 @@ public class UserPitchCard {
     private LocalDateTime updatedAt;
 
     /**
-     * 미강화 보유 카드를 생성한다.
+     * 미강화(기본본) 인스턴스를 생성한다.
      *
      * @param userId 유저 ID
      * @param cardId 마스터 구종 ID
@@ -77,6 +74,15 @@ public class UserPitchCard {
         this.cardId = cardId;
         this.changeAmountEnhanced = false;
         this.timingEnhancement = TimingEnhancement.NONE;
+    }
+
+    /**
+     * 미강화 기본본인지.
+     *
+     * @return 강화가 하나도 없으면 true
+     */
+    public boolean isBaseCopy() {
+        return !changeAmountEnhanced && timingEnhancement == TimingEnhancement.NONE;
     }
 
     /**
@@ -108,7 +114,7 @@ public class UserPitchCard {
      * 실효 변화량을 반환한다.
      *
      * @param baseChangeAmount 마스터 변화량
-     * @return 실효 변화량 (양수 증가만)
+     * @return 실효 변화량
      */
     public int resolveEffectiveChangeAmount(int baseChangeAmount) {
         return changeAmountEnhanced ? baseChangeAmount + 1 : baseChangeAmount;

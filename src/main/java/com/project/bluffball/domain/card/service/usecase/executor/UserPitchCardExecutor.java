@@ -21,99 +21,96 @@ import java.util.ArrayList;
 import java.util.List;
 
 /**
- * 유저 구종 카드 획득·강화·되돌리기 쓰기 Executor.
+ * 유저 구종 인스턴스 획득·강화·되돌리기 Executor.
  */
 @Component
 @RequiredArgsConstructor
 public class UserPitchCardExecutor {
 
-    /** 유저 보유 Repository */
     private final UserPitchCardRepository userPitchCardRepository;
-
-    /** 마스터 구종 Repository */
     private final PitchCardRepository pitchCardRepository;
-
-    /** 유저 구종 Reader */
     private final UserPitchCardReader userPitchCardReader;
-
-    /** 강화 카드 소모 Executor */
     private final UserEnhancementCardExecutor userEnhancementCardExecutor;
-
-    /** 유저 Reader */
     private final UserReader userReader;
-
-    /** 유저 Repository */
     private final UserRepository userRepository;
 
     /**
-     * 구종 카드를 획득한다 (미강화).
+     * 기본본 인스턴스를 새로 생성한다.
      *
      * @param userId 유저 ID
      * @param cardId 마스터 구종 ID
-     * @return 마스터 카드 ID
+     * @return 생성된 인스턴스 ID
      */
     @Transactional
     public Long acquire(Long userId, Long cardId) {
         requireMasterExists(cardId);
-        userPitchCardRepository.save(new UserPitchCard(userId, cardId));
-        return cardId;
+        UserPitchCard saved = userPitchCardRepository.save(new UserPitchCard(userId, cardId));
+        return saved.getId();
     }
 
     /**
-     * 미보유 마스터 구종을 모두 획득한다.
+     * 마스터별로 인스턴스가 하나도 없으면 기본본 1장을 지급한다.
      *
      * @param userId 유저 ID
-     * @return 새로 획득한 마스터 카드 ID 목록
+     * @return 새로 만든 인스턴스 ID 목록
      */
     @Transactional
     public List<Long> acquireAllMissing(Long userId) {
         List<Long> acquired = new ArrayList<>();
         for (Long cardId : pitchCardRepository.findAllIds()) {
             if (!userPitchCardRepository.existsByUserIdAndCardId(userId, cardId)) {
-                userPitchCardRepository.save(new UserPitchCard(userId, cardId));
-                acquired.add(cardId);
+                acquired.add(acquire(userId, cardId));
             }
         }
         return acquired;
     }
 
     /**
-     * 미보유 카드만 획득한다.
+     * 지정 마스터에 대해 인스턴스가 없으면 기본본을 지급하고, 각 마스터의 인스턴스 ID를 반환한다.
+     *
+     * <p>이미 보유 중이면 기본본을 우선, 없으면 첫 인스턴스 ID를 반환한다.</p>
      *
      * @param userId  유저 ID
-     * @param cardIds 마스터 구종 ID 목록
-     * @return 새로 획득한 마스터 카드 ID 목록
+     * @param cardIds 마스터 ID 목록
+     * @return 마스터별 인스턴스 ID (입력 순서)
      */
     @Transactional
     public List<Long> acquireIfMissing(Long userId, List<Long> cardIds) {
-        List<Long> acquired = new ArrayList<>();
+        List<Long> instanceIds = new ArrayList<>();
         for (Long cardId : cardIds) {
             requireMasterExists(cardId);
-            if (!userPitchCardRepository.existsByUserIdAndCardId(userId, cardId)) {
-                userPitchCardRepository.save(new UserPitchCard(userId, cardId));
-                acquired.add(cardId);
+            List<UserPitchCard> existing = userPitchCardRepository.findByUserIdAndCardId(userId, cardId);
+            if (existing.isEmpty()) {
+                instanceIds.add(acquire(userId, cardId));
+            } else {
+                Long id = existing.stream()
+                        .filter(UserPitchCard::isBaseCopy)
+                        .map(UserPitchCard::getId)
+                        .findFirst()
+                        .orElseGet(() -> existing.get(0).getId());
+                instanceIds.add(id);
             }
         }
-        return acquired;
+        return instanceIds;
     }
 
     /**
-     * 강화 카드를 소모하고 구종에 효과를 적용한다.
+     * 강화 카드를 소모하고 인스턴스에 효과를 적용한다.
      *
-     * @param userId             유저 ID
-     * @param pitchCardId        마스터 구종 ID
-     * @param enhancementCardId  강화 카드 마스터 ID
-     * @param effect             강화 효과
-     * @return 구종 마스터 ID
+     * @param userId            유저 ID
+     * @param userPitchCardId   구종 인스턴스 ID
+     * @param enhancementCardId 강화 카드 마스터 ID
+     * @param effect            효과
+     * @return 인스턴스 ID
      */
     @Transactional
     public Long applyEnhancement(
             Long userId,
-            Long pitchCardId,
+            Long userPitchCardId,
             Long enhancementCardId,
             EnhancementEffect effect) {
         userEnhancementCardExecutor.consumeOne(userId, enhancementCardId);
-        UserPitchCard owned = userPitchCardReader.getByUserIdAndCardId(userId, pitchCardId);
+        UserPitchCard owned = userPitchCardReader.getByIdForUser(userId, userPitchCardId);
         try {
             switch (effect) {
                 case CHANGE_AMOUNT_PLUS_1 -> owned.enhanceChangeAmount();
@@ -125,47 +122,47 @@ public class UserPitchCardExecutor {
         } catch (IllegalArgumentException ex) {
             throw new BadRequestException(ErrorCode.USER_PITCH_CARD_TIMING_INVALID, ex.getMessage());
         }
-        return pitchCardId;
+        return userPitchCardId;
     }
 
     /**
-     * 변화량 강화를 재화로 되돌린다 (강화 카드 미환불).
+     * 변화량 강화를 재화로 되돌린다.
      *
-     * @param userId 유저 ID
-     * @param cardId 마스터 구종 ID
-     * @param cost   재화 비용
-     * @return 구종 마스터 ID
+     * @param userId          유저 ID
+     * @param userPitchCardId 인스턴스 ID
+     * @param cost            재화
+     * @return 인스턴스 ID
      */
     @Transactional
-    public Long revertChangeAmount(Long userId, Long cardId, long cost) {
+    public Long revertChangeAmount(Long userId, Long userPitchCardId, long cost) {
         spendCurrency(userId, cost);
-        UserPitchCard owned = userPitchCardReader.getByUserIdAndCardId(userId, cardId);
+        UserPitchCard owned = userPitchCardReader.getByIdForUser(userId, userPitchCardId);
         try {
             owned.revertChangeAmount();
         } catch (IllegalStateException ex) {
             throw new BadRequestException(ErrorCode.USER_PITCH_CARD_NOT_ENHANCED, ex.getMessage());
         }
-        return cardId;
+        return userPitchCardId;
     }
 
     /**
-     * 타이밍 강화를 재화로 되돌린다 (강화 카드 미환불).
+     * 타이밍 강화를 재화로 되돌린다.
      *
-     * @param userId 유저 ID
-     * @param cardId 마스터 구종 ID
-     * @param cost   재화 비용
-     * @return 구종 마스터 ID
+     * @param userId          유저 ID
+     * @param userPitchCardId 인스턴스 ID
+     * @param cost            재화
+     * @return 인스턴스 ID
      */
     @Transactional
-    public Long revertTiming(Long userId, Long cardId, long cost) {
+    public Long revertTiming(Long userId, Long userPitchCardId, long cost) {
         spendCurrency(userId, cost);
-        UserPitchCard owned = userPitchCardReader.getByUserIdAndCardId(userId, cardId);
+        UserPitchCard owned = userPitchCardReader.getByIdForUser(userId, userPitchCardId);
         try {
             owned.revertTiming();
         } catch (IllegalStateException ex) {
             throw new BadRequestException(ErrorCode.USER_PITCH_CARD_NOT_ENHANCED, ex.getMessage());
         }
-        return cardId;
+        return userPitchCardId;
     }
 
     private void spendCurrency(Long userId, long cost) {

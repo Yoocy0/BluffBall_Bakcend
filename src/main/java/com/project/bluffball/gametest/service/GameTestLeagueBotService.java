@@ -1,11 +1,11 @@
 package com.project.bluffball.gametest.service;
 
+import com.project.bluffball.domain.card.dto.response.UserPitchCardResponse;
 import com.project.bluffball.domain.card.service.UserPitchCardService;
 import com.project.bluffball.domain.game.config.GameModeRule;
 import com.project.bluffball.domain.game.dto.request.LeagueMatchQueueJoinRequest;
 import com.project.bluffball.domain.game.dto.response.MatchJoinResponse;
 import com.project.bluffball.domain.game.service.LeagueMatchService;
-import com.project.bluffball.domain.game.service.usecase.reader.PitchCardReader;
 import com.project.bluffball.domain.league.config.LeagueTierRule;
 import com.project.bluffball.domain.league.enums.LeagueFormat;
 import com.project.bluffball.domain.league.enums.LeagueTier;
@@ -72,7 +72,6 @@ public class GameTestLeagueBotService {
     private final LeagueReader leagueReader;
     private final TeamMembershipValidator teamMembershipValidator;
     private final GameTestBotUserExecutor gameTestBotUserExecutor;
-    private final PitchCardReader pitchCardReader;
     private final UserPitchCardService userPitchCardService;
     private final GameModeRule gameModeRule;
     private final LeagueMatchService leagueMatchService;

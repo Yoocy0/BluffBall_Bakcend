@@ -50,14 +50,14 @@ public class TeamPitchCardsValidator {
     }
 
     /**
-     * dropCardId가 선택 카드에 포함되는지 검증한다.
+     * dropCardId가 선택 인스턴스에 포함되는지 검증한다.
      *
-     * @param cardIds 선택 카드 ID
-     * @param dropCardId 교체 시 제외 카드 ID
+     * @param userPitchCardIds 선택 인스턴스 ID
+     * @param dropCardId       교체 시 제외 인스턴스 ID
      * @throws BadRequestException 포함되지 않으면
      */
-    public void validateDropCardInHand(List<Long> cardIds, Long dropCardId) {
-        if (dropCardId == null || !cardIds.contains(dropCardId)) {
+    public void validateDropCardInHand(List<Long> userPitchCardIds, Long dropCardId) {
+        if (dropCardId == null || !userPitchCardIds.contains(dropCardId)) {
             throw new BadRequestException(
                     ErrorCode.TEAM_PITCH_DROP_CARD_INVALID,
                     "dropCardId=" + dropCardId);
@@ -65,9 +65,9 @@ public class TeamPitchCardsValidator {
     }
 
     /**
-     * 카드 ID가 구종으로 유효한지 검증한다.
+     * 인스턴스 ID가 구종 로드아웃으로 유효한지 검증한다.
      *
-     * @param allValid {@code CardReader.areValidPitcherHandCards} 결과
+     * @param allValid {@code UserPitchCardReader#areValidPitchInstances} 결과
      * @throws BadRequestException 유효하지 않으면
      */
     public void validateCardsValid(boolean allValid) {

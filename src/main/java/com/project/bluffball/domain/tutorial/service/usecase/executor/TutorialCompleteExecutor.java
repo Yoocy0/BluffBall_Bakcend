@@ -33,9 +33,9 @@ public class TutorialCompleteExecutor {
      * 튜토리얼을 완료하고 시작 구종을 지급한다.
      *
      * @param userId              유저 ID
-     * @param fixedPitchCardId    포심 패스트볼 ID
-     * @param selectedPitchCardIds 선택한 구종 ID 2개
-     * @return 지급 대상 전체 카드 ID (포심 + 선택 2)
+     * @param fixedPitchCardId     포심 패스트볼 마스터 ID
+     * @param selectedPitchCardIds 선택한 구종 마스터 ID 2개
+     * @return 지급·보유 인스턴스 ID (포심 + 선택 2)
      */
     @Transactional
     public List<Long> completeAndGrant(
@@ -50,10 +50,9 @@ public class TutorialCompleteExecutor {
         }
         userRepository.save(user);
 
-        List<Long> grantIds = new ArrayList<>();
-        grantIds.add(fixedPitchCardId);
-        grantIds.addAll(selectedPitchCardIds);
-        userPitchCardExecutor.acquireIfMissing(userId, grantIds);
-        return grantIds;
+        List<Long> grantMasterIds = new ArrayList<>();
+        grantMasterIds.add(fixedPitchCardId);
+        grantMasterIds.addAll(selectedPitchCardIds);
+        return userPitchCardExecutor.acquireIfMissing(userId, grantMasterIds);
     }
 }

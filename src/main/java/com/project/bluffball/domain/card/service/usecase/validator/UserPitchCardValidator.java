@@ -14,17 +14,6 @@ import org.springframework.stereotype.Component;
 public class UserPitchCardValidator {
 
     /**
-     * 미보유일 때만 획득 가능함을 검증한다.
-     *
-     * @param alreadyOwned 이미 보유 여부
-     */
-    public void validateNotOwned(boolean alreadyOwned) {
-        if (alreadyOwned) {
-            throw new ConflictException(ErrorCode.USER_PITCH_CARD_ALREADY_OWNED);
-        }
-    }
-
-    /**
      * 변화량 강화가 아직 없음을 검증한다.
      *
      * @param alreadyEnhanced 이미 강화됨
