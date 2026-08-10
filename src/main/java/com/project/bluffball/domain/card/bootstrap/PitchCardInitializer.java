@@ -28,8 +28,10 @@ public class PitchCardInitializer implements ApplicationRunner {
 
     private static final List<PitchSeed> MASTER_PITCHES = List.of(
             new PitchSeed("포심 패스트볼", 0, ChangeDirection.DOWN, Timing.EARLY),
+            new PitchSeed("투심 패스트볼", 1, ChangeDirection.REVERSE, Timing.EARLY),
             new PitchSeed("커터", 1, ChangeDirection.SIDE, Timing.EARLY),
             new PitchSeed("스플리터", 1, ChangeDirection.DOWN, Timing.EARLY),
+            new PitchSeed("체인지업", 1, ChangeDirection.REVERSE, Timing.LATE),
             new PitchSeed("슬라이더", 2, ChangeDirection.SIDE, Timing.NORMAL),
             new PitchSeed("커브", 3, ChangeDirection.DOWN, Timing.LATE),
             new PitchSeed("포크", 2, ChangeDirection.DOWN, Timing.NORMAL)
