@@ -195,6 +195,19 @@ public class UserPitchCardReader {
     }
 
     /**
+     * 핸드 ID(인스턴스 또는 마스터)를 마스터 구종 ID로 변환한다.
+     *
+     * <p>해당 유저 인스턴스면 마스터 ID, 아니면 인자 그대로(마스터로 간주).</p>
+     *
+     * @param userId           투수 유저 ID (null이면 마스터로 간주)
+     * @param cardOrInstanceId 인스턴스 또는 마스터 ID
+     * @return 마스터 구종 ID
+     */
+    public Long resolveMasterCardId(Long userId, Long cardOrInstanceId) {
+        return resolveMasterId(userId, cardOrInstanceId);
+    }
+
+    /**
      * 실효 타이밍.
      *
      * <p>{@code cardOrInstanceId}가 유저 인스턴스면 그 오버레이,

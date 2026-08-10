@@ -29,7 +29,7 @@ public class HalfInningRoleSwapExecutor {
         MatchInfo matchInfo = matchInfoReader.getById(matchSessionId);
         GameMode gameMode = matchInfo.getGameMode();
         return switch (gameMode) {
-            case SHOWDOWN, CUSTOM -> swapForSingleMode(matchSessionId);
+            case SHOWDOWN, CUSTOM, BOT -> swapForSingleMode(matchSessionId);
             case COMPACT_LEAGUE, FULL_LEAGUE -> swapForLeague(matchSessionId);
         };
     }
@@ -42,7 +42,7 @@ public class HalfInningRoleSwapExecutor {
      */
     public Long swapForSingleMode(String matchSessionId) {
         MatchInfo matchInfo = matchInfoReader.getById(matchSessionId);
-        if (matchInfo.getGameMode() != GameMode.SHOWDOWN && matchInfo.getGameMode() != GameMode.CUSTOM) {
+        if (!matchInfo.getGameMode().usesShowdownRules()) {
             throw new BadRequestException(ErrorCode.GAME_ROLE_SWAP_UNSUPPORTED);
         }
         if (matchInfo.getBatterLineup().size() != 1) {

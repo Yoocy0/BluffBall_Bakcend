@@ -35,19 +35,35 @@ public class CardHandDrawExecutor {
         MatchInfo matchInfo = matchInfoReader.getById(matchSessionId);
 
         int handSize = gameModeRule.getHandSize(matchInfo.getGameMode());
-        List<Long> allIds = pitchCardReader.findAllIds();
+        List<Long> masterPoolIds = pitchCardReader.findAllIds();
         List<Long> participantIds = matchInfo.getParticipantUserIds();
 
         matchInfo.clearMulliganPhase();
 
         List<List<Long>> allHands = new ArrayList<>();
         for (Long userId : participantIds) {
-            List<Long> drawnIds = cardHandDrawer.draw(allIds, handSize);
+            List<Long> pool = resolveDrawPool(matchInfo, userId, masterPoolIds);
+            List<Long> drawnIds = cardHandDrawer.draw(pool, handSize);
             matchInfo.setPlayerCardHand(userId, drawnIds);
             allHands.add(drawnIds);
         }
 
         matchInfoRepository.save(matchInfo);
         return allHands;
+    }
+
+    /**
+     * 참가자별 드로우 풀을 고른다. 연습 봇이면 저장된 botDrawPool, 아니면 전체 마스터.
+     *
+     * @param matchInfo     매치
+     * @param userId        참가자
+     * @param masterPoolIds 전체 마스터 ID (사람·PvP용)
+     * @return 드로우 풀
+     */
+    private List<Long> resolveDrawPool(MatchInfo matchInfo, Long userId, List<Long> masterPoolIds) {
+        if (matchInfo.isPracticeBotUser(userId) && matchInfo.hasBotDrawPool()) {
+            return matchInfo.getBotDrawPool();
+        }
+        return masterPoolIds;
     }
 }

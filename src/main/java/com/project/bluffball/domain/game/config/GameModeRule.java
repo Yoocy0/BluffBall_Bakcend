@@ -10,7 +10,7 @@ import org.springframework.stereotype.Component;
  *
  * <h3>투수 카드 핸드 장수 (리그 = 사전 선택 n+1, 구종·강화 포함)</h3>
  * <ul>
- *   <li>SHOWDOWN / CUSTOM — 3장 (인게임 드로우)</li>
+ *   <li>SHOWDOWN / CUSTOM / BOT — 3장 (인게임 드로우)</li>
  *   <li>COMPACT_LEAGUE — 4장 (사전 선택 = 경기 핸드)</li>
  *   <li>FULL_LEAGUE — 5장 (사전 선택 = 경기 핸드)</li>
  * </ul>
@@ -22,7 +22,7 @@ import org.springframework.stereotype.Component;
  *
  * <h3>인게임 카드 드로우·멀리건</h3>
  * <ul>
- *   <li>SHOWDOWN / CUSTOM — 셋업 숫자 이후 인게임에서 드로우·멀리건</li>
+ *   <li>SHOWDOWN / CUSTOM / BOT — 셋업 숫자 이후 인게임에서 드로우·멀리건</li>
  *   <li>FULL_LEAGUE / COMPACT_LEAGUE — 매치 전 구종·강화 사전 선택(인게임 드로우·멀리건 없음)</li>
  * </ul>
  *
@@ -34,10 +34,12 @@ import org.springframework.stereotype.Component;
  *
  * <h3>블러핑 숫자 제출</h3>
  * <ul>
- *   <li>SHOWDOWN — 참가 2명 FULL(OUT·병살·3루타·홈런)</li>
+ *   <li>SHOWDOWN / BOT — 참가 2명 FULL(OUT·병살·3루타·홈런)</li>
  *   <li>리그 — 타순 멤버 타자 셋업 + 양 선발/현재 투수 셋업.
  *       Compact 전담 투수는 타자 셋업 불필요. 투수 교체 시에만 역할별 재제출</li>
  * </ul>
+ *
+ * <p>BOT은 SHOWDOWN과 동일 규칙(연습/상대 마커). PvP 매칭 큐 선택지에는 포함하지 않는다.</p>
  */
 @Component
 public class GameModeRule {
@@ -50,7 +52,7 @@ public class GameModeRule {
      */
     public int getHandSize(GameMode gameMode) {
         return switch (gameMode) {
-            case SHOWDOWN, CUSTOM -> 3;
+            case SHOWDOWN, CUSTOM, BOT -> 3;
             case COMPACT_LEAGUE -> 4;
             case FULL_LEAGUE -> 5;
         };
@@ -66,7 +68,7 @@ public class GameModeRule {
      */
     public int getSubstituteHandSize(GameMode gameMode) {
         return switch (gameMode) {
-            case SHOWDOWN, CUSTOM -> getHandSize(gameMode);
+            case SHOWDOWN, CUSTOM, BOT -> getHandSize(gameMode);
             case COMPACT_LEAGUE, FULL_LEAGUE -> getHandSize(gameMode) - 1;
         };
     }
@@ -81,7 +83,7 @@ public class GameModeRule {
      */
     public boolean usesInGameCardDrawAndMulligan(GameMode gameMode) {
         return switch (gameMode) {
-            case SHOWDOWN, CUSTOM -> true;
+            case SHOWDOWN, CUSTOM, BOT -> true;
             case FULL_LEAGUE, COMPACT_LEAGUE -> false;
         };
     }
@@ -104,7 +106,7 @@ public class GameModeRule {
      */
     public int getDefaultInnings(GameMode gameMode) {
         return switch (gameMode) {
-            case SHOWDOWN, CUSTOM -> 1;
+            case SHOWDOWN, CUSTOM, BOT -> 1;
             case COMPACT_LEAGUE -> 3;
             case FULL_LEAGUE -> 9;
         };
@@ -120,7 +122,7 @@ public class GameModeRule {
      */
     public int getBattingOrderSize(GameMode gameMode) {
         return switch (gameMode) {
-            case SHOWDOWN, CUSTOM -> 1;
+            case SHOWDOWN, CUSTOM, BOT -> 1;
             case COMPACT_LEAGUE -> 3;
             case FULL_LEAGUE -> 9;
         };
@@ -136,7 +138,7 @@ public class GameModeRule {
      */
     public int getRosterSize(GameMode gameMode) {
         return switch (gameMode) {
-            case SHOWDOWN, CUSTOM -> 1;
+            case SHOWDOWN, CUSTOM, BOT -> 1;
             case COMPACT_LEAGUE -> 4;
             case FULL_LEAGUE -> 9;
         };
@@ -160,7 +162,7 @@ public class GameModeRule {
      */
     public int getMaxPitcherSubstitutions(GameMode gameMode) {
         return switch (gameMode) {
-            case SHOWDOWN, CUSTOM -> 0;
+            case SHOWDOWN, CUSTOM, BOT -> 0;
             case COMPACT_LEAGUE -> 1;
             case FULL_LEAGUE -> 3;
         };
