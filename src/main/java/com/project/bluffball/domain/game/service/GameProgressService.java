@@ -198,6 +198,14 @@ public class GameProgressService {
         GameStateSnapshot snapshot = gameStateReader.getSnapshot(matchSessionId);
         publishGameEndEvent(matchSessionId, snapshot, winnerUserId);
 
+        // 연습용 봇 매치 — 보상·래더 사이드이펙트 없음
+        if (matchInfoReader.isPracticeBotMatch(matchSessionId)) {
+            // TODO: Showdown에 보상/전적/래더가 추가되면 여기서 스킵한다.
+            // 현재 리그 순위 반영은 isLeagueMatch로 이미 제외되며, InningLog 아카이브는 디버깅용으로 유지한다.
+            log.info("practice/bot match end — skip reward/standings side effects matchSessionId={}",
+                    matchSessionId);
+        }
+
         // 리그 순위 반영 (멱등)
         applyLeagueStandingsIfNeeded(matchSessionId, snapshot);
 

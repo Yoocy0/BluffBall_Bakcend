@@ -346,6 +346,16 @@ public class MatchInfoReader {
     }
 
     /**
+     * 연습용 봇 매치 여부 (Service ✅)
+     *
+     * @param matchSessionId 매치 세션 ID
+     * @return 봇 연습 매치면 true
+     */
+    public boolean isPracticeBotMatch(String matchSessionId) {
+        return getById(matchSessionId).isPracticeBotMatch();
+    }
+
+    /**
      * 홈 선발 투수 ID (Service ✅)
      *
      * @param matchSessionId 매치 세션 ID

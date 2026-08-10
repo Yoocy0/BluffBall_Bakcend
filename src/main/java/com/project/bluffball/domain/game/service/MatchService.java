@@ -63,6 +63,20 @@ public class MatchService {
     }
 
     /**
+     * 큐에 등록되어 있으면 취소한다. 없으면 no-op.
+     *
+     * <p>매칭 대기 중 봇 매치로 전환할 때 사용한다.</p>
+     *
+     * @param userId 유저 ID
+     */
+    public void cancelQueueIfPresent(Long userId) {
+        if (!matchQueueReader.hasQueueEntry(userId)) {
+            return;
+        }
+        cancelQueue(userId);
+    }
+
+    /**
      * 경기 종료 후 참가자 큐 Entry를 정리한다 — 재매칭 409 방지.
      */
     public void clearQueueEntriesForMatch(String matchSessionId) {

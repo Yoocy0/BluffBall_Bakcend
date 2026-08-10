@@ -66,6 +66,14 @@ public class MatchInfo {
     /** 리그 경기 결과(점수·보상) 반영 완료 여부 */
     private boolean leagueResultApplied;
 
+    /**
+     * 연습용 봇 매치 여부.
+     *
+     * <p>true이면 보상·래더/순위 등 사이드이펙트를 건너뛴다.
+     * (현재 Showdown PvP에도 보상 경로가 없으므로, 향후 보상 추가 시 이 플래그로 가드한다.)</p>
+     */
+    private boolean practiceBotMatch;
+
     /** 리그 티어 — 리그 매치에서 사용 */
     @Enumerated(EnumType.ORDINAL)
     private LeagueTier leagueTier;
@@ -801,6 +809,16 @@ public class MatchInfo {
         this.awayNextBatterIndex = 0;
         this.homePitcherSubstitutionCount = 0;
         this.awayPitcherSubstitutionCount = 0;
+        this.practiceBotMatch = false;
+    }
+
+    /**
+     * 연습용 봇 매치로 표시한다.
+     *
+     * <p>결과 경로에서 보상·래더 반영을 건너뛸 때 사용한다.</p>
+     */
+    public void markAsPracticeBotMatch() {
+        this.practiceBotMatch = true;
     }
 
     /**
