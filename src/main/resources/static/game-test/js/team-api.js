@@ -94,6 +94,19 @@
         return res.json();
     }
 
+    /** 본인 로드아웃 저장 (userPitchCardIds) */
+    async function saveMyPitchCards(teamId, format, userPitchCardIds, dropCardId) {
+        const res = await fetch(`/api/v1/teams/${teamId}/lineups/${format}/pitch-cards/me`, {
+            method: 'PUT',
+            headers: authHeaders(true),
+            body: JSON.stringify({ userPitchCardIds, dropCardId }),
+        });
+        if (!res.ok) {
+            throw new Error(await parseError(res));
+        }
+        return res.json();
+    }
+
     /**
      * 테스트용: 선택한 포맷 기준 빈자리를 봇으로 채운다.
      * 부족한 인원 수는 서버가 format(Compact 4 / Full 9)으로 계산한다.
@@ -123,6 +136,7 @@
         saveLineup,
         getPitchCards,
         savePitchCards,
+        saveMyPitchCards,
         fillRosterWithBots,
     };
 })();

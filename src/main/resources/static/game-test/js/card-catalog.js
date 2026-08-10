@@ -69,6 +69,18 @@
         return cards;
     }
 
+    /** 내 보유 구종 인스턴스 (userPitchCardId) */
+    async function fetchMyPitchCards() {
+        const token = BluffBallWs.requireLoginToken();
+        const res = await fetch('/api/v1/users/me/pitch-cards', {
+            headers: { Authorization: `Bearer ${token}` },
+        });
+        if (!res.ok) {
+            throw new Error(`내 구종 인스턴스 조회 실패 (HTTP ${res.status})`);
+        }
+        return res.json();
+    }
+
     /** 투수 시작 좌표 선택용 — coordinateNumber 1~25 */
     async function fetchPitcherCoordinateOptions() {
         const cached = sessionStorage.getItem(STORAGE_COORDINATES);
@@ -165,6 +177,7 @@
     window.BluffBallCards = {
         fetchPitcherCoordinateOptions,
         fetchPitchCards,
+        fetchMyPitchCards,
         mountPitchTipsRail,
         formatTiming,
         formatChange,

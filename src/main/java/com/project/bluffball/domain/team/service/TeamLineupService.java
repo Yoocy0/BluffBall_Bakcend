@@ -182,8 +182,7 @@ public class TeamLineupService {
             Long dropCardId,
             int requiredHandSize) {
         teamPitchCardsValidator.validateDropCardInHand(userPitchCardIds, dropCardId);
-        teamPitchCardsValidator.validateCardsValid(
-                userPitchCardReader.areValidPitchInstances(ownerUserId, userPitchCardIds));
+        // 인스턴스 소유·중복 검증 (구종 마스터 여부는 UserPitchCard 생성 경로로 보장)
         teamPitchCardsValidator.validateOwned(
                 userPitchCardReader.ownsAllInstances(ownerUserId, userPitchCardIds));
         teamPitchCardsValidator.validateTotalCost(

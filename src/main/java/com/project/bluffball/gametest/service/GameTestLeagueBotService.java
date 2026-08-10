@@ -391,14 +391,6 @@ public class GameTestLeagueBotService {
                 ? GameMode.COMPACT_LEAGUE
                 : GameMode.FULL_LEAGUE;
         int handSize = gameModeRule.getHandSize(gameMode);
-        List<Long> allPitchIds = pitchCardReader.findAllIds();
-        if (allPitchIds.size() < handSize) {
-            throw new BadRequestException(
-                    ErrorCode.GAME_CARD_POOL_INSUFFICIENT,
-                    "not enough pitch cards in catalog size=" + allPitchIds.size());
-        }
-        List<Long> hand = allPitchIds.subList(0, handSize);
-        Long dropCardId = hand.get(hand.size() - 1);
 
         List<Long> roster = new ArrayList<>(batters);
         if (!roster.contains(pitcher)) {
@@ -410,8 +402,22 @@ public class GameTestLeagueBotService {
         }
 
         List<UpsertTeamPitchCardsRequest.MemberPitchCardSelection> selections = roster.stream()
-                .map(userId -> new UpsertTeamPitchCardsRequest.MemberPitchCardSelection(
-                        userId, List.copyOf(hand), dropCardId))
+                .map(userId -> {
+                    List<UserPitchCardResponse> inventory = userPitchCardService.getMyCards(userId);
+                    if (inventory.size() < handSize) {
+                        throw new BadRequestException(
+                                ErrorCode.GAME_CARD_POOL_INSUFFICIENT,
+                                "not enough pitch instances userId=" + userId
+                                        + " size=" + inventory.size());
+                    }
+                    List<Long> instanceIds = inventory.stream()
+                            .map(UserPitchCardResponse::userPitchCardId)
+                            .limit(handSize)
+                            .toList();
+                    Long dropCardId = instanceIds.get(instanceIds.size() - 1);
+                    return new UpsertTeamPitchCardsRequest.MemberPitchCardSelection(
+                            userId, instanceIds, dropCardId);
+                })
                 .toList();
 
         teamLineupService.upsertPitchCards(

@@ -10,10 +10,12 @@
 
     const state = {
         team: null,
-        catalog: [],
+        myUserId: null,
+        /** 내 인스턴스 목록 (UserPitchCardResponse) */
+        inventory: [],
         rosterUserIds: [],
         memberLabels: new Map(),
-        /** userId -> { cardIds: (number|null)[], dropIndex: number } */
+        /** userId -> { userPitchCardIds: (number|null)[], dropIndex: number } */
         byUser: new Map(),
         selectedUserId: null,
     };
@@ -38,20 +40,37 @@
         }
     }
 
+    function isEditingSelf() {
+        return state.selectedUserId != null
+            && state.myUserId != null
+            && Number(state.selectedUserId) === Number(state.myUserId);
+    }
+
     function ensureUserHand(userId) {
         if (!state.byUser.has(userId)) {
             const size = handSize(formatSelect.value);
             state.byUser.set(userId, {
-                cardIds: Array.from({ length: size }, () => null),
+                userPitchCardIds: Array.from({ length: size }, () => null),
                 dropIndex: size - 1,
             });
         }
         return state.byUser.get(userId);
     }
 
-    function cardName(cardId) {
-        const c = state.catalog.find((x) => x.cardId === cardId || x.id === cardId);
-        return c ? c.name : `card ${cardId}`;
+    function cardLabel(userPitchCardId) {
+        const c = state.inventory.find((x) => x.userPitchCardId === userPitchCardId);
+        if (!c) {
+            return `instance ${userPitchCardId}`;
+        }
+        const enh = [];
+        if (c.changeAmountEnhanced) {
+            enh.push('+Δ');
+        }
+        if (c.timingEnhancement && c.timingEnhancement !== 'NONE') {
+            enh.push(c.timingEnhancement);
+        }
+        const suffix = enh.length ? ` [${enh.join(',')}]` : '';
+        return `${c.name}${suffix} (#${userPitchCardId})`;
     }
 
     function onDragStart(e, payload) {
@@ -67,18 +86,25 @@
         }
     }
 
-    function placeCard(cardId, slotIndex) {
+    function placeCard(userPitchCardId, slotIndex) {
+        if (!isEditingSelf()) {
+            return;
+        }
         const hand = ensureUserHand(state.selectedUserId);
-        // remove duplicate elsewhere in same hand
-        hand.cardIds = hand.cardIds.map((id, i) => (id === cardId && i !== slotIndex ? null : id));
-        hand.cardIds[slotIndex] = cardId;
+        hand.userPitchCardIds = hand.userPitchCardIds.map((id, i) => (
+            id === userPitchCardId && i !== slotIndex ? null : id
+        ));
+        hand.userPitchCardIds[slotIndex] = userPitchCardId;
         renderSlots();
         renderPool();
     }
 
     function clearSlot(slotIndex) {
+        if (!isEditingSelf()) {
+            return;
+        }
         const hand = ensureUserHand(state.selectedUserId);
-        hand.cardIds[slotIndex] = null;
+        hand.userPitchCardIds[slotIndex] = null;
         renderSlots();
         renderPool();
     }
@@ -90,9 +116,10 @@
             return;
         }
 
+        const editable = isEditingSelf();
         const hand = ensureUserHand(state.selectedUserId);
-        const size = hand.cardIds.length;
-        hand.cardIds.forEach((cardId, index) => {
+        const size = hand.userPitchCardIds.length;
+        hand.userPitchCardIds.forEach((userPitchCardId, index) => {
             const isPlus = index === size - 1;
             const slot = document.createElement('div');
             slot.className = isPlus ? 'slot-card slot-card-plus' : 'slot-card';
@@ -104,10 +131,12 @@
 
             const body = document.createElement('div');
             body.className = 'slot-body';
-            body.textContent = cardId != null ? cardName(cardId) : '비움';
+            body.textContent = userPitchCardId != null
+                ? cardLabel(userPitchCardId)
+                : (editable ? '비움' : '미선택/타인');
             slot.appendChild(body);
 
-            if (cardId != null) {
+            if (editable && userPitchCardId != null) {
                 const clearBtn = document.createElement('button');
                 clearBtn.type = 'button';
                 clearBtn.className = 'slot-clear';
@@ -116,19 +145,21 @@
                 slot.appendChild(clearBtn);
             }
 
-            slot.addEventListener('dragover', (e) => {
-                e.preventDefault();
-                slot.classList.add('slot-card-over');
-            });
-            slot.addEventListener('dragleave', () => slot.classList.remove('slot-card-over'));
-            slot.addEventListener('drop', (e) => {
-                e.preventDefault();
-                slot.classList.remove('slot-card-over');
-                const data = parseDrag(e);
-                if (data.cardId != null) {
-                    placeCard(Number(data.cardId), index);
-                }
-            });
+            if (editable) {
+                slot.addEventListener('dragover', (e) => {
+                    e.preventDefault();
+                    slot.classList.add('slot-card-over');
+                });
+                slot.addEventListener('dragleave', () => slot.classList.remove('slot-card-over'));
+                slot.addEventListener('drop', (e) => {
+                    e.preventDefault();
+                    slot.classList.remove('slot-card-over');
+                    const data = parseDrag(e);
+                    if (data.userPitchCardId != null) {
+                        placeCard(Number(data.userPitchCardId), index);
+                    }
+                });
+            }
 
             cardSlots.appendChild(slot);
         });
@@ -136,20 +167,27 @@
 
     function renderPool() {
         cardPool.innerHTML = '';
-        const hand = state.selectedUserId != null ? ensureUserHand(state.selectedUserId) : null;
-        const used = new Set((hand?.cardIds || []).filter((id) => id != null));
+        if (!isEditingSelf()) {
+            cardPool.textContent = '본인 로드아웃만 편집할 수 있습니다. 봇 부하는 fill-roster가 인스턴스로 저장합니다.';
+            return;
+        }
 
-        state.catalog.forEach((card) => {
-            const cardId = card.cardId;
+        const hand = ensureUserHand(state.selectedUserId);
+        const used = new Set((hand?.userPitchCardIds || []).filter((id) => id != null));
+
+        state.inventory.forEach((card) => {
+            const userPitchCardId = card.userPitchCardId;
             const chip = document.createElement('div');
             chip.className = 'drag-chip drag-chip-card';
             chip.draggable = true;
-            if (used.has(cardId)) {
+            if (used.has(userPitchCardId)) {
                 chip.classList.add('drag-chip-used');
             }
+            const amount = card.effectiveChangeAmount ?? card.baseChangeAmount ?? 0;
+            const timing = card.effectiveTiming || card.baseTiming || '-';
             chip.innerHTML = `<strong>${card.name}</strong>`
-                + `<span>${card.direction || '-'} ${card.changeAmount ?? 0} · ${card.timing || '-'}</span>`;
-            chip.addEventListener('dragstart', (e) => onDragStart(e, { cardId }));
+                + `<span>#${userPitchCardId} · ${card.direction || '-'} ${amount} · ${timing} · cost ${card.cost ?? '-'}</span>`;
+            chip.addEventListener('dragstart', (e) => onDragStart(e, { userPitchCardId }));
             cardPool.appendChild(chip);
         });
     }
@@ -159,17 +197,21 @@
         state.rosterUserIds.forEach((userId) => {
             const opt = document.createElement('option');
             opt.value = String(userId);
-            opt.textContent = state.memberLabels.get(userId) || `user ${userId}`;
+            const mine = Number(userId) === Number(state.myUserId) ? ' (나)' : '';
+            opt.textContent = `${state.memberLabels.get(userId) || `user ${userId}`}${mine}`;
             memberSelect.appendChild(opt);
         });
         if (state.rosterUserIds.length) {
             if (!state.rosterUserIds.includes(state.selectedUserId)) {
-                state.selectedUserId = state.rosterUserIds[0];
+                state.selectedUserId = state.rosterUserIds.includes(state.myUserId)
+                    ? state.myUserId
+                    : state.rosterUserIds[0];
             }
             memberSelect.value = String(state.selectedUserId);
         } else {
             state.selectedUserId = null;
         }
+        btnSaveCards.disabled = !state.team || !isEditingSelf();
     }
 
     function render() {
@@ -206,7 +248,7 @@
         const size = handSize(format);
         roster.forEach((userId) => {
             state.byUser.set(userId, {
-                cardIds: Array.from({ length: size }, () => null),
+                userPitchCardIds: Array.from({ length: size }, () => null),
                 dropIndex: size - 1,
             });
         });
@@ -214,12 +256,10 @@
         const saved = await BluffBallTeamApi.getPitchCards(state.team.teamId, format);
         if (saved?.selections) {
             saved.selections.forEach((sel) => {
-                const ids = [...(sel.cardIds || [])];
+                const ids = [...(sel.userPitchCardIds || sel.cardIds || [])];
                 while (ids.length < size) {
                     ids.push(null);
                 }
-                const dropIndex = Math.max(0, ids.indexOf(sel.dropCardId));
-                // keep drop card at last slot for UI
                 if (sel.dropCardId != null) {
                     const withoutDrop = ids.filter((id) => id !== sel.dropCardId);
                     const arranged = [...withoutDrop.slice(0, size - 1)];
@@ -227,17 +267,17 @@
                         arranged.push(null);
                     }
                     arranged.push(sel.dropCardId);
-                    state.byUser.set(sel.userId, { cardIds: arranged, dropIndex: size - 1 });
+                    state.byUser.set(sel.userId, { userPitchCardIds: arranged, dropIndex: size - 1 });
                 } else {
                     state.byUser.set(sel.userId, {
-                        cardIds: ids.slice(0, size),
-                        dropIndex: dropIndex >= 0 ? dropIndex : size - 1,
+                        userPitchCardIds: ids.slice(0, size),
+                        dropIndex: size - 1,
                     });
                 }
             });
         }
 
-        state.selectedUserId = roster[0] ?? null;
+        state.selectedUserId = roster.includes(state.myUserId) ? state.myUserId : (roster[0] ?? null);
         render();
     }
 
@@ -247,6 +287,7 @@
             return;
         }
 
+        state.myUserId = BluffBallAuth.getUserIdFromToken();
         state.team = await BluffBallTeamApi.getMyTeam();
         if (!state.team) {
             teamMeta.textContent = '소속 팀이 없습니다. 팀 페이지에서 창단하세요.';
@@ -256,14 +297,13 @@
         }
 
         teamMeta.textContent = `${state.team.name} · teamId ${state.team.teamId}`;
-        btnSaveCards.disabled = false;
 
         const members = await BluffBallTeamApi.getMembers(state.team.teamId);
         state.memberLabels = new Map(
             members.map((m) => [m.userId, `${m.nickname || '멤버'} (#${m.userId})`]),
         );
 
-        state.catalog = await BluffBallCards.fetchPitchCards();
+        state.inventory = await BluffBallCards.fetchMyPitchCards();
         await loadForFormat();
     }
 
@@ -274,33 +314,29 @@
             showError('팀이 없습니다.');
             return;
         }
-        if (!state.rosterUserIds.length) {
-            showError('라인업이 없습니다.');
+        if (!isEditingSelf()) {
+            showError('본인 로드아웃만 저장할 수 있습니다.');
             return;
         }
 
-        const selections = [];
-        for (const userId of state.rosterUserIds) {
-            const hand = ensureUserHand(userId);
-            if (hand.cardIds.some((id) => id == null)) {
-                showError(`${state.memberLabels.get(userId) || userId} 핸드를 모두 채워주세요.`);
-                state.selectedUserId = userId;
-                memberSelect.value = String(userId);
-                renderSlots();
-                renderPool();
-                return;
-            }
-            const dropCardId = hand.cardIds[hand.cardIds.length - 1];
-            selections.push({
-                userId,
-                cardIds: hand.cardIds.map(Number),
-                dropCardId: Number(dropCardId),
-            });
+        const hand = ensureUserHand(state.myUserId);
+        if (hand.userPitchCardIds.some((id) => id == null)) {
+            showError('핸드를 모두 채워주세요.');
+            renderSlots();
+            renderPool();
+            return;
         }
+        const userPitchCardIds = hand.userPitchCardIds.map(Number);
+        const dropCardId = userPitchCardIds[userPitchCardIds.length - 1];
 
         try {
-            await BluffBallTeamApi.savePitchCards(state.team.teamId, formatSelect.value, selections);
-            showOk('구종 카드를 저장했습니다.');
+            await BluffBallTeamApi.saveMyPitchCards(
+                state.team.teamId,
+                formatSelect.value,
+                userPitchCardIds,
+                dropCardId,
+            );
+            showOk('내 구종 인스턴스 로드아웃을 저장했습니다.');
         } catch (e) {
             showError(e.message || String(e));
         }
@@ -313,6 +349,7 @@
         state.selectedUserId = Number(memberSelect.value);
         renderSlots();
         renderPool();
+        btnSaveCards.disabled = !state.team || !isEditingSelf();
     });
     btnSaveCards.addEventListener('click', () => save());
 
