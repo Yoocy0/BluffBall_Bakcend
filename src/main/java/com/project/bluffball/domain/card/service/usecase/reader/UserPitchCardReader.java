@@ -26,7 +26,7 @@ import java.util.stream.Collectors;
 /**
  * 유저 보유 구종 인스턴스 읽기·실효 스탯 resolve Reader.
  *
- * <p>인게임 핸드 ID는 인스턴스 ID(리그) 또는 마스터 ID(쇼다운 드로우)일 수 있다.
+ * <p>인게임 핸드 ID는 주로 {@code UserPitchCard} 인스턴스 ID이다.
  * resolve 시 인스턴스 소유를 먼저 보고, 없으면 마스터 기준으로 보유 인스턴스 중
  * 강화가 가장 많은 장을 사용한다.</p>
  */
@@ -39,6 +39,20 @@ public class UserPitchCardReader {
 
     /** 마스터 구종 Repository */
     private final PitchCardRepository pitchCardRepository;
+
+    /**
+     * 유저가 보유한 모든 구종 인스턴스 ID 목록.
+     *
+     * <p>SHOWDOWN/CUSTOM/BOT 사람 측 드로우·멀리건 풀로 사용한다.</p>
+     *
+     * @param userId 유저 ID
+     * @return 보유 인스턴스 ID (마스터 ID·인스턴스 ID 순)
+     */
+    public List<Long> findOwnedInstanceIds(Long userId) {
+        return userPitchCardRepository.findByUserIdOrderByCardIdAscIdAsc(userId).stream()
+                .map(UserPitchCard::getId)
+                .toList();
+    }
 
     /**
      * 인스턴스 Entity 조회 (Executor·Reader 내부용).

@@ -85,7 +85,7 @@ public class MatchInfo {
     /**
      * 봇 드로우/멀리건 풀(인스턴스 ID).
      *
-     * <p>사람 참가자는 기존처럼 전체 마스터 풀을 쓰고, 봇만 이 목록을 사용한다.</p>
+     * <p>사람 참가자는 보유 {@code UserPitchCard} 인스턴스 ID 풀을 쓰고, 봇만 이 목록을 사용한다.</p>
      */
     private List<Long> botDrawPool;
 
