@@ -1,10 +1,10 @@
 package com.project.bluffball.domain.game.service;
 
-import com.project.bluffball.domain.game.bot.BotDeckCatalog;
 import com.project.bluffball.domain.game.dto.request.BotMatchStartRequest;
 import com.project.bluffball.domain.game.dto.response.BotMatchStartResponse;
 import com.project.bluffball.domain.game.dto.response.MatchFoundEvent;
 import com.project.bluffball.domain.game.enums.BotDifficulty;
+import com.project.bluffball.domain.game.service.usecase.executor.BotDeckInventoryExecutor;
 import com.project.bluffball.domain.game.service.usecase.executor.BotUserPoolExecutor;
 import com.project.bluffball.domain.game.service.usecase.executor.SingleMatchCreateExecutor;
 import com.project.bluffball.domain.game.service.usecase.validator.BotMatchValidator;
@@ -34,6 +34,9 @@ public class BotMatchService {
     /** 난이도별 재사용 봇 유저 */
     private final BotUserPoolExecutor botUserPoolExecutor;
 
+    /** 난이도별 봇 인벤토리·드로우 풀 */
+    private final BotDeckInventoryExecutor botDeckInventoryExecutor;
+
     /** Showdown 매치 생성 */
     private final SingleMatchCreateExecutor singleMatchCreateExecutor;
 
@@ -42,9 +45,6 @@ public class BotMatchService {
 
     /** 봇 자동 플레이 */
     private final BotMatchAutoPlayService botMatchAutoPlayService;
-
-    /** 난이도별 덱 카탈로그 (현재는 placeholder) */
-    private final BotDeckCatalog botDeckCatalog;
 
     /** 개인 매칭 알림 */
     private final SimpMessagingTemplate messagingTemplate;
@@ -70,21 +70,24 @@ public class BotMatchService {
             matchService.cancelQueueIfPresent(humanUserId);
         }
 
-        // 난이도별 덱 placeholder — 현재 드로우 경로에는 미연동
-        List<Long> deckIds = botDeckCatalog.masterPitchCardIdsFor(difficulty);
-        if (!deckIds.isEmpty()) {
-            log.debug("bot deck catalog (unused yet) difficulty={} size={}", difficulty, deckIds.size());
-        }
-
         Long botUserId = botUserPoolExecutor.resolveBotUserId(difficulty);
-        // 공개 큐 미사용 — practiceBotMatch=true 로 직접 생성
-        String matchSessionId = singleMatchCreateExecutor.execute(humanUserId, botUserId, true);
+        // 난이도별 인스턴스 풀 시딩 (풀봇 idempotent)
+        List<Long> botDrawPool = botDeckInventoryExecutor.ensureDrawPool(botUserId, difficulty);
+
+        String matchSessionId = singleMatchCreateExecutor.execute(
+                humanUserId,
+                botUserId,
+                true,
+                difficulty,
+                botUserId,
+                botDrawPool);
 
         botMatchAutoPlayService.start(matchSessionId, botUserId);
         notifyMatchFound(humanUserId, matchSessionId);
 
-        log.info("bot match started matchSessionId={} human={} bot={} difficulty={} fromMatchmaking={}",
-                matchSessionId, humanUserId, botUserId, difficulty, fromMatchmaking);
+        log.info(
+                "bot match started matchSessionId={} human={} bot={} difficulty={} poolSize={} fromMatchmaking={}",
+                matchSessionId, humanUserId, botUserId, difficulty, botDrawPool.size(), fromMatchmaking);
 
         return new BotMatchStartResponse(matchSessionId, botUserId, difficulty, fromMatchmaking);
     }

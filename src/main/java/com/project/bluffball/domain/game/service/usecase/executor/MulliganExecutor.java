@@ -43,7 +43,7 @@ public class MulliganExecutor {
                 .filter(id -> !swapSet.contains(id))
                 .collect(Collectors.toList());
 
-        List<Long> allCardIds = pitchCardReader.findAllIds();
+        List<Long> allCardIds = resolveDrawPool(matchInfo, userId);
         List<Long> newHand = cardHandDrawer.redraw(allCardIds, keepIds, handSize);
 
         matchInfo.setPlayerCardHand(userId, newHand);
@@ -61,5 +61,19 @@ public class MulliganExecutor {
         matchInfo.completeMulliganForUser(userId);
         matchInfo.syncPitcherCardHandFromPlayer();
         matchInfoRepository.save(matchInfo);
+    }
+
+    /**
+     * 참가자별 멀리건 재드로우 풀을 고른다.
+     *
+     * @param matchInfo 매치
+     * @param userId    참가자
+     * @return 풀 ID 목록
+     */
+    private List<Long> resolveDrawPool(MatchInfo matchInfo, Long userId) {
+        if (matchInfo.isPracticeBotUser(userId) && matchInfo.hasBotDrawPool()) {
+            return matchInfo.getBotDrawPool();
+        }
+        return pitchCardReader.findAllIds();
     }
 }

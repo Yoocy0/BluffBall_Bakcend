@@ -356,6 +356,28 @@ public class MatchInfoReader {
     }
 
     /**
+     * 연습 봇 유저 ID (Service ✅)
+     *
+     * @param matchSessionId 매치 세션 ID
+     * @return 봇 userId (없으면 null)
+     */
+    public Long getBotUserId(String matchSessionId) {
+        return getById(matchSessionId).getBotUserId();
+    }
+
+    /**
+     * 봇 드로우 풀 인스턴스 ID 목록 (Service ✅)
+     *
+     * @param matchSessionId 매치 세션 ID
+     * @return 풀 (없으면 빈 목록)
+     */
+    public List<Long> getBotDrawPool(String matchSessionId) {
+        MatchInfo matchInfo = getById(matchSessionId);
+        matchInfo.ensureCollectionsInitialized();
+        return List.copyOf(matchInfo.getBotDrawPool());
+    }
+
+    /**
      * 홈 선발 투수 ID (Service ✅)
      *
      * @param matchSessionId 매치 세션 ID

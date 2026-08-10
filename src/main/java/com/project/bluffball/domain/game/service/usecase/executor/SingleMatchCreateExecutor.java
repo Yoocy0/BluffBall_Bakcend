@@ -1,5 +1,6 @@
 package com.project.bluffball.domain.game.service.usecase.executor;
 
+import com.project.bluffball.domain.game.enums.BotDifficulty;
 import com.project.bluffball.domain.game.redis.GameState;
 import com.project.bluffball.domain.game.redis.MatchInfo;
 import com.project.bluffball.domain.game.repository.GameStateRepository;
@@ -47,6 +48,27 @@ public class SingleMatchCreateExecutor {
      * @return 생성된 matchSessionId (UUID)
      */
     public String execute(Long pitcherUserId, Long batterUserId, boolean practiceBotMatch) {
+        return execute(pitcherUserId, batterUserId, practiceBotMatch, null, null, null);
+    }
+
+    /**
+     * 싱글 모드(1 vs 1) 매치를 생성한다. (연습 봇 메타 포함)
+     *
+     * @param pitcherUserId    초기 투수 유저
+     * @param batterUserId     초기 타자 유저
+     * @param practiceBotMatch true이면 연습용 봇 매치
+     * @param botDifficulty    봇 난이도 (practiceBotMatch일 때)
+     * @param botUserId        봇 유저 ID
+     * @param botDrawPool      봇 드로우/멀리건 인스턴스 ID 풀
+     * @return 생성된 matchSessionId (UUID)
+     */
+    public String execute(
+            Long pitcherUserId,
+            Long batterUserId,
+            boolean practiceBotMatch,
+            BotDifficulty botDifficulty,
+            Long botUserId,
+            List<Long> botDrawPool) {
         String matchSessionId = UUID.randomUUID().toString();
 
         MatchInfo matchInfo = MatchInfo.builder()
@@ -58,7 +80,7 @@ public class SingleMatchCreateExecutor {
         matchInfo.ensureCollectionsInitialized();
         matchInfo.initializeDoubleJudgmentSettings();
         if (practiceBotMatch) {
-            matchInfo.markAsPracticeBotMatch();
+            matchInfo.markAsPracticeBotMatch(botDifficulty, botUserId, botDrawPool);
         }
 
         GameState gameState = GameState.builder()

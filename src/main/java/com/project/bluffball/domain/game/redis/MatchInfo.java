@@ -1,6 +1,7 @@
 package com.project.bluffball.domain.game.redis;
 
 import com.project.bluffball.domain.game.dto.request.SetupNumberRequest;
+import com.project.bluffball.domain.game.enums.BotDifficulty;
 import com.project.bluffball.domain.game.enums.GameStatus;
 import com.project.bluffball.domain.game.enums.SetupKind;
 import com.project.bluffball.domain.league.enums.LeagueTier;
@@ -73,6 +74,20 @@ public class MatchInfo {
      * (현재 Showdown PvP에도 보상 경로가 없으므로, 향후 보상 추가 시 이 플래그로 가드한다.)</p>
      */
     private boolean practiceBotMatch;
+
+    /** 연습 봇 난이도 — practiceBotMatch일 때만 사용 */
+    @Enumerated(EnumType.ORDINAL)
+    private BotDifficulty botDifficulty;
+
+    /** 연습 봇 유저 ID — practiceBotMatch일 때만 사용 */
+    private Long botUserId;
+
+    /**
+     * 봇 드로우/멀리건 풀(인스턴스 ID).
+     *
+     * <p>사람 참가자는 기존처럼 전체 마스터 풀을 쓰고, 봇만 이 목록을 사용한다.</p>
+     */
+    private List<Long> botDrawPool;
 
     /** 리그 티어 — 리그 매치에서 사용 */
     @Enumerated(EnumType.ORDINAL)
@@ -334,6 +349,9 @@ public class MatchInfo {
         }
         if (playerDropCards == null) {
             playerDropCards = new ArrayList<>();
+        }
+        if (botDrawPool == null) {
+            botDrawPool = new ArrayList<>();
         }
         for (PlayerSetupNumbers entry : playerSetupNumbers) {
             entry.ensureListsInitialized();
@@ -810,6 +828,9 @@ public class MatchInfo {
         this.homePitcherSubstitutionCount = 0;
         this.awayPitcherSubstitutionCount = 0;
         this.practiceBotMatch = false;
+        this.botDifficulty = null;
+        this.botUserId = null;
+        this.botDrawPool = new ArrayList<>();
     }
 
     /**
@@ -819,6 +840,40 @@ public class MatchInfo {
      */
     public void markAsPracticeBotMatch() {
         this.practiceBotMatch = true;
+    }
+
+    /**
+     * 연습용 봇 매치 메타(난이도·봇 유저·드로우 풀)를 설정한다.
+     *
+     * @param difficulty 봇 난이도
+     * @param botUserId  봇 유저 ID
+     * @param botDrawPool 봇 드로우/멀리건용 인스턴스 ID 목록
+     */
+    public void markAsPracticeBotMatch(BotDifficulty difficulty, Long botUserId, List<Long> botDrawPool) {
+        this.practiceBotMatch = true;
+        this.botDifficulty = difficulty;
+        this.botUserId = botUserId;
+        this.botDrawPool = botDrawPool != null ? new ArrayList<>(botDrawPool) : new ArrayList<>();
+    }
+
+    /**
+     * 해당 유저가 이 매치의 연습 봇인지.
+     *
+     * @param userId 유저 ID
+     * @return practice bot 매치이고 botUserId와 일치하면 true
+     */
+    public boolean isPracticeBotUser(Long userId) {
+        return practiceBotMatch && botUserId != null && botUserId.equals(userId);
+    }
+
+    /**
+     * 봇 전용 드로우 풀이 사용 가능한지.
+     *
+     * @return botDrawPool이 비어 있지 않으면 true
+     */
+    public boolean hasBotDrawPool() {
+        ensureCollectionsInitialized();
+        return botDrawPool != null && !botDrawPool.isEmpty();
     }
 
     /**
