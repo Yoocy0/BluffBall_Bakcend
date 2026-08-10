@@ -14,13 +14,15 @@ import lombok.NoArgsConstructor;
  *   <li>{@code card} — 공통 (name, user_type, card_type_code)</li>
  *   <li>{@code pitch_card} — 구종 전용 (change_amount, direction, timing)</li>
  *   <li>{@code coordinate_card} — 좌표 전용 (coordinate_number, is_strike)</li>
+ *   <li>{@code enhancement_card} — 강화 전용 (effect)</li>
  * </ul>
  *
  * <p>{@code card_type_code} discriminator:</p>
  * <ul>
- *   <li>0 = 기본 Card (타이밍 카드, 구종 강화 카드)</li>
+ *   <li>0 = 기본 Card</li>
  *   <li>1 = PitchCard</li>
  *   <li>2 = CoordinateCard</li>
+ *   <li>3 = EnhancementCard</li>
  * </ul>
  */
 @Entity

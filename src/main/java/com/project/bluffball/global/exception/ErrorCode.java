@@ -54,6 +54,9 @@ public enum ErrorCode {
     COORDINATE_CARD_NOT_FOUND(HttpStatus.NOT_FOUND, "좌표 카드를 찾을 수 없습니다."),
     COORDINATE_CARD_INVALID_TYPE(HttpStatus.BAD_REQUEST, "좌표 카드 유형이 올바르지 않습니다."),
     COORDINATE_CARD_MASTER_NOT_FOUND(HttpStatus.BAD_REQUEST, "좌표 카드 마스터가 없습니다."),
+    ENHANCEMENT_CARD_NOT_FOUND(HttpStatus.NOT_FOUND, "강화 카드를 찾을 수 없습니다."),
+    USER_ENHANCEMENT_CARD_NOT_FOUND(HttpStatus.NOT_FOUND, "보유하지 않은 강화 카드입니다."),
+    USER_ENHANCEMENT_CARD_INSUFFICIENT(HttpStatus.BAD_REQUEST, "강화 카드 수량이 부족합니다."),
 
     // Game
     GAME_NOT_INITIALIZED(HttpStatus.BAD_REQUEST, "경기 진행이 초기화되지 않았습니다."),
