@@ -22,7 +22,7 @@ import java.util.concurrent.ThreadLocalRandom;
  *   <li>해당 타입이 핸드에 없으면 차선 구종으로 같은 의도 유지</li>
  * </ul>
  */
-@Component
+@Component("gameTestPitcherBotDecisionPolicy")
 public class PitcherBotDecisionPolicy {
 
     /** 스트라이크존 후보 시작 좌표 (중앙 우선) */

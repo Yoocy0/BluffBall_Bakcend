@@ -4,32 +4,47 @@
     const loginScreen = document.getElementById('loginScreen');
     const hubScreen = document.getElementById('hubScreen');
     const homeScreen = document.getElementById('homeScreen');
+    const botDifficultyScreen = document.getElementById('botDifficultyScreen');
     const matchingScreen = document.getElementById('matchingScreen');
     const matchCompleteModal = document.getElementById('matchCompleteModal');
     const matchCompleteCountdown = document.getElementById('matchCompleteCountdown');
 
     const btnKakaoLogin = document.getElementById('btnKakaoLogin');
     const btnGoogleLogin = document.getElementById('btnGoogleLogin');
+    const btnDevLogin = document.getElementById('btnDevLogin');
+    const devPinInput = document.getElementById('devPinInput');
     const loginError = document.getElementById('loginError');
     const userInfo = document.getElementById('userInfo');
     const hubError = document.getElementById('hubError');
     const homeError = document.getElementById('homeError');
+    const botDiffError = document.getElementById('botDiffError');
     const btnLogout = document.getElementById('btnLogout');
 
     const btnOpenGameStart = document.getElementById('btnOpenGameStart');
     const btnOpenTeam = document.getElementById('btnOpenTeam');
     const btnOpenPitchCards = document.getElementById('btnOpenPitchCards');
     const btnBackToHub = document.getElementById('btnBackToHub');
+    const btnBackToModes = document.getElementById('btnBackToModes');
 
     const btnModeShowdown = document.getElementById('btnModeShowdown');
+    const btnModeBotShowdown = document.getElementById('btnModeBotShowdown');
     const btnModeLeagueCompact = document.getElementById('btnModeLeagueCompact');
     const btnModeLeagueFull = document.getElementById('btnModeLeagueFull');
     const btnModeBotCompact = document.getElementById('btnModeBotCompact');
     const btnModeBotFull = document.getElementById('btnModeBotFull');
+    const btnBotDiffEasy = document.getElementById('btnBotDiffEasy');
+    const btnBotDiffNormal = document.getElementById('btnBotDiffNormal');
+    const btnBotDiffHard = document.getElementById('btnBotDiffHard');
     const matchingModeLabel = document.getElementById('matchingModeLabel');
     const matchingTimer = document.getElementById('matchingTimer');
     const matchingError = document.getElementById('matchingError');
     const btnCancelMatch = document.getElementById('btnCancelMatch');
+
+    const BOT_DIFFICULTY_LABELS = {
+        EASY: '쉬움',
+        NORMAL: '보통',
+        HARD: '어려움',
+    };
 
     const state = {
         stompClient: null,
@@ -37,19 +52,24 @@
         matchingStartedAt: null,
         matchHandled: false,
         waitingInQueue: false,
-        /** 'SHOWDOWN' | 'LEAGUE' */
+        /** 'SHOWDOWN' | 'LEAGUE' | 'BOT_SHOWDOWN' */
         queueKind: 'SHOWDOWN',
         leagueFormat: null,
-        /** 매칭 성사 시 auto-play에 넘길 봇 ID (상대 봇 매칭 전용) */
+        /** 매칭 성사 시 auto-play에 넘길 봇 ID (리그 상대 봇 매칭 전용) */
         pendingBotUserIds: null,
         pendingTeammateBotIds: null,
         pendingOpponentBotIds: null,
+        /** 봇전 시작 중이면 취소 시 큐 API를 치지 않음 */
+        startingBotShowdown: false,
     };
 
     function showScreen(screen) {
         loginScreen.hidden = screen !== 'login';
         hubScreen.hidden = screen !== 'hub';
         homeScreen.hidden = screen !== 'modes';
+        if (botDifficultyScreen) {
+            botDifficultyScreen.hidden = screen !== 'bot-difficulty';
+        }
         matchingScreen.hidden = screen !== 'matching';
     }
 
@@ -536,8 +556,76 @@
         }
     }
 
+    /**
+     * Showdown 봇전 — POST /api/v1/match/bot/showdown/start 후 기존 인게임 화면으로 진입.
+     * 서버가 BotMatchAutoPlayService를 켜므로 리그 auto-play API는 호출하지 않는다.
+     */
+    async function startShowdownBotMatch(difficulty) {
+        showError(botDiffError, '');
+        showError(matchingError, '');
+        state.matchHandled = false;
+        state.waitingInQueue = false;
+        state.startingBotShowdown = true;
+        state.pendingBotUserIds = null;
+        state.pendingTeammateBotIds = [];
+        state.pendingOpponentBotIds = null;
+        state.queueKind = 'BOT_SHOWDOWN';
+        state.leagueFormat = null;
+
+        const label = BOT_DIFFICULTY_LABELS[difficulty] || difficulty;
+        matchingModeLabel.textContent = `봇전 (쇼다운) · ${label} 시작 중...`;
+        showScreen('matching');
+        startMatchingTimer();
+
+        try {
+            const token = BluffBallWs.requireLoginToken();
+            const res = await fetch('/api/v1/match/bot/showdown/start', {
+                method: 'POST',
+                headers: {
+                    Authorization: `Bearer ${token}`,
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({
+                    difficulty,
+                    fromMatchmaking: false,
+                }),
+            });
+            if (!res.ok) {
+                throw new Error(await parseApiError(res));
+            }
+            const body = await res.json();
+            if (!body.matchSessionId) {
+                throw new Error('봇 매치 세션 ID가 없습니다.');
+            }
+
+            state.startingBotShowdown = false;
+            state.pendingOpponentBotIds = body.botUserId != null
+                ? [Number(body.botUserId)]
+                : [];
+            // 사람은 홈(선공 투수)으로 시작한다.
+            handleMatchComplete(body.matchSessionId, 'pitcher');
+        } catch (e) {
+            state.startingBotShowdown = false;
+            stopMatchingTimer();
+            disconnectMatchWs();
+            showScreen('bot-difficulty');
+            showError(botDiffError, e.message || String(e));
+        }
+    }
+
     async function cancelMatching() {
         showError(matchingError, '');
+
+        // 봇전 시작 API 대기 중이면 큐 취소 없이 난이도 화면으로
+        if (state.startingBotShowdown) {
+            state.startingBotShowdown = false;
+            stopMatchingTimer();
+            disconnectMatchWs();
+            state.matchHandled = false;
+            showScreen('bot-difficulty');
+            return;
+        }
+
         try {
             await releaseQueueIfWaiting();
         } catch (e) {
@@ -556,6 +644,9 @@
         showError(loginError, '');
         btnKakaoLogin.disabled = true;
         btnGoogleLogin.disabled = true;
+        if (btnDevLogin) {
+            btnDevLogin.disabled = true;
+        }
 
         try {
             await BluffBallAuth.startOAuthLogin(provider);
@@ -563,6 +654,41 @@
             showError(loginError, e.message || String(e));
             btnKakaoLogin.disabled = false;
             btnGoogleLogin.disabled = false;
+            if (btnDevLogin) {
+                btnDevLogin.disabled = false;
+            }
+        }
+    }
+
+    async function handleDevLogin() {
+        showError(loginError, '');
+        const pin = (devPinInput?.value || '').trim();
+        if (!/^\d{4}$/.test(pin)) {
+            showError(loginError, 'PIN은 숫자 4자리로 입력하세요.');
+            return;
+        }
+
+        btnKakaoLogin.disabled = true;
+        btnGoogleLogin.disabled = true;
+        if (btnDevLogin) {
+            btnDevLogin.disabled = true;
+        }
+
+        try {
+            const tokens = await BluffBallAuth.devLogin(pin);
+            BluffBallAuth.saveTokens(tokens);
+            if (devPinInput) {
+                devPinInput.value = '';
+            }
+            renderLoginState();
+        } catch (e) {
+            showError(loginError, e.message || String(e));
+        } finally {
+            btnKakaoLogin.disabled = false;
+            btnGoogleLogin.disabled = false;
+            if (btnDevLogin) {
+                btnDevLogin.disabled = false;
+            }
         }
     }
 
@@ -582,6 +708,18 @@
 
     btnKakaoLogin?.addEventListener('click', () => handleOAuthLogin('kakao'));
     btnGoogleLogin?.addEventListener('click', () => handleOAuthLogin('google'));
+    btnDevLogin?.addEventListener('click', () => handleDevLogin());
+    devPinInput?.addEventListener('keydown', (e) => {
+        if (e.key === 'Enter') {
+            handleDevLogin();
+        }
+    });
+    devPinInput?.addEventListener('input', () => {
+        if (!devPinInput) {
+            return;
+        }
+        devPinInput.value = devPinInput.value.replace(/\D/g, '').slice(0, 4);
+    });
     btnLogout?.addEventListener('click', () => {
         releaseQueueIfWaiting({ silent: true }).finally(() => {
             disconnectMatchWs();
@@ -596,6 +734,10 @@
         showScreen('modes');
     });
     btnBackToHub?.addEventListener('click', () => showScreen('hub'));
+    btnBackToModes?.addEventListener('click', () => {
+        showError(botDiffError, '');
+        showScreen('modes');
+    });
     btnOpenTeam?.addEventListener('click', () => {
         window.location.href = '/game-test/Team.html';
     });
@@ -604,10 +746,24 @@
     });
 
     btnModeShowdown?.addEventListener('click', () => startMatching('SHOWDOWN', null, '쇼다운'));
+    btnModeBotShowdown?.addEventListener('click', () => {
+        showError(homeError, '');
+        showError(botDiffError, '');
+        showScreen('bot-difficulty');
+    });
     btnModeLeagueCompact?.addEventListener('click', () => startMatching('LEAGUE', 'COMPACT', '리그 컴팩트'));
     btnModeLeagueFull?.addEventListener('click', () => startMatching('LEAGUE', 'FULL', '리그 풀'));
     btnModeBotCompact?.addEventListener('click', () => startBotOpponentMatching('COMPACT', '컴팩트 · 상대 봇'));
     btnModeBotFull?.addEventListener('click', () => startBotOpponentMatching('FULL', '풀 · 상대 봇'));
+
+    [btnBotDiffEasy, btnBotDiffNormal, btnBotDiffHard].forEach((btn) => {
+        btn?.addEventListener('click', () => {
+            const difficulty = btn.dataset.difficulty;
+            if (difficulty) {
+                startShowdownBotMatch(difficulty);
+            }
+        });
+    });
     btnCancelMatch?.addEventListener('click', () => cancelMatching());
 
     window.addEventListener('pagehide', releaseQueueOnPageHide);

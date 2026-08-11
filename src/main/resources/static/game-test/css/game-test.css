@@ -666,6 +666,20 @@ button.danger {
     margin-top: 24px;
 }
 
+.home-diff-btn {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 4px;
+    background: linear-gradient(135deg, #81c995, #5bb974);
+}
+
+.home-diff-desc {
+    font-size: 0.8rem;
+    font-weight: 500;
+    opacity: 0.85;
+}
+
 /* —— 매칭 대기 —— */
 .matching-status-label {
     margin: 0 0 8px;
@@ -787,6 +801,53 @@ button.danger {
     background: #ffffff;
     color: #1a1d23;
     border: 1px solid #dadce0;
+}
+
+.home-dev-login {
+    width: 100%;
+    margin-top: 8px;
+    padding-top: 16px;
+    border-top: 1px solid #3c4043;
+}
+
+.home-dev-login-label {
+    margin: 0 0 10px;
+    font-size: 0.85rem;
+    color: #9aa0a6;
+    text-align: center;
+}
+
+.home-dev-login-row {
+    display: flex;
+    gap: 8px;
+    align-items: stretch;
+}
+
+.home-dev-pin-input {
+    flex: 1;
+    min-height: 52px;
+    padding: 12px 14px;
+    border-radius: 12px;
+    border: 1px solid #5f6368;
+    background: #292a2d;
+    color: #e8eaed;
+    font-size: 1.1rem;
+    font-weight: 700;
+    letter-spacing: 0.25em;
+    text-align: center;
+}
+
+.home-dev-pin-input:focus {
+    outline: 2px solid #8ab4f8;
+    outline-offset: 1px;
+}
+
+.home-login-dev {
+    flex: 0 0 auto;
+    width: auto;
+    min-width: 96px;
+    background: linear-gradient(135deg, #8ab4f8, #6a9ae8);
+    color: #1a1d23;
 }
 
 .home-user-info {

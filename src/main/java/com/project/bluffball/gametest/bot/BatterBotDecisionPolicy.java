@@ -16,7 +16,7 @@ import java.util.concurrent.ThreadLocalRandom;
  * 남은 구종에 대해 공개된 시작 좌표 기준 “존 진입 확률”이 가장 높은 구종을 가정한 뒤
  * 스윙(예상 최종 좌표·타이밍) 또는 지켜보기를 결정한다.</p>
  */
-@Component
+@Component("gameTestBatterBotDecisionPolicy")
 public class BatterBotDecisionPolicy {
 
     /**

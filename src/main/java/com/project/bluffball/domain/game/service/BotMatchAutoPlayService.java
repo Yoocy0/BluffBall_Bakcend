@@ -188,7 +188,7 @@ public class BotMatchAutoPlayService {
                 lastActionAtMs.put(matchSessionId, System.currentTimeMillis());
             }
         } catch (Exception e) {
-            log.warn("bot auto-play tick failed matchSessionId={}: {}", matchSessionId, e.toString());
+            log.warn("bot auto-play tick failed matchSessionId={}", matchSessionId, e);
         }
     }
 

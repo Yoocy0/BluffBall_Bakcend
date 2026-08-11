@@ -312,6 +312,37 @@
         goToLeaguePlay();
     }
 
+
+    /** 쇼다운/봇: CardHand 미수신·드로우 실패 대비 폴링 */
+    async function waitForShowdownCardDraw() {
+        for (let i = 0; i < 40; i++) {
+            if (state.navigating) {
+                return;
+            }
+            const session = await BluffBallNav.fetchSessionState(state.matchSessionId);
+            if (session) {
+                BluffBallNav.applySessionState(session);
+                const hand = session.myCardHand || [];
+                if (hand.length > 0) {
+                    log('카드 패 확인 — 멀리건 화면으로 이동합니다.', 'ok');
+                    goToMulligan();
+                    return;
+                }
+                if (session.setupComplete && i >= 6 && hand.length === 0) {
+                    // 셋업은 끝났는데 핸드가 없으면 드로우 실패 가능성
+                    setSetupStatus('카드 드로우 실패 — 구종 카드가 부족할 수 있습니다.');
+                    log('셋업은 완료됐지만 카드 패가 없습니다. 구종 카드 보유를 확인하거나 봇전을 다시 시작해 보세요.', 'err');
+                    return;
+                }
+            }
+            await sleep(500);
+        }
+        if (!state.navigating) {
+            setSetupStatus('카드 드로우 대기 시간 초과');
+            log('카드 드로우 응답이 없습니다. 새로고침 후 다시 시도해 보세요.', 'err');
+        }
+    }
+
     function handleCardHandEvent({ event }) {
         if (!BluffBallGameWs.isCardHandForMe?.(event)) {
             return;
@@ -417,6 +448,7 @@
             } else {
                 setSetupStatus('제출 완료 — 상대방·카드 드로우 대기 중...', true);
                 log('setup-numbers 제출 완료', 'ok');
+                waitForShowdownCardDraw().catch((e) => log(e.message || String(e), 'err'));
             }
         } catch (e) {
             log(e.message, 'err');

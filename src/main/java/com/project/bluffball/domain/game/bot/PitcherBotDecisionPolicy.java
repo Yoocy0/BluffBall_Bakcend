@@ -3,6 +3,7 @@ package com.project.bluffball.domain.game.bot;
 import com.project.bluffball.domain.card.enums.ChangeDirection;
 import com.project.bluffball.domain.game.dto.response.CardInfo;
 import com.project.bluffball.domain.game.enums.BotDifficulty;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
 import java.util.ArrayList;
@@ -64,6 +65,7 @@ public class PitcherBotDecisionPolicy {
     /**
      * 기본 난수로 정책을 생성한다(Spring 빈).
      */
+    @Autowired
     public PitcherBotDecisionPolicy() {
         this(new Random());
     }

@@ -7,6 +7,7 @@ import com.project.bluffball.domain.game.enums.Timing;
 import lombok.RequiredArgsConstructor;
 import org.springframework.boot.ApplicationArguments;
 import org.springframework.boot.ApplicationRunner;
+import org.springframework.core.annotation.Order;
 import org.springframework.stereotype.Component;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -18,6 +19,7 @@ import java.util.List;
  * <p>기동 시 마스터 구종이 없으면 등록한다. 이미 DB에 구종이 있어도 신규 구종만 추가한다.</p>
  */
 @Component
+@Order(100)
 @RequiredArgsConstructor
 public class PitchCardInitializer implements ApplicationRunner {
 

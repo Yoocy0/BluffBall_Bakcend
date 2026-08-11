@@ -7,12 +7,15 @@ import java.util.List;
 
 /**
  * 턴 결과 WebSocket 송신 이벤트.
+ *
+ * <p>구종명은 공개하지 않는다({@code pitchCardName}은 항상 null).
+ * 최종 좌표·타이밍·판정·보드 상태만 전달한다.</p>
  */
 public record TurnResultEvent(
         TurnResult turnResult,
         int finalCoordinateNumber,
         Timing pitchTiming,
-        /** 이번 턴 투수가 선택한 구종명 (예: 포심 패스트볼) */
+        /** 구종명은 비공개 — 항상 null */
         String pitchCardName,
         List<Integer> diceResults,
         int inning,

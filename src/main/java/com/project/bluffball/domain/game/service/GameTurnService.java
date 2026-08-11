@@ -55,7 +55,7 @@ public class GameTurnService {
      * 투수 구종 카드 및 시작 좌표 카드 선택을 처리한다.
      *
      * <p>처리 완료 후 타자에게 시작 좌표 번호만 공개하는 {@code PitcherReadyEvent}를 전송한다.
-     * 최종 좌표와 구종 타이밍은 타자 선택 후 {@code TurnResultEvent}에서 공개한다.</p>
+     * 최종 좌표와 구종 타이밍은 타자 선택 후 {@code TurnResultEvent}에서 공개하며, 구종명은 공개하지 않는다.</p>
      */
     public void pitcherSelectCard(String matchSessionId, Long userId, PitcherCardSelectRequest request) {
         // 현재 게임의 상태가 유효한지 검증

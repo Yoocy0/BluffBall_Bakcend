@@ -291,6 +291,20 @@ public class UserPitchCardReader {
     }
 
     /**
+     * 핸드 ID(인스턴스 또는 마스터)의 구종 표시 이름을 반환한다.
+     *
+     * @param userId           투수 유저 ID (null이면 마스터 ID로만 조회)
+     * @param cardOrInstanceId 인스턴스 또는 마스터 ID
+     * @return 구종 이름
+     */
+    public String getEffectiveCardName(Long userId, Long cardOrInstanceId) {
+        if (cardOrInstanceId == null) {
+            return null;
+        }
+        return requireMaster(resolveMasterId(userId, cardOrInstanceId)).getName();
+    }
+
+    /**
      * 핸드 카드의 실효 CardInfo 목록.
      *
      * <p>핸드에 담긴 ID를 그대로 {@code CardInfo.cardId}에 넣어 선택 키로 쓴다.</p>
