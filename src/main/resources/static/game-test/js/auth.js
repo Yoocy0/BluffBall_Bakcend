@@ -116,6 +116,23 @@
         return res.json();
     }
 
+    /**
+     * 개발자 PIN 로그인 — POST /game-test/api/dev-login
+     * @param {string} pin 4자리 PIN
+     */
+    async function devLogin(pin) {
+        const res = await fetch('/game-test/api/dev-login', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ pin }),
+        });
+        if (!res.ok) {
+            const body = await res.json().catch(() => ({}));
+            throw new Error(body.message || `개발자 로그인 실패 (HTTP ${res.status})`);
+        }
+        return res.json();
+    }
+
     window.BluffBallAuth = {
         ACCESS_TOKEN_KEY,
         REFRESH_TOKEN_KEY,
@@ -129,5 +146,6 @@
         fetchOAuthConfig,
         startOAuthLogin,
         exchangeCodeForTokens,
+        devLogin,
     };
 })();

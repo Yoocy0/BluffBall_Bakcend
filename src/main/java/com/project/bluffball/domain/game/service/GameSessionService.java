@@ -17,7 +17,6 @@ import com.project.bluffball.domain.game.redis.TurnResultSession;
 import com.project.bluffball.domain.game.service.usecase.reader.GameProgressReader;
 import com.project.bluffball.domain.game.service.usecase.reader.GameStateReader;
 import com.project.bluffball.domain.game.service.usecase.reader.MatchInfoReader;
-import com.project.bluffball.domain.game.service.usecase.reader.PitchCardReader;
 import com.project.bluffball.domain.game.service.usecase.reader.TurnResultSessionReader;
 import com.project.bluffball.domain.game.service.usecase.validator.MatchParticipantValidator;
 import com.project.bluffball.domain.user.record.enums.GameMode;
@@ -41,7 +40,6 @@ public class GameSessionService {
     private final GameProgressReader gameProgressReader;
     private final TurnResultSessionReader turnResultSessionReader;
     private final UserPitchCardReader userPitchCardReader;
-    private final PitchCardReader pitchCardReader;
     private final MatchPresenceService matchPresenceService;
     private final GameModeRule gameModeRule;
 
@@ -220,7 +218,7 @@ public class GameSessionService {
                         session.getTurnResult(),
                         session.getFinalCoordinateNumber(),
                         session.getPitchTiming(),
-                        pitchCardReader.getPitchCardName(session.getSelectedPitchCardId()),
+                        null, // 구종명 비공개
                         session.getDiceResults()));
     }
 }

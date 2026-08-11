@@ -3,6 +3,7 @@ package com.project.bluffball.domain.game.bot;
 import com.project.bluffball.domain.game.dto.response.CardInfo;
 import com.project.bluffball.domain.game.enums.BotDifficulty;
 import com.project.bluffball.domain.game.enums.Timing;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
 import java.util.ArrayList;
@@ -35,6 +36,7 @@ public class BatterBotDecisionPolicy {
      *
      * @param pitcherPolicy 투수 정책(분류·대체·HARD 샘플링)
      */
+    @Autowired
     public BatterBotDecisionPolicy(PitcherBotDecisionPolicy pitcherPolicy) {
         this(pitcherPolicy, new Random());
     }

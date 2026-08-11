@@ -4,7 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>BluffBall</title>
-    <link rel="stylesheet" href="/game-test/css/game-test.css?v=4">
+    <link rel="stylesheet" href="/game-test/css/game-test.css?v=6">
 </head>
 <body class="home-body">
 <div class="home-page">
@@ -21,6 +21,23 @@
             <button type="button" id="btnGoogleLogin" class="home-login-btn home-login-google">
                 구글로 로그인
             </button>
+
+            <div class="home-dev-login">
+                <p class="home-dev-login-label">개발자 테스트 로그인</p>
+                <div class="home-dev-login-row">
+                    <input type="password"
+                           id="devPinInput"
+                           class="home-dev-pin-input"
+                           inputmode="numeric"
+                           pattern="[0-9]*"
+                           maxlength="4"
+                           placeholder="4자리 PIN"
+                           autocomplete="one-time-code">
+                    <button type="button" id="btnDevLogin" class="home-login-btn home-login-dev">
+                        로그인
+                    </button>
+                </div>
+            </div>
         </div>
 
         <p id="loginError" class="home-error" hidden></p>
@@ -48,6 +65,9 @@
 
         <div class="home-mode-list">
             <button type="button" id="btnModeShowdown" class="home-mode-btn">쇼다운</button>
+            <button type="button" id="btnModeBotShowdown" class="home-mode-btn home-mode-btn-alt">
+                봇전 (쇼다운)
+            </button>
             <button type="button" id="btnModeLeagueCompact" class="home-mode-btn">리그 (컴팩트)</button>
             <button type="button" id="btnModeLeagueFull" class="home-mode-btn">리그 (풀)</button>
             <button type="button" id="btnModeBotCompact" class="home-mode-btn home-mode-btn-alt">
@@ -60,6 +80,33 @@
         </div>
 
         <p id="homeError" class="home-error" hidden></p>
+    </section>
+
+    <!-- 봇전 난이도 선택 -->
+    <section id="botDifficultyScreen" class="home-screen" hidden>
+        <h1 class="home-title home-title-sm">봇전 (쇼다운)</h1>
+        <p class="home-subtitle">난이도를 선택하세요</p>
+
+        <div class="home-mode-list">
+            <button type="button" id="btnBotDiffEasy" class="home-mode-btn home-diff-btn"
+                    data-difficulty="EASY">
+                쉬움
+                <span class="home-diff-desc">튜토리얼 기본 덱</span>
+            </button>
+            <button type="button" id="btnBotDiffNormal" class="home-mode-btn home-diff-btn"
+                    data-difficulty="NORMAL">
+                보통
+                <span class="home-diff-desc">마스터 기본 구종</span>
+            </button>
+            <button type="button" id="btnBotDiffHard" class="home-mode-btn home-diff-btn"
+                    data-difficulty="HARD">
+                어려움
+                <span class="home-diff-desc">강화 카드 포함</span>
+            </button>
+            <button type="button" id="btnBackToModes" class="home-mode-btn home-mode-btn-cancel">뒤로</button>
+        </div>
+
+        <p id="botDiffError" class="home-error" hidden></p>
     </section>
 
     <!-- 매칭 대기 -->
@@ -85,11 +132,11 @@
 
 <script src="https://cdn.jsdelivr.net/npm/sockjs-client@1/dist/sockjs.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/@stomp/stompjs@7/bundles/stomp.umd.min.js"></script>
-<script src="/game-test/js/auth.js?v=1"></script>
+<script src="/game-test/js/auth.js?v=2"></script>
 <script src="/game-test/js/ws-client.js?v=1"></script>
 <script src="/game-test/js/game-role.js?v=3"></script>
 <script src="/game-test/js/game-ws.js?v=11"></script>
-<script src="/game-test/js/game-nav.js?v=10"></script>
-<script src="/game-test/js/home.js?v=11"></script>
+<script src="/game-test/js/game-nav.js?v=11"></script>
+<script src="/game-test/js/home.js?v=14"></script>
 </body>
 </html>

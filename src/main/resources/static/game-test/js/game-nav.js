@@ -219,10 +219,10 @@
         return sessionStorage.getItem(STORAGE_GAME_MODE) || '';
     }
 
-    /** 쇼다운/커스텀만 인게임 드로우·멀리건 */
+    /** 쇼다운/커스텀/봇전만 인게임 드로우·멀리건 */
     function usesInGameMulligan(gameMode) {
         const mode = gameMode || getGameMode();
-        return mode === 'SHOWDOWN' || mode === 'CUSTOM';
+        return mode === 'SHOWDOWN' || mode === 'CUSTOM' || mode === 'BOT';
     }
 
     function isLeagueMode(gameMode) {
